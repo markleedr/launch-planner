@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Riverfront Residences — Launch Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-app:#F5F4F1;
+    --bg-sidebar:#FBFAF8;
+    --bg-surface:#FFFFFF;
+    --titlebar:#ECEBE7;
+    --border:#E3E0D8;
+    --border-strong:#D3CFC4;
+    --text:#17181A;
+    --text-2:#5E5A52;
+    --text-3:#9C9789;
+    --accent:#FFD600;
+    --accent-ink:#17181A;
+    --good-ink:#1F7A44; --good-bg:#E4F4E9; --good-dot:#2EA658;
+    --warn-ink:#A96A0A; --warn-bg:#FBEFDA; --warn-dot:#E0A020;
+    --info-ink:#2A5FC7; --info-bg:#E7EEFC; --info-dot:#3F76E0;
+    --done-dot:#B2ADA0;
+    --phase-plan:#DEDACD;
+    --phase-produce:#8D8875;
+    --phase-live:#242319;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg-app);
+    color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    font-size:13px;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .app{display:flex;flex-direction:column;height:100vh;width:100vw;}
+
+  /* ---------- title bar ---------- */
+  .titlebar{
+    flex:0 0 auto; height:40px; display:flex; align-items:center; gap:16px;
+    padding:0 14px; background:var(--titlebar); border-bottom:1px solid var(--border-strong);
+    -webkit-user-select:none; user-select:none;
+  }
+  .traffic{display:flex; gap:8px; flex:0 0 auto;}
+  .traffic i{width:12px;height:12px;border-radius:50%;display:block;position:relative;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.15);}
+  .traffic .r{background:radial-gradient(circle at 30% 30%, #FF8078, #FF5F57 60%);}
+  .traffic .y{background:radial-gradient(circle at 30% 30%, #FFD060, #FEBC2E 60%);}
+  .traffic .g{background:radial-gradient(circle at 30% 30%, #57DE72, #28C840 60%);}
+  .navarrows{display:flex; gap:2px; flex:0 0 auto;}
+  .navarrows button{width:24px;height:24px;border:none;background:transparent;border-radius:6px;color:#8B8779;display:flex;align-items:center;justify-content:center;}
+  .navarrows button.disabled{color:#C7C3B6;}
+  .navarrows svg{width:14px;height:14px;}
+  .titletext{flex:1 1 auto; text-align:center; font-size:12.5px; font-weight:600; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .titlebar-right{display:flex; gap:2px; flex:0 0 auto;}
+  .titlebar-right button{width:26px;height:26px;border:none;background:transparent;border-radius:6px;color:#6B6759;display:flex;align-items:center;justify-content:center;}
+  .titlebar-right svg{width:15px;height:15px;}
+
+  /* ---------- body layout ---------- */
+  .body{flex:1 1 auto; display:flex; min-height:0;}
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    flex:0 0 232px; background:var(--bg-sidebar); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:18px 14px;
+  }
+  .brand{display:flex; align-items:center; gap:9px; padding:0 4px 16px;}
+  .brand .mark{width:22px;height:22px;border-radius:6px;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:800;font-size:12px;}
+  .brand .word{font-weight:700; font-size:13.5px; color:var(--text);}
+
+  .switcher{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; margin-bottom:16px;
+    background:var(--bg-surface); border:1px solid var(--border); border-radius:9px;
+  }
+  .switcher .avatar{width:20px;height:20px;border-radius:6px;background:#DCE7FB;color:var(--info-ink);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .switcher .name{flex:1 1 auto; font-size:12.5px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .switcher svg{width:13px;height:13px;color:var(--text-3); flex:0 0 auto;}
+
+  .navlabel{font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-3); padding:4px 10px 8px;}
+  .navlist{display:flex; flex-direction:column; gap:2px;}
+  .navitem{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13px; font-weight:500; color:var(--text-2);}
+  .navitem svg{width:16px;height:16px; flex:0 0 auto;}
+  .navitem.active{background:var(--bg-surface); border:1px solid var(--border); color:var(--text); font-weight:700; box-shadow:0 1px 2px rgba(23,24,26,0.04);}
+  .navitem .count{margin-left:auto; font-size:10.5px; font-weight:700; color:var(--text-3); background:#EEEBE3; padding:1px 6px; border-radius:999px;}
+
+  .sidebar-spacer{flex:1 1 auto;}
+  .userrow{display:flex; align-items:center; gap:9px; padding:10px 10px 4px; border-top:1px solid var(--border); margin-top:8px;}
+  .userrow .avatar{width:26px;height:26px;border-radius:50%;background:#242319;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .userrow .meta{flex:1 1 auto; min-width:0;}
+  .userrow .who{font-size:12.5px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .userrow .team{font-size:11px; color:var(--text-3);}
+  .userrow svg{width:15px;height:15px; color:var(--text-3);}
+
+  /* ---------- main ---------- */
+  .main{flex:1 1 auto; min-width:0; overflow:hidden; padding:24px 30px 22px; display:flex; flex-direction:column; gap:18px;}
+
+  .topbar{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;}
+  .crumb{font-size:11.5px; color:var(--text-3); font-weight:600; margin-bottom:6px;}
+  .crumb span{color:var(--text-2);}
+  .topbar h1{margin:0; font-family:'Montserrat',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;}
+  .topbar .sub{font-size:12.5px; color:var(--text-2); margin-top:4px;}
+
+  .topbar-actions{display:flex; align-items:center; gap:10px;}
+  .btn{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; padding:8px 13px; border-radius:8px; border:1px solid var(--border-strong); background:var(--bg-surface); color:var(--text);}
+  .btn svg{width:14px;height:14px;}
+  .avatarstack{display:flex; align-items:center;}
+  .avatarstack .a{width:26px;height:26px;border-radius:50%;border:2px solid var(--bg-app);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-left:-8px;}
+  .avatarstack .a:first-child{margin-left:0;}
+  .iconbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-surface);display:flex;align-items:center;justify-content:center;color:var(--text-2);position:relative;}
+  .iconbtn svg{width:15px;height:15px;}
+  .iconbtn .dot{position:absolute; top:6px; right:6px; width:6px; height:6px; border-radius:50%; background:#E0483F; border:1.5px solid var(--bg-surface);}
+
+  .badge-launch{display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:700; padding:7px 12px 7px 10px; border-radius:999px;}
+  .badge-launch svg{width:13px;height:13px;}
+
+  /* ---------- stats ---------- */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .stat-card{background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .stat-card .label{font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-3);}
+  .stat-card .row{display:flex; align-items:baseline; gap:8px; margin-top:5px;}
+  .stat-card .value{font-size:21px; font-weight:800; font-family:'Montserrat',sans-serif;}
+  .stat-card .value.accent-num{color:var(--text);}
+  .stat-card .foot{font-size:11px; color:var(--text-3); margin-top:3px;}
+  .bar-track{height:5px;border-radius:99px;background:#EEEBE2;margin-top:8px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--text);border-radius:99px;}
+
+  /* ---------- content grid ---------- */
+  .grid{display:grid; grid-template-columns:1.66fr 1fr; gap:16px; min-height:0; flex:1 1 auto;}
+  .stack{display:flex; flex-direction:column; gap:16px; min-height:0;}
+  .card{background:var(--bg-surface); border:1px solid var(--border); border-radius:11px; padding:16px 18px 18px; box-shadow:0 1px 2px rgba(23,24,26,0.03);}
+  .card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:13px;}
+  .card-head h2{margin:0; font-size:13.5px; font-weight:700;}
+  .card-head .meta{font-size:11.5px; color:var(--text-3); font-weight:500;}
+  .legend{display:flex; gap:12px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); font-weight:500;}
+  .legend i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  /* ---------- gantt ---------- */
+  .gantt-head{display:grid; grid-template-columns:172px 1fr; margin-bottom:5px;}
+  .gantt-head .weeks{display:grid; grid-template-columns:repeat(10,1fr); font-size:9.5px; font-weight:600; color:var(--text-3);}
+  .gantt-head .weeks span{border-left:1px solid var(--border); padding-left:5px;}
+  .gantt-head .weeks span:first-child{border-left:none; padding-left:0;}
+  .gantt-rows{display:flex; flex-direction:column; gap:9px;}
+  .gantt-row{display:grid; grid-template-columns:172px 1fr; align-items:center;}
+  .glabel{display:flex; align-items:center; gap:8px; padding-right:10px; min-width:0;}
+  .glabel .gicon{width:22px;height:22px;border-radius:6px;background:#F0EEE7;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--text-2);}
+  .glabel .gicon svg{width:12px;height:12px;}
+  .glabel .gtext{min-width:0;}
+  .glabel .name{font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .glabel .status{display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text-2); font-weight:500; margin-top:1px;}
+  .glabel .status i{width:5px;height:5px;border-radius:50%;}
+  .gtrack{position:relative; height:18px; background-image:repeating-linear-gradient(to right,var(--border) 0,var(--border) 1px,transparent 1px,transparent 10%); border-radius:5px;}
+  .gbar{position:absolute; top:0; height:100%; display:flex; border-radius:4px; overflow:hidden;}
+  .gbar span{height:100%;}
+  .p-plan{background:var(--phase-plan);}
+  .p-produce{background:var(--phase-produce);}
+  .p-live{background:var(--phase-live);}
+  .today{position:absolute; top:-16px; bottom:-2px; left:74.29%; width:0; border-left:1.5px dashed #B0AA98; z-index:2;}
+  .today .flag{position:absolute; top:-1px; left:5px; font-size:9px; font-weight:700; color:var(--text-2); white-space:nowrap;}
+
+  /* ---------- table ---------- */
+  table{width:100%; border-collapse:collapse;}
+  th{text-align:left; font-size:10px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-3); padding-bottom:8px; border-bottom:1px solid var(--border);}
+  td{padding:9px 0; border-bottom:1px solid var(--border); font-size:12.5px; vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .supplier-cell{display:flex; align-items:center; gap:9px;}
+  .supplier-cell .av{width:24px;height:24px;border-radius:7px;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .supplier-cell .n{font-weight:700; color:var(--text);}
+  td.contact{color:var(--text-2);}
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px;}
+  .pill i{width:5px;height:5px;border-radius:50%;}
+  .pill.good{background:var(--good-bg); color:var(--good-ink);}
+  .pill.warn{background:var(--warn-bg); color:var(--warn-ink);}
+  .pill.info{background:var(--info-bg); color:var(--info-ink);}
+
+  /* ---------- costs ---------- */
+  .cost-row{display:flex; justify-content:space-between; gap:10px; padding:8.5px 0; border-bottom:1px solid var(--border); font-size:12.5px;}
+  .cost-row:last-of-type{border-bottom:none;}
+  .cost-row .item{font-weight:500;}
+  .cost-row .sub{display:block; font-size:10.5px; color:var(--text-3); font-weight:400; margin-top:1px;}
+  .cost-row .amount{font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .cost-total{display:flex; justify-content:space-between; align-items:baseline; margin-top:11px; padding-top:12px; border-top:1.5px solid var(--border-strong);}
+  .cost-total .label{font-size:12.5px; font-weight:700;}
+  .cost-total .amount{font-size:19px; font-weight:800; font-family:'Montserrat',sans-serif; font-variant-numeric:tabular-nums;}
+  .cost-progress{margin-top:10px;}
+  .cost-progress .row{display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-3); margin-bottom:5px;}
+
+  .milestones{display:flex; flex-direction:column; gap:11px;}
+  .mrow{display:flex; align-items:flex-start; gap:10px;}
+  .mrow .mdate{flex:0 0 46px; text-align:center; background:#F0EEE7; border-radius:7px; padding:4px 0;}
+  .mrow .mdate .d{font-size:13px; font-weight:800; line-height:1;}
+  .mrow .mdate .m{font-size:8.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-3);}
+  .mrow .mtext{padding-top:2px;}
+  .mrow .mtitle{font-size:12px; font-weight:600; color:var(--text);}
+  .mrow .msub{font-size:10.5px; color:var(--text-3); margin-top:1px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+    <div class="navarrows">
+      <button class="disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <div class="titletext">Launch Planner — Riverfront Residences</div>
+    <div class="titlebar-right">
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="sidebar">
+      <div class="brand"><div class="mark">L</div><div class="word">Launch Planner</div></div>
+
+      <div class="switcher">
+        <div class="avatar">RR</div>
+        <div class="name">Riverfront Residences</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+
+      <div class="navlabel">Project</div>
+      <div class="navlist">
+        <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</div>
+        <div class="navitem active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>Schedule</div>
+        <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></svg>Suppliers<span class="count">5</span></div>
+        <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.2c0 2.8-6 1.3-6 4.1 0 1.3 1.3 2.2 3 2.2s3-1 3-2.4"/></svg>Budget</div>
+        <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Files<span class="count">18</span></div>
+        <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1z"/></svg>Settings</div>
+      </div>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="userrow">
+        <div class="avatar">MP</div>
+        <div class="meta"><div class="who">Mark P.</div><div class="team">Project Profile</div></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <div class="topbar">
+        <div>
+          <div class="crumb">Projects / <span>Riverfront Residences</span></div>
+          <h1>Launch Schedule</h1>
+          <div class="sub">Stage 1 release &middot; Marketing &amp; site launch</div>
+        </div>
+        <div class="topbar-actions">
+          <div class="badge-launch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+            18 days to launch
+          </div>
+          <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 11l5 5 5-5M5 21h14"/></svg>Export</button>
+          <div class="avatarstack">
+            <div class="a" style="background:#242319">MP</div>
+            <div class="a" style="background:#3F76E0">JT</div>
+            <div class="a" style="background:#2EA658">AS</div>
+          </div>
+          <div class="iconbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="label">Launch date</div>
+          <div class="row"><div class="value">Oct 8</div></div>
+          <div class="foot">18 days from today</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Budget used</div>
+          <div class="row"><div class="value">91%</div></div>
+          <div class="bar-track"><div class="bar-fill" style="width:91%"></div></div>
+          <div class="foot">$35,200 of $38,500</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Deliverables</div>
+          <div class="row"><div class="value">4<span style="font-size:12px;font-weight:600;color:var(--text-3)">&nbsp;/&nbsp;5 on track</span></div></div>
+          <div class="foot">1 flagged at risk</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Suppliers engaged</div>
+          <div class="row"><div class="value">5</div></div>
+          <div class="foot">5 of 5 contracted</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stack">
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Deliverables timeline</h2>
+              <div class="legend">
+                <span><i style="background:var(--phase-plan)"></i>Plan</span>
+                <span><i style="background:var(--phase-produce)"></i>Produce</span>
+                <span><i style="background:var(--phase-live)"></i>Live</span>
+              </div>
+            </div>
+
+            <div class="gantt-head">
+              <div></div>
+              <div class="weeks">
+                <span>30 Jul</span><span>6 Aug</span><span>13 Aug</span><span>20 Aug</span><span>27 Aug</span>
+                <span>3 Sep</span><span>10 Sep</span><span>17 Sep</span><span>24 Sep</span><span>1 Oct</span>
+              </div>
+            </div>
+
+            <div class="gantt-rows">
+
+              <div class="gantt-row">
+                <div class="glabel">
+                  <div class="gicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></div>
+                  <div class="gtext"><div class="name">Sales gallery fit-out</div><div class="status"><i style="background:var(--done-dot)"></i>Complete</div></div>
+                </div>
+                <div class="gtrack">
+                  <div class="today"></div>
+                  <div class="gbar" style="left:0%; width:42.86%;">
+                    <span class="p-plan" style="width:26.67%"></span>
+                    <span class="p-produce" style="width:53.33%"></span>
+                    <span class="p-live" style="width:20%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="glabel">
+                  <div class="gicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="14" height="11" rx="1.5"/><path d="M17 10l4-2v8l-4-2"/></svg></div>
+                  <div class="gtext"><div class="name">Site signage</div><div class="status"><i style="background:var(--good-dot)"></i>Installing</div></div>
+                </div>
+                <div class="gtrack">
+                  <div class="today"></div>
+                  <div class="gbar" style="left:28.57%; width:48.57%;">
+                    <span class="p-plan" style="width:29.41%"></span>
+                    <span class="p-produce" style="width:52.94%"></span>
+                    <span class="p-live" style="width:17.65%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="glabel">
+                  <div class="gicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div>
+                  <div class="gtext"><div class="name">EDM campaign</div><div class="status"><i style="background:var(--done-dot)"></i>Sent</div></div>
+                </div>
+                <div class="gtrack">
+                  <div class="today"></div>
+                  <div class="gbar" style="left:14.29%; width:42.86%;">
+                    <span class="p-plan" style="width:26.67%"></span>
+                    <span class="p-produce" style="width:53.33%"></span>
+                    <span class="p-live" style="width:20%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="glabel">
+                  <div class="gicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V4h12v5M6 18h12v3H6zM4 9h16v7H4z"/><path d="M8 12h8"/></svg></div>
+                  <div class="gtext"><div class="name">Brochure print</div><div class="status"><i style="background:var(--warn-dot)"></i>At risk</div></div>
+                </div>
+                <div class="gtrack">
+                  <div class="today"></div>
+                  <div class="gbar" style="left:20%; width:60%;">
+                    <span class="p-plan" style="width:28.57%"></span>
+                    <span class="p-produce" style="width:57.14%"></span>
+                    <span class="p-live" style="width:14.29%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="glabel">
+                  <div class="gicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg></div>
+                  <div class="gtext"><div class="name">Website launch</div><div class="status"><i style="background:var(--good-dot)"></i>Building</div></div>
+                </div>
+                <div class="gtrack">
+                  <div class="today"><span class="flag">Today</span></div>
+                  <div class="gbar" style="left:0%; width:100%;">
+                    <span class="p-plan" style="width:28.57%"></span>
+                    <span class="p-produce" style="width:60%"></span>
+                    <span class="p-live" style="width:11.43%"></span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Suppliers</h2><div class="meta">5 of 5 contracted</div></div>
+            <table>
+              <thead><tr><th>Supplier</th><th>Category</th><th>Contact</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div class="supplier-cell"><div class="av" style="background:#8D8875">MF</div><div class="n">Meridian Fitout Group</div></div></td>
+                  <td>Sales gallery</td><td class="contact">Elena Cho</td>
+                  <td><span class="pill good"><i></i>Paid</span></td>
+                </tr>
+                <tr>
+                  <td><div class="supplier-cell"><div class="av" style="background:#3F76E0">BS</div><div class="n">Bluewater Signage Co.</div></div></td>
+                  <td>Site signage</td><td class="contact">Ravi Sen</td>
+                  <td><span class="pill info"><i></i>In progress</span></td>
+                </tr>
+                <tr>
+                  <td><div class="supplier-cell"><div class="av" style="background:#2EA658">N&amp;</div><div class="n">Nettle &amp; Co Studio</div></div></td>
+                  <td>EDM design</td><td class="contact">Priya Shah</td>
+                  <td><span class="pill good"><i></i>Complete</span></td>
+                </tr>
+                <tr>
+                  <td><div class="supplier-cell"><div class="av" style="background:#E0A020">CP</div><div class="n">Coastal Print Partners</div></div></td>
+                  <td>Brochure print</td><td class="contact">Dana Whitfield</td>
+                  <td><span class="pill warn"><i></i>Delayed</span></td>
+                </tr>
+                <tr>
+                  <td><div class="supplier-cell"><div class="av" style="background:#242319">AD</div><div class="n">Anchor Digital</div></div></td>
+                  <td>Website build</td><td class="contact">Tom Reyes</td>
+                  <td><span class="pill info"><i></i>In progress</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2>Running costs</h2><div class="meta">Ex. GST</div></div>
+            <div class="cost-row"><div class="item">Sales gallery fit-out<span class="sub">Joinery &amp; turnkey signage</span></div><div class="amount">$9,200</div></div>
+            <div class="cost-row"><div class="item">Site signage<span class="sub">Fabrication &amp; install</span></div><div class="amount">$8,400</div></div>
+            <div class="cost-row"><div class="item">EDM campaign<span class="sub">Design &amp; send</span></div><div class="amount">$2,150</div></div>
+            <div class="cost-row"><div class="item">Brochure print<span class="sub">2,000 units + distribution</span></div><div class="amount">$3,600</div></div>
+            <div class="cost-row"><div class="item">Website build<span class="sub">Dev &amp; hosting setup</span></div><div class="amount">$6,800</div></div>
+            <div class="cost-row"><div class="item">Photography &amp; drone footage<span class="sub">Launch content shoot</span></div><div class="amount">$1,850</div></div>
+            <div class="cost-row"><div class="item">Contingency<span class="sub">10% of subtotal</span></div><div class="amount">$3,200</div></div>
+            <div class="cost-total"><div class="label">Total running cost</div><div class="amount">$35,200</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Upcoming milestones</h2></div>
+            <div class="milestones">
+              <div class="mrow"><div class="mdate"><div class="d">22</div><div class="m">Sep</div></div><div class="mtext"><div class="mtitle">Signage install complete</div><div class="msub">Bluewater Signage Co.</div></div></div>
+              <div class="mrow"><div class="mdate"><div class="d">24</div><div class="m">Sep</div></div><div class="mtext"><div class="mtitle">Brochure distribution</div><div class="msub">Coastal Print Partners</div></div></div>
+              <div class="mrow"><div class="mdate"><div class="d">6</div><div class="m">Oct</div></div><div class="mtext"><div class="mtitle">Website goes live</div><div class="msub">Anchor Digital</div></div></div>
+              <div class="mrow"><div class="mdate"><div class="d">8</div><div class="m">Oct</div></div><div class="mtext"><div class="mtitle">Public launch event</div><div class="msub">On-site, Riverfront Residences</div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
