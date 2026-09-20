@@ -1,0 +1,474 @@
+<title>Riverfront Launch Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #EEEBE3;
+    --canvas-2: #E4E0D5;
+    --chrome: #F6F4EF;
+    --surface: #FFFFFF;
+    --border: #E7E3D8;
+    --border-strong: #D9D4C6;
+    --text: #1B1B18;
+    --text-secondary: #6F6A5F;
+    --text-tertiary: #A39D8D;
+    --accent: #FFD600;
+    --accent-ink: #1B1B18;
+    --good-bg: #E5F2E7; --good-ink: #23803F; --good-dot: #2FA24A;
+    --warn-bg: #FBF0DC; --warn-ink: #A16A0A; --warn-dot: #E0A020;
+    --info-bg: #E5EEFB; --info-ink: #2C5FA6; --info-dot: #3F7DD1;
+    --done-dot: #B7B1A2;
+    --phase-plan: #DAD5C8;
+    --phase-produce: #918A78;
+    --phase-live: #26251F;
+    --shadow-window: 0 30px 60px -20px rgba(27,27,24,0.35), 0 10px 24px -12px rgba(27,27,24,0.18);
+    --shadow-card: 0 1px 2px rgba(27,27,24,0.04), 0 6px 16px -10px rgba(27,27,24,0.12);
+    --radius-window: 14px;
+    --radius-card: 14px;
+    --radius-pill: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(120% 140% at 50% -10%, var(--canvas-2) 0%, var(--canvas) 60%);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  h1, h2, h3 { font-family: 'Montserrat', 'Inter', sans-serif; margin: 0; letter-spacing: -0.01em; }
+
+  .stage { width: 100%; max-width: 1180px; }
+
+  .browser-window {
+    width: 100%;
+    background: var(--surface);
+    border-radius: var(--radius-window);
+    box-shadow: var(--shadow-window);
+    border: 1px solid rgba(27,27,24,0.06);
+    overflow: hidden;
+  }
+
+  /* ---------- chrome bar ---------- */
+  .chrome-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    height: 48px;
+    padding: 0 16px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .traffic-lights { display: flex; gap: 8px; flex: 0 0 auto; }
+  .traffic-lights span {
+    width: 12px; height: 12px; border-radius: 50%; display: block;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.12);
+  }
+  .traffic-lights .red    { background: #FF5F57; }
+  .traffic-lights .yellow { background: #FEBC2E; }
+  .traffic-lights .green  { background: #28C840; }
+
+  .nav-arrows { display: flex; gap: 4px; flex: 0 0 auto; }
+  .nav-arrows button {
+    width: 26px; height: 26px; border-radius: 50%; border: none;
+    background: transparent; color: var(--text-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+  }
+  .nav-arrows svg { width: 15px; height: 15px; }
+
+  .page-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 8px;
+  }
+  .page-title b { color: var(--text); font-weight: 700; }
+
+  .chrome-icons { display: flex; gap: 4px; flex: 0 0 auto; }
+  .chrome-icons button {
+    width: 28px; height: 28px; border-radius: 8px; border: none;
+    background: transparent; color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center; cursor: default;
+  }
+  .chrome-icons svg { width: 16px; height: 16px; }
+
+  /* ---------- app body ---------- */
+  .app-body { padding: 30px 34px 36px; background: var(--surface); }
+
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 6px;
+  }
+  .app-header h1 { font-size: 27px; font-weight: 800; }
+  .app-header .sub { font-size: 13.5px; color: var(--text-secondary); margin-top: 5px; }
+
+  .header-stats { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .stat { text-align: right; }
+  .stat .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+  .stat .value { font-size: 17px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+  .pill-accent {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--accent); color: var(--accent-ink);
+    font-size: 12.5px; font-weight: 700;
+    padding: 9px 14px; border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+  .pill-accent svg { width: 13px; height: 13px; }
+
+  /* ---------- layout grid ---------- */
+  .grid { display: grid; grid-template-columns: 1.62fr 1fr; gap: 22px; align-items: start; }
+
+  .stack { display: flex; flex-direction: column; gap: 22px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 20px 22px 22px;
+  }
+
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+  }
+  .card-head h2 { font-size: 15px; font-weight: 800; }
+  .card-head .meta { font-size: 12px; color: var(--text-tertiary); }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* ---------- gantt ---------- */
+  .gantt-axis {
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    margin-bottom: 6px;
+  }
+  .gantt-axis .weeks {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+  .gantt-axis .weeks span { border-left: 1px solid var(--border); padding-left: 6px; }
+  .gantt-axis .weeks span:first-child { border-left: none; padding-left: 0; }
+
+  .gantt-rows { display: flex; flex-direction: column; gap: 14px; }
+  .gantt-row { display: grid; grid-template-columns: 148px 1fr; align-items: center; gap: 0; }
+
+  .gantt-label { padding-right: 14px; min-width: 0; }
+  .gantt-label .name { font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-label .status { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 10.5px; color: var(--text-secondary); font-weight: 500; }
+  .gantt-label .status i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+  .gantt-track {
+    position: relative;
+    height: 22px;
+    background-image: repeating-linear-gradient(to right, var(--border) 0, var(--border) 1px, transparent 1px, transparent 12.5%);
+    border-radius: 6px;
+  }
+  .gantt-bar { position: absolute; top: 0; height: 100%; display: flex; border-radius: 5px; overflow: hidden; }
+  .gantt-bar span { height: 100%; }
+  .phase-plan { background: var(--phase-plan); }
+  .phase-produce { background: var(--phase-produce); }
+  .phase-live { background: var(--phase-live); }
+
+  .today-line {
+    position: absolute; top: -18px; bottom: -2px; left: 67.86%;
+    width: 0; border-left: 1.5px dashed #9B9585;
+  }
+  .today-line .flag {
+    position: absolute; top: -1px; left: 6px; font-size: 9.5px; font-weight: 700;
+    color: var(--text-secondary); white-space: nowrap; letter-spacing: 0.02em;
+  }
+
+  /* ---------- supplier table ---------- */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text-tertiary);
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  th.num, td.num { text-align: right; }
+  td { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td.supplier { font-weight: 700; }
+  td.contact { color: var(--text-secondary); }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-pill);
+  }
+  .status-pill i { width: 6px; height: 6px; border-radius: 50%; }
+  .status-pill.good { background: var(--good-bg); color: var(--good-ink); }
+  .status-pill.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .status-pill.info { background: var(--info-bg); color: var(--info-ink); }
+
+  /* ---------- costs ---------- */
+  .cost-list { display: flex; flex-direction: column; }
+  .cost-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .cost-row .item { color: var(--text); font-weight: 500; }
+  .cost-row .sub { display: block; font-size: 11px; color: var(--text-tertiary); font-weight: 400; margin-top: 2px; }
+  .cost-row .amount { font-weight: 600; color: var(--text); white-space: nowrap; }
+
+  .cost-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 14px; padding-top: 16px; border-top: 1.5px solid var(--border-strong);
+  }
+  .cost-total .label { font-size: 13px; font-weight: 700; color: var(--text); }
+  .cost-total .amount { font-size: 22px; font-weight: 800; font-family: 'Montserrat', sans-serif; color: var(--text); }
+
+  .card-footnote { margin-top: 14px; font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+    .app-body { padding: 22px 18px 26px; }
+    .header-stats { gap: 14px; }
+    .gantt-axis, .gantt-row { grid-template-columns: 96px 1fr; }
+    .gantt-label .name { font-size: 11.5px; }
+  }
+
+  @media (max-width: 520px) {
+    .nav-arrows { display: none; }
+    .page-title { font-size: 11.5px; }
+    .stat:nth-child(1) { display: none; }
+    body { padding: 20px 10px; }
+    .app-header h1 { font-size: 22px; }
+  }
+</style>
+
+<div class="stage">
+  <div class="browser-window">
+
+    <div class="chrome-bar">
+      <div class="traffic-lights"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+      <div class="nav-arrows">
+        <button aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div class="page-title">Launch Planner &nbsp;–&nbsp; <b>Riverfront Residences</b></div>
+      <div class="chrome-icons">
+        <button aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+        <button aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      </div>
+    </div>
+
+    <div class="app-body">
+
+      <div class="app-header">
+        <div>
+          <div class="eyebrow">Project Launch Plan</div>
+          <h1>Riverfront Residences</h1>
+          <div class="sub">Stage&nbsp;1 release &middot; Marketing &amp; site launch</div>
+        </div>
+        <div class="header-stats">
+          <div class="stat">
+            <div class="label">Budget</div>
+            <div class="value">$24,500</div>
+          </div>
+          <div class="stat">
+            <div class="label">Deliverables</div>
+            <div class="value">4 active</div>
+          </div>
+          <div class="pill-accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+            18 days to launch
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stack">
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Deliverables timeline</h2>
+              <div class="legend">
+                <span><i class="phase-plan"></i>Plan</span>
+                <span><i class="phase-produce"></i>Produce</span>
+                <span><i class="phase-live"></i>Live</span>
+              </div>
+            </div>
+
+            <div class="gantt-axis">
+              <div></div>
+              <div class="weeks">
+                <span>Wk 1</span><span>Wk 2</span><span>Wk 3</span><span>Wk 4</span>
+                <span>Wk 5</span><span>Wk 6</span><span>Wk 7</span><span>Wk 8</span>
+              </div>
+            </div>
+
+            <div class="gantt-rows">
+
+              <div class="gantt-row">
+                <div class="gantt-label">
+                  <div class="name">Site signage</div>
+                  <div class="status"><i style="background:var(--good-dot)"></i>On track</div>
+                </div>
+                <div class="gantt-track">
+                  <div class="today-line"><span class="flag">Today</span></div>
+                  <div class="gantt-bar" style="left:0%; width:50%;">
+                    <span class="phase-plan" style="width:35.71%"></span>
+                    <span class="phase-produce" style="width:50%"></span>
+                    <span class="phase-live" style="width:14.29%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="gantt-label">
+                  <div class="name">EDM campaign</div>
+                  <div class="status"><i style="background:var(--done-dot)"></i>Sent</div>
+                </div>
+                <div class="gantt-track">
+                  <div class="today-line"></div>
+                  <div class="gantt-bar" style="left:7.14%; width:46.43%;">
+                    <span class="phase-plan" style="width:30.77%"></span>
+                    <span class="phase-produce" style="width:53.85%"></span>
+                    <span class="phase-live" style="width:15.38%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="gantt-label">
+                  <div class="name">Brochure print</div>
+                  <div class="status"><i style="background:var(--warn-dot)"></i>At risk</div>
+                </div>
+                <div class="gantt-track">
+                  <div class="today-line"></div>
+                  <div class="gantt-bar" style="left:17.86%; width:60.71%;">
+                    <span class="phase-plan" style="width:29.41%"></span>
+                    <span class="phase-produce" style="width:58.82%"></span>
+                    <span class="phase-live" style="width:11.76%"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-row">
+                <div class="gantt-label">
+                  <div class="name">Website launch</div>
+                  <div class="status"><i style="background:var(--good-dot)"></i>On track</div>
+                </div>
+                <div class="gantt-track">
+                  <div class="today-line"></div>
+                  <div class="gantt-bar" style="left:0%; width:100%;">
+                    <span class="phase-plan" style="width:25%"></span>
+                    <span class="phase-produce" style="width:60.71%"></span>
+                    <span class="phase-live" style="width:14.29%"></span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Suppliers</h2>
+              <div class="meta">4 engaged</div>
+            </div>
+            <table>
+              <thead>
+                <tr><th>Supplier</th><th>Category</th><th>Contact</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="supplier">Bluewater Signage Co.</td>
+                  <td>Site signage</td>
+                  <td class="contact">Ravi Sen</td>
+                  <td><span class="status-pill good"><i></i>Confirmed</span></td>
+                </tr>
+                <tr>
+                  <td class="supplier">Nettle &amp; Co Studio</td>
+                  <td>EDM design</td>
+                  <td class="contact">Priya Shah</td>
+                  <td><span class="status-pill good"><i></i>Confirmed</span></td>
+                </tr>
+                <tr>
+                  <td class="supplier">Coastal Print Partners</td>
+                  <td>Brochure print</td>
+                  <td class="contact">Dana Whitfield</td>
+                  <td><span class="status-pill warn"><i></i>Delayed</span></td>
+                </tr>
+                <tr>
+                  <td class="supplier">Anchor Digital</td>
+                  <td>Website build</td>
+                  <td class="contact">Tom Reyes</td>
+                  <td><span class="status-pill info"><i></i>In progress</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Running costs</h2>
+            <div class="meta">Ex. GST</div>
+          </div>
+          <div class="cost-list">
+            <div class="cost-row">
+              <div class="item">Site signage<span class="sub">Fabrication &amp; install</span></div>
+              <div class="amount">$8,400</div>
+            </div>
+            <div class="cost-row">
+              <div class="item">EDM campaign<span class="sub">Design &amp; send</span></div>
+              <div class="amount">$2,150</div>
+            </div>
+            <div class="cost-row">
+              <div class="item">Brochure print<span class="sub">2,000 units</span></div>
+              <div class="amount">$3,600</div>
+            </div>
+            <div class="cost-row">
+              <div class="item">Website build<span class="sub">Dev &amp; hosting setup</span></div>
+              <div class="amount">$6,800</div>
+            </div>
+            <div class="cost-row">
+              <div class="item">Contingency<span class="sub">10% of subtotal</span></div>
+              <div class="amount">$2,095</div>
+            </div>
+          </div>
+          <div class="cost-total">
+            <div class="label">Total running cost</div>
+            <div class="amount">$23,045</div>
+          </div>
+          <div class="card-footnote">Updated 2 days ago &middot; 4 of 4 suppliers invoiced</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
