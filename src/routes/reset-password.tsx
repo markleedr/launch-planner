@@ -1,0 +1,138 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wordmark } from "@/components/brand";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/reset-password")({
+  head: () => ({ meta: [{ title: "Reset password - Project Planner" }] }),
+  component: ResetPasswordPage,
+});
+
+function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  // The recovery link puts a token in the URL; the Supabase client parses it and
+  // establishes a temporary session (PASSWORD_RECOVERY). Wait for that before
+  // allowing a password change.
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active && data.session) setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || session) setReady(true);
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (password !== confirm) {
+      setError("Passwords don't match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setDone(true);
+      setTimeout(() => navigate({ to: "/projects" }), 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update password.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="border-b">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Wordmark />
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
+              <ArrowLeft className="mr-1 size-4" />
+              Home
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-6 py-12">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Set a new password</CardTitle>
+            <CardDescription>
+              {ready
+                ? "Choose a new password for your account."
+                : "Open this page from the reset link in your email."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {done ? (
+              <p className="text-sm text-positive">
+                Password updated. Taking you to your projects…
+              </p>
+            ) : (
+              <form onSubmit={submit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">New password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    disabled={!ready}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm">Confirm password</Label>
+                  <Input
+                    id="confirm"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    disabled={!ready}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                  />
+                </div>
+
+                {error && <p className="text-sm text-destructive">{error}</p>}
+
+                <Button type="submit" className="w-full" disabled={busy || !ready}>
+                  {busy ? "Saving…" : "Update password"}
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-4 text-center">
+              <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
+                Back to sign in
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}
