@@ -44,15 +44,20 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL =
     process.env.SUPABASE_URL ?? serverBuildEnv.SUPABASE_URL ?? serverBuildEnv.VITE_SUPABASE_URL;
   const SUPABASE_ADMIN_KEY =
+    // Vercel reserves the SUPABASE_ env var prefix for its native integration, so
+    // hosts that hit that restriction set SB_SECRET_KEY instead. Lovable/local
+    // environments keep working via the original names.
+    process.env.SB_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
     process.env.SUPABASE_SECRET_KEY ??
+    serverBuildEnv.SB_SECRET_KEY ??
     serverBuildEnv.SUPABASE_SERVICE_ROLE_KEY ??
     serverBuildEnv.SUPABASE_SECRET_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_ADMIN_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-      ...(!SUPABASE_ADMIN_KEY ? ["SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY"] : []),
+      ...(!SUPABASE_ADMIN_KEY ? ["SB_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY)"] : []),
     ];
     const message = `Missing server-side Supabase environment variable(s): ${missing.join(", ")}. Lovable Cloud secrets are not copied into local development automatically; add the server secret to the local environment or use the Lovable preview.`;
     console.error(`[Supabase] ${message}`);

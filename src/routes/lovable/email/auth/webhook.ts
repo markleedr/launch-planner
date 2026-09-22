@@ -150,7 +150,8 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
 
         // Enqueue email for async processing by the dispatcher (process-email-queue).
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        const supabaseServiceKey =
+          process.env.SB_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
 
         if (!supabaseUrl || !supabaseServiceKey) {
           console.error('Missing Supabase environment variables')

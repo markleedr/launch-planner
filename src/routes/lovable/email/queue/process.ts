@@ -67,7 +67,9 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
         const apiKey = process.env.LOVABLE_API_KEY;
         const supabaseUrl = process.env.SUPABASE_URL ?? import.meta.env.VITE_SUPABASE_URL;
         const supabaseServiceKey =
-          process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+          process.env.SB_SECRET_KEY ??
+          process.env.SUPABASE_SERVICE_ROLE_KEY ??
+          process.env.SUPABASE_SECRET_KEY;
 
         if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
           console.error("Missing required environment variables");

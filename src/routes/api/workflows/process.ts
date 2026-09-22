@@ -34,6 +34,7 @@ function isAuthorised(request: Request): boolean {
   if (!header?.startsWith("Bearer ")) return false;
   const token = header.slice("Bearer ".length).trim();
   const validTokens = [
+    process.env.SB_SECRET_KEY,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     process.env.SUPABASE_SECRET_KEY,
   ].filter((value): value is string => Boolean(value));
