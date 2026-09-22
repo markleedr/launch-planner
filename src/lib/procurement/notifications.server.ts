@@ -51,7 +51,16 @@ export async function notify(client: SupabaseClient, input: NotificationInput): 
     if (queueError.code === "23505" && input.idempotencyKey) return;
     throw queueError;
   }
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.RESEND_API_KEY) {
+    // Queued as "skipped" above; the scheduled outbox worker will pick it up
+    // and send it automatically as soon as RESEND_API_KEY is configured. Log
+    // loudly now so a missing key shows up in server logs immediately instead
+    // of only being discoverable by querying email_outbox.
+    console.error(
+      `[Email] RESEND_API_KEY is not configured — "${input.kind}" notification queued but not sent.`,
+    );
+    return;
+  }
   await attemptOutboxEmail(client, outbox as unknown as EmailOutboxRow);
 }
 
