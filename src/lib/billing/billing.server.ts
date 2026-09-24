@@ -172,8 +172,7 @@ export const startSignupCheckout = createServerFn({ method: "POST" }).handler(as
 
 /**
  * Provision (or link) the account for a completed pay-first Checkout Session.
- * New customers get an emailed set-password link; existing accounts get a
- * normal sign-in link and keep their user id.
+ * Every customer, new or returning, gets an emailed set-password link.
  */
 export async function provisionCheckoutAccount(
   session: Stripe.Checkout.Session,
@@ -191,13 +190,14 @@ export async function provisionCheckoutAccount(
     user_metadata: { source: "stripe_checkout" },
   });
 
-  const isNewUser = Boolean(created.data.user?.id);
   let userId = created.data.user?.id ?? null;
 
+  // Always send a "set your password" link, never a magic sign-in link. Every
+  // paid customer, new or returning, gets the same reliable password-set flow.
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: isNewUser ? "recovery" : "magiclink",
+    type: "recovery",
     email,
-    options: { redirectTo: isNewUser ? `${origin}/reset-password` : `${origin}/projects` },
+    options: { redirectTo: `${origin}/reset-password` },
   });
   if (linkError) throw linkError;
   userId = userId ?? linkData.user?.id ?? null;
@@ -225,10 +225,8 @@ export async function provisionCheckoutAccount(
       userId,
       email,
       kind: "account_invitation",
-      title: isNewUser ? "Set your Launch Planner password" : "Sign in to Launch Planner",
-      body: isNewUser
-        ? "Your payment is complete and your Launch Planner account is ready. Use the secure link below to set your password and sign in."
-        : "Your Launch Planner subscription is active. Use the secure link below to sign in.",
+      title: "Set your Launch Planner password",
+      body: "Your payment is complete and your Launch Planner account is ready. Use the secure link below to set your password and sign in.",
       href: actionLink,
       idempotencyKey: `checkout-access:${session.id}`,
     });

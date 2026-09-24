@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -32,6 +33,11 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/welcome'
     | '/planner/new'
     | '/planner/procurement'
     | '/planner/summary'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/welcome'
     | '/planner/new'
     | '/planner/procurement'
     | '/planner/summary'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/welcome'
     | '/planner/new'
     | '/planner/procurement'
     | '/planner/summary'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  WelcomeRoute: typeof WelcomeRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiWorkflowsProcessRoute: typeof ApiWorkflowsProcessRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
@@ -313,6 +326,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  WelcomeRoute: WelcomeRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiWorkflowsProcessRoute: ApiWorkflowsProcessRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
