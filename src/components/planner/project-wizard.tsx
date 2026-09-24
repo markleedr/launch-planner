@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -98,6 +98,17 @@ export function ProjectWizard() {
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const currentIndex = STEPS.findIndex((item) => item.id === step);
 
+  // PlannerProvider wraps the whole /planner/* layout, so currentProjectId
+  // survives navigating here from an already-open project. Without this, the
+  // wizard would silently edit that project instead of starting a new one.
+  const resetOnMount = useRef(false);
+  useLayoutEffect(() => {
+    if (resetOnMount.current) return;
+    resetOnMount.current = true;
+    p.resetDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function persist(): Promise<string | null> {
     if (!user) return null;
     setBusy(true);
@@ -175,6 +186,23 @@ export function ProjectWizard() {
               {index + 1}. {item.label}
             </button>
           ))}
+        </div>
+        <div className="mt-3 md:hidden">
+          <Select
+            value={step}
+            onValueChange={(value) => void go(STEPS.findIndex((s) => s.id === value))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STEPS.map((item, index) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {index + 1}. {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

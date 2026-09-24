@@ -91,6 +91,8 @@ interface PlannerContextValue {
   // Persistence
   currentProjectId: string | null;
   setCurrentProjectId: (v: string | null) => void;
+  /** Clears the draft back to a blank new project, including currentProjectId. */
+  resetDraft: () => void;
   toSnapshot: () => PlannerSnapshot;
   hydrate: (snap: PlannerSnapshot) => void;
 }
@@ -241,6 +243,30 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     launchDateObj,
     currentProjectId,
     setCurrentProjectId,
+    resetDraft() {
+      setProjectName("New project");
+      setProjectBlurb(
+        "A considered residential development supported by a coordinated launch plan designed to connect the project with its intended buyers.",
+      );
+      setProjectType("multi_residential");
+      setUnits(20);
+      setSellPrice("750000");
+      setMediaBudget("300000");
+      setLaunchDate("");
+      setLocation("");
+      setAddress({ street: "", suburb: "", state: "", postcode: "" });
+      setHeroImageId("apartments");
+      setHeroImageUrl("");
+      setProjectParties([]);
+      setStandardCollectionBusinessDays(10);
+      setBuyerTypes(["owner_occupier"]);
+      setChannels(["ppc", "paid_social"]);
+      setPersonas([]);
+      setDeliverables([]);
+      setChecklist(seedChecklist("multi_residential"));
+      setContacts(seedContacts);
+      setCurrentProjectId(null);
+    },
     toSnapshot: () => ({
       projectName,
       projectBlurb,

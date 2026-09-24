@@ -29,6 +29,7 @@ interface AppShellProps {
   active: AppSection;
   children: ReactNode;
   headerActions?: ReactNode;
+  projectId?: string | null;
   projectNavigation?: boolean;
   showFooter?: boolean;
   title: string;
@@ -40,6 +41,8 @@ interface SidebarContentProps {
   onBilling: () => void;
   onNavigate?: () => void;
   onSignOut: () => void;
+  projectId?: string | null;
+  projectName: string;
   projectNavigation: boolean;
 }
 
@@ -47,6 +50,7 @@ export function AppShell({
   active,
   children,
   headerActions,
+  projectId,
   projectNavigation = false,
   showFooter = false,
   title,
@@ -76,6 +80,8 @@ export function AppShell({
     billingBusy,
     onBilling: () => void manageBilling(),
     onSignOut: () => void signOut(),
+    projectId,
+    projectName: title,
     projectNavigation,
   };
 
@@ -110,12 +116,21 @@ export function AppShell({
                 </SheetContent>
               </Sheet>
               <Wordmark className="text-base lg:hidden" />
-              <div className="hidden min-w-0 lg:block">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Launch Planner
-                </p>
-                <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-              </div>
+              {projectNavigation ? (
+                <Link to="/projects" className="min-w-0 rounded-sm hover:underline">
+                  <p className="hidden text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground lg:block">
+                    Launch Planner
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                </Link>
+              ) : (
+                <div className="hidden min-w-0 lg:block">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Launch Planner
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                </div>
+              )}
             </div>
             {headerActions ? <div className="shrink-0">{headerActions}</div> : null}
           </div>
@@ -136,6 +151,8 @@ function SidebarContent({
   onBilling,
   onNavigate,
   onSignOut,
+  projectId,
+  projectName,
   projectNavigation,
 }: SidebarContentProps) {
   return (
@@ -149,12 +166,20 @@ function SidebarContent({
         {projectNavigation ? (
           <div className="mb-5">
             <SidebarLabel>Current project</SidebarLabel>
+            <Link
+              to="/projects"
+              onClick={onNavigate}
+              className="mb-1 block truncate rounded-lg px-3 py-1 text-sm font-semibold text-white hover:underline"
+            >
+              {projectName}
+            </Link>
             <SidebarLink
               active={active === "plan"}
               icon={<BarChart3 />}
               label="Plan"
               onNavigate={onNavigate}
               to="/planner"
+              projectId={projectId}
             />
             <SidebarLink
               active={active === "summary"}
@@ -162,13 +187,15 @@ function SidebarContent({
               label="Summary"
               onNavigate={onNavigate}
               to="/planner/summary"
+              projectId={projectId}
             />
             <SidebarLink
               active={active === "procurement"}
               icon={<ClipboardList />}
-              label="Procurement"
+              label="Quotes"
               onNavigate={onNavigate}
               to="/planner/procurement"
+              projectId={projectId}
             />
           </div>
         ) : null}
@@ -234,6 +261,7 @@ interface SidebarLinkProps {
   icon: ReactNode;
   label: string;
   onNavigate?: () => void;
+  projectId?: string | null;
   to:
     | "/"
     | "/account"
@@ -244,11 +272,15 @@ interface SidebarLinkProps {
     | "/projects";
 }
 
-function SidebarLink({ active, icon, label, onNavigate, to }: SidebarLinkProps) {
+const PLANNER_TABS = new Set(["/planner", "/planner/summary", "/planner/procurement"]);
+
+function SidebarLink({ active, icon, label, onNavigate, projectId, to }: SidebarLinkProps) {
+  const search =
+    to === "/account" ? {} : PLANNER_TABS.has(to) && projectId ? { projectId } : undefined;
   return (
     <Link
       to={to}
-      search={to === "/account" ? {} : undefined}
+      search={search}
       className={cn(SIDEBAR_LINK_CLASS, active && SIDEBAR_LINK_ACTIVE_CLASS)}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}

@@ -41,6 +41,7 @@ function PlannerLayoutInner() {
       <AppShell
         active={active}
         title={p.projectName || "Project planner"}
+        projectId={p.currentProjectId}
         projectNavigation
         headerActions={<SaveButton />}
       >

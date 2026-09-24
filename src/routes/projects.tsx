@@ -1,12 +1,36 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Copy, FolderOpen, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { RequireSubscription } from "@/components/billing/require-subscription";
 import { useSession } from "@/hooks/use-session";
-import { deleteProject, listProjects, type ProjectRow } from "@/lib/project-store";
+import {
+  deleteProject,
+  duplicateProject,
+  listProjects,
+  renameProject,
+  type ProjectRow,
+} from "@/lib/project-store";
 import { syncSubscription } from "@/lib/billing/billing.server";
 import { formatAuDate } from "@/lib/planner";
 
@@ -59,6 +83,9 @@ function ProjectsPage() {
   const [rows, setRows] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -81,11 +108,45 @@ function ProjectsPage() {
   }, [authLoading, user, navigate, refresh]);
 
   async function remove(id: string) {
+    setBusyId(id);
     try {
       await deleteProject(id);
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not delete.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function duplicate(id: string) {
+    setBusyId(id);
+    try {
+      await duplicateProject(id);
+      refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not duplicate this project.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function startRename(row: ProjectRow) {
+    setRenamingId(row.id);
+    setRenameValue(row.name);
+  }
+
+  async function commitRename(id: string) {
+    const name = renameValue.trim();
+    setRenamingId(null);
+    if (!name) return;
+    const previous = rows;
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, name } : r)));
+    try {
+      await renameProject(id, name);
+    } catch (e) {
+      setRows(previous);
+      setError(e instanceof Error ? e.message : "Could not rename this project.");
     }
   }
 
@@ -157,21 +218,73 @@ function ProjectsPage() {
                     key={r.id}
                     className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-muted/35 sm:px-5"
                   >
-                    <Link to="/planner" search={{ projectId: r.id }} className="min-w-0 flex-1">
-                      <div className="truncate font-medium group-hover:underline">{r.name}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        Updated {formatAuDate(new Date(r.updated_at))}
-                      </div>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-9 text-muted-foreground hover:text-destructive"
-                      onClick={() => remove(r.id)}
-                      aria-label={`Delete ${r.name}`}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {renamingId === r.id ? (
+                      <RenameField
+                        value={renameValue}
+                        onChange={setRenameValue}
+                        onCommit={() => void commitRename(r.id)}
+                        onCancel={() => setRenamingId(null)}
+                      />
+                    ) : (
+                      <Link to="/planner" search={{ projectId: r.id }} className="min-w-0 flex-1">
+                        <div className="truncate font-medium group-hover:underline">{r.name}</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          Updated {formatAuDate(new Date(r.updated_at))}
+                        </div>
+                      </Link>
+                    )}
+                    <AlertDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-9 shrink-0 text-muted-foreground"
+                            disabled={busyId === r.id}
+                            aria-label={`More actions for ${r.name}`}
+                          >
+                            <MoreVertical className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => startRename(r)}>
+                            <Pencil className="mr-2 size-4" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => void duplicate(r.id)}>
+                            <Copy className="mr-2 size-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 size-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete &ldquo;{r.name}&rdquo;?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This removes the project and everything in it, deliverables, proposals
+                            and messages, and can&apos;t be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => void remove(r.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </li>
                 ))}
               </ul>
@@ -180,5 +293,44 @@ function ProjectsPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function RenameField({
+  value,
+  onChange,
+  onCommit,
+  onCancel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.select();
+  }, []);
+
+  return (
+    <Input
+      ref={inputRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onCommit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onCommit();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+      autoFocus
+      className="min-w-0 flex-1"
+      aria-label="Project name"
+    />
   );
 }
