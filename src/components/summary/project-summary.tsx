@@ -25,11 +25,16 @@ export function ProjectSummary({
   snapshot,
   parties,
   sharedFor,
+  sharedBy,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
   sharedFor?: string;
+  sharedBy?: { fullName: string | null; organisationName: string | null } | null;
 }) {
+  const sharedByLabel = sharedBy
+    ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
+    : "";
   const { financials, budget, grouped, schedule, launchDate } = deriveProjectSummary(snapshot);
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
@@ -43,6 +48,9 @@ export function ProjectSummary({
         <div className="space-y-0.5">
           <Wordmark className="text-xl" />
           <BrandTagline className="block" />
+          {sharedByLabel ? (
+            <p className="pt-1 text-xs text-muted-foreground">Shared by {sharedByLabel}</p>
+          ) : null}
         </div>
         {sharedFor ? (
           <p className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">

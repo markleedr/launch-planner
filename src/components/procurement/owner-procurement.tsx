@@ -377,6 +377,31 @@ function DeliverableProposalGroup({
                   <tr key={String(proposal.id)} className="border-b last:border-0">
                     <td className="px-3 py-3 font-medium">
                       {String(contractor.organisation_name)}
+                      {Boolean(
+                        contractor.representative_name || contractor.email || contractor.phone,
+                      ) && (
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs font-normal text-muted-foreground">
+                          {Boolean(contractor.representative_name) && (
+                            <span>{String(contractor.representative_name)}</span>
+                          )}
+                          {Boolean(contractor.email) && (
+                            <a
+                              href={`mailto:${String(contractor.email)}`}
+                              className="hover:text-foreground hover:underline"
+                            >
+                              {String(contractor.email)}
+                            </a>
+                          )}
+                          {Boolean(contractor.phone) && (
+                            <a
+                              href={`tel:${String(contractor.phone)}`}
+                              className="hover:text-foreground hover:underline"
+                            >
+                              {String(contractor.phone)}
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant={proposal.status === "awarded" ? "default" : "outline"}>

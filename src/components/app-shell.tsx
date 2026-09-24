@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Wordmark } from "@/components/brand";
 import Footer from "@/components/home/Footer";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BILLING_ENABLED } from "@/hooks/use-subscription";
@@ -132,7 +133,10 @@ export function AppShell({
                 </div>
               )}
             </div>
-            {headerActions ? <div className="shrink-0">{headerActions}</div> : null}
+            <div className="flex shrink-0 items-center gap-2">
+              {headerActions}
+              <NotificationBell />
+            </div>
           </div>
         </header>
 

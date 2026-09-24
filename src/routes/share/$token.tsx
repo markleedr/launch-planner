@@ -41,9 +41,19 @@ function SharedProjectSummary() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-5 flex justify-end print:hidden">
-          <ExportPdfButton snapshot={snapshot} parties={parties} />
+          <ExportPdfButton
+            snapshot={snapshot}
+            parties={parties}
+            sharedFor={data.providerName}
+            sharedBy={data.sharedBy}
+          />
         </div>
-        <ProjectSummary snapshot={snapshot} parties={parties} sharedFor={data.providerName} />
+        <ProjectSummary
+          snapshot={snapshot}
+          parties={parties}
+          sharedFor={data.providerName}
+          sharedBy={data.sharedBy}
+        />
       </main>
     </div>
   );

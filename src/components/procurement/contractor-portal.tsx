@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Building2, Check, Clock3, Loader2, LogOut, RefreshCw, Send } from "lucide-react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Bell, Building2, Check, Clock3, Loader2, LogOut, RefreshCw, Send, X } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -28,6 +28,8 @@ import { submitProposal, submitVariation } from "@/lib/procurement/procurement.s
 
 export function ContractorPortal() {
   const navigate = useNavigate();
+  const { invited } = useSearch({ from: "/contractor" });
+  const [showWelcome, setShowWelcome] = useState(Boolean(invited));
   const { user, loading: authLoading } = useSession();
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [notifications, setNotifications] = useState<Array<Record<string, unknown>>>([]);
@@ -132,6 +134,29 @@ export function ContractorPortal() {
             Refresh
           </Button>
         </div>
+
+        {showWelcome && (
+          <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 p-4">
+            <Building2 className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="flex-1 text-sm">
+              <p className="font-medium">Welcome to your contractor portal</p>
+              <p className="mt-1 text-muted-foreground">
+                Proposal requests you&apos;ve been invited to appear below. Open one to see the
+                brief and submit your quote, no other setup needed.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0"
+              aria-label="Dismiss welcome message"
+              onClick={() => setShowWelcome(false)}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
 
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
