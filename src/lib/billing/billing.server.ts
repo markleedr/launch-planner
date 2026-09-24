@@ -163,7 +163,7 @@ export const startSignupCheckout = createServerFn({ method: "POST" }).handler(as
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       metadata: { signup_flow: "pay_first" },
-      success_url: `${getAppOrigin()}/login?checkout=success`,
+      success_url: `${getAppOrigin()}/welcome`,
       cancel_url: `${getAppOrigin()}/pricing?checkout=cancel`,
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
