@@ -43,6 +43,6 @@ function isAuthorised(request: Request): boolean {
 
 /** Canonical public origin, shared with Stripe redirects and email links. */
 function appOrigin(): string {
-  const value = process.env.APP_ORIGIN?.trim() || "https://base-layer-start.lovable.app";
+  const value = process.env.APP_ORIGIN?.trim() || "https://launchplanner.com.au";
   return new URL(value).origin;
 }

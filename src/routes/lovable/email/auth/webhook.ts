@@ -31,10 +31,11 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
+// FROM_DOMAIN must match a domain verified in Resend. notifications@launchplanner.com.au
+// already sends successfully via the checkout email flow, so auth emails reuse it.
 const SITE_NAME = "Launch Planner"
-const SENDER_DOMAIN = "notify.launchplanner.com.au"
 const ROOT_DOMAIN = "launchplanner.com.au"
-const FROM_DOMAIN = "notify.launchplanner.com.au"
+const FROM_DOMAIN = "launchplanner.com.au"
 
 function redactEmail(email: string | null | undefined): string {
   if (!email) return '***'
@@ -179,7 +180,6 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
             message_id: messageId,
             to: payload.data.email,
             from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-            sender_domain: SENDER_DOMAIN,
             subject: EMAIL_SUBJECTS[emailType] || 'Notification',
             html,
             text,
