@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clock3, Loader2, RefreshCw, Trophy, Users } from "lucide-react";
+import { Check, ChevronDown, Clock3, Loader2, RefreshCw, Trophy, Users } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -70,6 +70,14 @@ export function OwnerProcurement() {
   }, [p.currentProjectId, refresh]);
 
   const groups = useMemo(() => groupByDeliverable(rows), [rows]);
+  const needsDecision = useMemo(
+    () => groups.filter((group) => !group.proposals.some((p2) => p2.status === "awarded")),
+    [groups],
+  );
+  const awardedGroups = useMemo(
+    () => groups.filter((group) => group.proposals.some((p2) => p2.status === "awarded")),
+    [groups],
+  );
 
   async function award(row: Record<string, unknown>) {
     const contractor = asRecord(row.contractor);
@@ -174,17 +182,45 @@ export function OwnerProcurement() {
           </CardHeader>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {groups.map((group) => (
-            <DeliverableProposalGroup
-              key={group.deliverableId}
-              group={group}
-              busyId={busyId}
-              onAward={award}
-              onDecideVariation={decideSubmittedVariation}
-              onChanged={refresh}
-            />
-          ))}
+        <div className="space-y-8">
+          {needsDecision.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Needs your decision ({needsDecision.length})
+              </h2>
+              <div className="space-y-6">
+                {needsDecision.map((group) => (
+                  <DeliverableProposalGroup
+                    key={group.deliverableId}
+                    group={group}
+                    busyId={busyId}
+                    onAward={award}
+                    onDecideVariation={decideSubmittedVariation}
+                    onChanged={refresh}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {awardedGroups.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Awarded / in progress ({awardedGroups.length})
+              </h2>
+              <div className="space-y-6">
+                {awardedGroups.map((group) => (
+                  <DeliverableProposalGroup
+                    key={group.deliverableId}
+                    group={group}
+                    busyId={busyId}
+                    onAward={award}
+                    onDecideVariation={decideSubmittedVariation}
+                    onChanged={refresh}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>
@@ -208,6 +244,7 @@ function DeliverableProposalGroup({
   const submitted = group.proposals.filter((proposal) => proposal.status === "submitted");
   const [nextDeadline, setNextDeadline] = useState("");
   const [deadlineBusy, setDeadlineBusy] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const deadline = group.brief.proposal_deadline
     ? new Date(String(group.brief.proposal_deadline))
     : null;
@@ -293,7 +330,19 @@ function DeliverableProposalGroup({
             </Button>
           </div>
         )}
-        <div className="overflow-x-auto rounded-md border">
+        {awarded && (
+          <AwardedSummary
+            awarded={awarded}
+            costs={
+              sortedProposalCosts.find(({ proposal }) => proposal.id === awarded.id)?.costs ?? null
+            }
+            open={historyOpen}
+            onToggle={() => setHistoryOpen((v) => !v)}
+          />
+        )}
+        <div
+          className={`overflow-x-auto rounded-md border ${awarded && !historyOpen ? "hidden" : ""}`}
+        >
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
@@ -367,7 +416,7 @@ function DeliverableProposalGroup({
           </table>
         </div>
 
-        <Accordion type="single" collapsible>
+        <Accordion type="single" collapsible className={awarded && !historyOpen ? "hidden" : ""}>
           {group.proposals
             .filter((proposal) => latestRevision(proposal))
             .map((proposal) => {
@@ -402,6 +451,39 @@ function DeliverableProposalGroup({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function AwardedSummary({
+  awarded,
+  costs,
+  open,
+  onToggle,
+}: {
+  awarded: Record<string, unknown>;
+  costs: ReturnType<typeof calculateProposalCost> | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const contractor = asRecord(awarded.contractor);
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2.5 text-left text-sm hover:bg-muted/50"
+      aria-expanded={open}
+    >
+      <span>
+        Awarded to <span className="font-medium">{String(contractor.organisation_name)}</span>
+        {costs && (
+          <span className="text-muted-foreground"> · {formatAudWhole(costs.totalCents)}</span>
+        )}
+      </span>
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        {open ? "Hide proposals" : "View proposals"}
+        <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </span>
+    </button>
   );
 }
 

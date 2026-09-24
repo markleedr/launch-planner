@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { differenceInCalendarDays } from "date-fns";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
   UNIT_LABELS,
+  checklistProgress,
   deliverableCosts,
   formatAud,
   formatAudWhole,
@@ -40,6 +42,18 @@ import {
   type DeliverableCategory,
   type ProjectType,
 } from "@/lib/planner";
+
+const SECTIONS = [
+  { id: "details", label: "Details" },
+  { id: "budget", label: "Budget" },
+  { id: "schedule", label: "Schedule" },
+  { id: "checklist", label: "Checklist" },
+  { id: "team", label: "Team" },
+] as const;
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 export const Route = createFileRoute("/planner/")({
   validateSearch: (search: Record<string, unknown>): { mediaBudget?: number } => {
@@ -64,10 +78,70 @@ function PlannerEditor() {
   }, [mediaBudget, p]);
   const overBudget = p.budget.varianceVsMediaBudgetCents > 0;
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const checklist = checklistProgress(p.checklist);
+  const daysLate = p.launchDateObj
+    ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
+    : null;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="grid gap-6 lg:grid-cols-3">
+      <nav
+        aria-label="Plan sections"
+        className="sticky top-16 z-20 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b bg-background/95 px-6 py-2 backdrop-blur"
+      >
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection(s.id);
+            }}
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {s.label}
+          </a>
+        ))}
+      </nav>
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <StatusTile
+          tone={overBudget ? "bad" : "good"}
+          label="Budget"
+          value={
+            overBudget
+              ? `${formatAudWhole(p.budget.varianceVsMediaBudgetCents)} over`
+              : `${formatAudWhole(-p.budget.varianceVsMediaBudgetCents)} under`
+          }
+          onClick={() => scrollToSection("budget")}
+        />
+        <StatusTile
+          tone={daysLate === null ? "neutral" : daysLate > 0 ? "bad" : "good"}
+          label="Schedule"
+          value={
+            daysLate === null
+              ? "No launch date set"
+              : daysLate > 0
+                ? `${daysLate} days late`
+                : daysLate === 0
+                  ? "On time"
+                  : `${Math.abs(daysLate)} days buffer`
+          }
+          onClick={() => scrollToSection("schedule")}
+        />
+        <StatusTile
+          tone={checklist.openHigh > 0 ? "bad" : "good"}
+          label="Checklist"
+          value={
+            checklist.openHigh > 0
+              ? `${checklist.openHigh} high-priority open`
+              : `${checklist.done} of ${checklist.total} reviewed`
+          }
+          onClick={() => scrollToSection("checklist")}
+        />
+      </div>
+
+      <div id="details" className="grid scroll-mt-32 gap-6 lg:grid-cols-3">
         {/* Intake */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -214,7 +288,7 @@ function PlannerEditor() {
       </div>
 
       {/* Deliverables & budget */}
-      <Card className="mt-6">
+      <Card id="budget" className="mt-6 scroll-mt-32">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Deliverables & budget</CardTitle>
@@ -260,24 +334,17 @@ function PlannerEditor() {
                   );
                 })}
               </tbody>
-              <tfoot>
-                <tr className="border-t-2 font-semibold">
-                  <td className="py-3 pr-2">Grand total</td>
-                  <td className="py-3 px-2 text-right">
-                    {formatAud(p.budget.productionTotalCents)}
-                  </td>
-                  <td className="py-3 px-2 text-right">{formatAud(p.budget.mediaTotalCents)}</td>
-                  <td className="py-3 px-2 text-right">{formatAud(p.budget.grandTotalCents)}</td>
-                  <td />
-                </tr>
-              </tfoot>
             </table>
           </div>
+          <p className="mt-3 text-right text-xs text-muted-foreground">
+            Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
+            above.
+          </p>
         </CardContent>
       </Card>
 
       {/* Schedule & critical path */}
-      <Card className="mt-6">
+      <Card id="schedule" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Marketing schedule & critical path</CardTitle>
           <CardDescription>
@@ -292,7 +359,7 @@ function PlannerEditor() {
       </Card>
 
       {/* Critical-issue checklist */}
-      <Card className="mt-6">
+      <Card id="checklist" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Critical issues checklist</CardTitle>
           <CardDescription>
@@ -305,7 +372,7 @@ function PlannerEditor() {
       </Card>
 
       {/* Team & suppliers */}
-      <Card className="mt-6">
+      <Card id="team" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Team & suppliers</CardTitle>
           <CardDescription>
@@ -345,93 +412,107 @@ function CategoryGroup({
   justAddedId?: string | null;
   onJustAddedFocused?: () => void;
 }) {
+  const [open, setOpen] = useState(true);
   return (
     <>
       <tr className="bg-muted/50">
-        <td
-          colSpan={5}
-          className="py-2 pr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          {CATEGORY_LABELS[category]}
+        <td colSpan={5} className="p-0">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center gap-1.5 px-0 py-2 pr-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            aria-expanded={open}
+          >
+            <ChevronDown
+              className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+            />
+            {CATEGORY_LABELS[category]}
+            <span className="font-normal normal-case text-muted-foreground/70">
+              ({items.length})
+            </span>
+          </button>
         </td>
       </tr>
-      <tr className="border-b text-left text-xs text-muted-foreground">
-        <th className="py-1 pr-2 font-medium">Deliverable</th>
-        <th className="w-40 py-1 px-2 text-right font-medium">Production</th>
-        <th className="w-40 py-1 px-2 text-right font-medium">Media</th>
-        <th className="w-32 py-1 px-2 text-right font-medium">Total</th>
-        <th className="w-10 py-1" />
-      </tr>
-      {items.map((d) => {
-        const costs = deliverableCosts(d);
-        return (
-          <tr key={d.id} className="border-b">
-            <td className="py-2 pr-2">
-              <Input
-                value={d.name}
-                onChange={(e) => onUpdate(d.id, { name: e.target.value })}
-                className="h-8"
-                autoFocus={d.id === justAddedId}
-                onFocus={(e) => {
-                  if (d.id === justAddedId) {
-                    e.target.select();
-                    onJustAddedFocused?.();
-                  }
-                }}
-              />
-            </td>
-            <td className="py-2 px-2 align-top">
-              <CentsInput
-                cents={d.productionCostCents}
-                onChange={(cents) => onUpdate(d.id, { productionCostCents: cents })}
-              />
-              {costs.productionCents !== d.productionCostCents && (
-                <p className="mt-1 text-right text-xs text-muted-foreground">
-                  = {formatAud(costs.productionCents)}
-                </p>
-              )}
-            </td>
-            <td className="py-2 px-2 align-top">
-              <CentsInput
-                cents={d.mediaCostCents}
-                onChange={(cents) => onUpdate(d.id, { mediaCostCents: cents })}
-              />
-              {costs.mediaCents !== d.mediaCostCents && (
-                <p className="mt-1 text-right text-xs text-muted-foreground">
-                  = {formatAud(costs.mediaCents)}
-                </p>
-              )}
-            </td>
-            <td className="py-2 px-2 text-right align-top tabular-nums">
-              {formatAud(costs.totalCents)}
-            </td>
-            <td className="py-2 text-right">
-              <div className="flex justify-end">
-                <DeliverableEditorDialog
-                  deliverable={d}
-                  allDeliverables={allDeliverables}
-                  onSave={(patch) => onUpdate(d.id, patch)}
-                  compact
+      {open && (
+        <tr className="border-b text-left text-xs text-muted-foreground">
+          <th className="py-1 pr-2 font-medium">Deliverable</th>
+          <th className="w-40 py-1 px-2 text-right font-medium">Production</th>
+          <th className="w-40 py-1 px-2 text-right font-medium">Media</th>
+          <th className="w-32 py-1 px-2 text-right font-medium">Total</th>
+          <th className="w-10 py-1" />
+        </tr>
+      )}
+      {open &&
+        items.map((d) => {
+          const costs = deliverableCosts(d);
+          return (
+            <tr key={d.id} className="border-b">
+              <td className="py-2 pr-2">
+                <Input
+                  value={d.name}
+                  onChange={(e) => onUpdate(d.id, { name: e.target.value })}
+                  className="h-8"
+                  autoFocus={d.id === justAddedId}
+                  onFocus={(e) => {
+                    if (d.id === justAddedId) {
+                      e.target.select();
+                      onJustAddedFocused?.();
+                    }
+                  }}
                 />
-                <ScheduleDialog
-                  deliverable={d}
-                  allDeliverables={allDeliverables}
-                  onSave={(patch) => onUpdate(d.id, patch)}
+              </td>
+              <td className="py-2 px-2 align-top">
+                <CentsInput
+                  cents={d.productionCostCents}
+                  onChange={(cents) => onUpdate(d.id, { productionCostCents: cents })}
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => onRemove(d.id)}
-                  aria-label="Remove deliverable"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            </td>
-          </tr>
-        );
-      })}
+                {costs.productionCents !== d.productionCostCents && (
+                  <p className="mt-1 text-right text-xs text-muted-foreground">
+                    = {formatAud(costs.productionCents)}
+                  </p>
+                )}
+              </td>
+              <td className="py-2 px-2 align-top">
+                <CentsInput
+                  cents={d.mediaCostCents}
+                  onChange={(cents) => onUpdate(d.id, { mediaCostCents: cents })}
+                />
+                {costs.mediaCents !== d.mediaCostCents && (
+                  <p className="mt-1 text-right text-xs text-muted-foreground">
+                    = {formatAud(costs.mediaCents)}
+                  </p>
+                )}
+              </td>
+              <td className="py-2 px-2 text-right align-top tabular-nums">
+                {formatAud(costs.totalCents)}
+              </td>
+              <td className="py-2 text-right">
+                <div className="flex justify-end">
+                  <DeliverableEditorDialog
+                    deliverable={d}
+                    allDeliverables={allDeliverables}
+                    onSave={(patch) => onUpdate(d.id, patch)}
+                    compact
+                  />
+                  <ScheduleDialog
+                    deliverable={d}
+                    allDeliverables={allDeliverables}
+                    onSave={(patch) => onUpdate(d.id, patch)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => onRemove(d.id)}
+                    aria-label="Remove deliverable"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
       <tr className="border-b text-muted-foreground">
         <td className="py-2 pr-2 text-right text-xs" colSpan={3}>
           {CATEGORY_LABELS[category]} subtotal
@@ -484,6 +565,35 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label>{label}</Label>
       {children}
     </div>
+  );
+}
+
+function StatusTile({
+  tone,
+  label,
+  value,
+  onClick,
+}: {
+  tone: "good" | "bad" | "neutral";
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  const toneClass =
+    tone === "bad"
+      ? "border-destructive/30 bg-destructive/5 text-destructive"
+      : tone === "good"
+        ? "border-positive/30 bg-positive/5 text-positive"
+        : "border-border bg-muted/30 text-muted-foreground";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg border px-4 py-3 text-left transition-shadow hover:shadow-sm ${toneClass}`}
+    >
+      <div className="text-xs font-medium uppercase tracking-wide opacity-80">{label}</div>
+      <div className="mt-0.5 text-lg font-semibold">{value}</div>
+    </button>
   );
 }
 

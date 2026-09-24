@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Building2,
   Check,
+  ChevronDown,
   ImagePlus,
   Info,
   Loader2,
@@ -520,17 +521,38 @@ function DeliverablesStep() {
             body="Skip this step or add the first item from the catalog."
           />
         ) : (
-          <div className="space-y-4">
-            {p.deliverables.map((deliverable) => (
-              <DeliverableBriefEditor
-                key={deliverable.id}
-                deliverable={deliverable}
-                allDeliverables={p.deliverables}
-                onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
-                onRemove={() => p.removeDeliverable(deliverable.id)}
-                justAdded={deliverable.id === justAddedId}
-              />
-            ))}
+          <div className="space-y-6">
+            {p.grouped.map(({ category, items }) => {
+              const cat = p.budget.categories.find((c) => c.category === category);
+              return (
+                <div key={category}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {CATEGORY_LABELS[category]}
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {formatAud(cat?.totalCents ?? 0)}
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    {items.map((deliverable) => (
+                      <DeliverableBriefEditor
+                        key={deliverable.id}
+                        deliverable={deliverable}
+                        allDeliverables={p.deliverables}
+                        onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
+                        onRemove={() => p.removeDeliverable(deliverable.id)}
+                        justAdded={deliverable.id === justAddedId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-between border-t pt-3 text-sm font-semibold">
+              <span>Total</span>
+              <span className="tabular-nums">{formatAud(p.budget.grandTotalCents)}</span>
+            </div>
           </div>
         )}
       </CardContent>
@@ -673,25 +695,23 @@ function MediaStep() {
             </p>
           </div>
 
-          <div className="rounded-md border p-3">
-            <p className="text-sm text-muted-foreground">Media spend on deliverables</p>
-            <p className="text-lg font-semibold">{formatAudWhole(mediaTotalCents)}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              disabled={mediaTotalCents === 0}
-              onClick={() => p.setMediaBudget(String(Math.round(mediaTotalCents / 100)))}
-            >
-              Use deliverable media spend
-            </Button>
-            {mediaTotalCents === 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Add media cost to deliverables in step 2 to use this.
+          {mediaTotalCents > 0 && mediaTotalCents !== parseInt(p.mediaBudget || "0", 10) * 100 && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p className="text-sm font-medium">Your deliverables now cost differently</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Media spend costed on deliverables: {formatAudWhole(mediaTotalCents)}
               </p>
-            )}
-          </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2 bg-background"
+                onClick={() => p.setMediaBudget(String(Math.round(mediaTotalCents / 100)))}
+              >
+                Match media budget to this
+              </Button>
+            </div>
+          )}
 
           <div>
             <p className="text-sm text-muted-foreground">Generated media deliverables</p>
@@ -724,6 +744,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
   const [deadline, setDeadline] = useState("");
   const [inviting, setInviting] = useState(false);
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
+  const [directoryOpen, setDirectoryOpen] = useState(true);
+  const directoryInitialized = useRef(false);
 
   async function refresh(projectId?: string | null) {
     try {
@@ -770,6 +792,16 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     // The project id is intentionally the only refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentProjectId]);
+
+  // Collapse the directory to a one-line summary once contractors already
+  // exist on this project, so returning here isn't a full directory-building
+  // screen again. Only decide this once, right after the first load.
+  useEffect(() => {
+    if (loading || directoryInitialized.current) return;
+    directoryInitialized.current = true;
+    setDirectoryOpen(p.projectParties.length === 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   async function addParty() {
     setError(null);
@@ -927,15 +959,40 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
 
   return (
     <div className="space-y-6">
+      <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
+        <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
+        <div>
+          <p className="font-semibold">A price request does not assign the work.</p>
+          <p className="mt-1 text-muted-foreground">
+            Below, add or reuse contractors, then check a box against a deliverable to send that
+            contractor a private price request. You can request competing prices from multiple
+            contractors, then award one in Procurement.
+          </p>
+        </div>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Contractor directory</CardTitle>
-          <CardDescription>
-            Reuse project parties and contractors across future projects. Only portal contractors
-            receive account access.
-          </CardDescription>
+        <CardHeader
+          className={p.projectParties.length > 0 ? "cursor-pointer select-none" : undefined}
+          onClick={p.projectParties.length > 0 ? () => setDirectoryOpen((v) => !v) : undefined}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Contractor directory</CardTitle>
+              <CardDescription>
+                {directoryOpen
+                  ? "Reuse project parties and contractors across future projects. Only portal contractors receive account access."
+                  : `${p.projectParties.length} ${p.projectParties.length === 1 ? "contractor" : "contractors"} in this project. Manage`}
+              </CardDescription>
+            </div>
+            {p.projectParties.length > 0 && (
+              <ChevronDown
+                className={`size-4 shrink-0 text-muted-foreground transition-transform ${directoryOpen ? "" : "-rotate-90"}`}
+              />
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className={`space-y-4 ${directoryOpen ? "" : "hidden"}`}>
           {loading ? <Loader2 className="size-5 animate-spin" /> : null}
           {directory.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1058,18 +1115,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
-            <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
-            <div>
-              <p className="font-semibold">A price request does not assign the work.</p>
-              <p className="mt-1 text-muted-foreground">
-                Each checked box sends that contractor a private request for that deliverable. You
-                can request competing prices from multiple contractors, then award one in
-                Procurement.
-              </p>
-            </div>
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end">
             <div className="rounded-md bg-muted/40 px-4 py-3 text-sm">
               <span className="font-semibold">{selectedDeliverableCount}</span>{" "}
