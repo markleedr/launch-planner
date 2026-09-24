@@ -15,7 +15,9 @@ import { usePlanner } from "@/components/planner/planner-provider";
 import {
   catalogItemToDeliverable,
   CHANNEL_LABELS,
+  CHANNEL_TO_CATALOG,
   DELIVERABLE_CATALOG,
+  PROJECT_TYPE_LABELS,
   recommend,
   type ChannelCode,
 } from "@/lib/planner";
@@ -74,6 +76,21 @@ export function RecommendDialog() {
 
   const catalogName = (id: string) =>
     DELIVERABLE_CATALOG.find((c) => c.catalogId === id)?.name ?? id;
+
+  // Reuse each recommended channel's rationale for the catalog item it maps to;
+  // anything suggested directly for the project type falls back to a generic note.
+  const channelRationaleByCatalogId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const { code, rationale } of rec.channels) {
+      const catalogId = CHANNEL_TO_CATALOG[code];
+      if (catalogId) map.set(catalogId, rationale);
+    }
+    return map;
+  }, [rec.channels]);
+  const projectTypeLabel = PROJECT_TYPE_LABELS[p.projectType];
+  const deliverableRationale = (id: string) =>
+    channelRationaleByCatalogId.get(id) ??
+    `A core deliverable for ${projectTypeLabel.toLowerCase()} launches.`;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -147,13 +164,19 @@ export function RecommendDialog() {
             {rec.suggestedCatalogIds.map((id) => (
               <label
                 key={id}
-                className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-accent"
+                className="flex items-start gap-2 rounded px-1 py-1 text-sm hover:bg-accent"
               >
                 <Checkbox
+                  className="mt-0.5"
                   checked={deliverableSel.has(id)}
                   onCheckedChange={() => setDeliverableSel((s) => toggle(s, id))}
                 />
-                {catalogName(id)}
+                <span>
+                  <span className="font-medium">{catalogName(id)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {deliverableRationale(id)}
+                  </span>
+                </span>
               </label>
             ))}
           </section>

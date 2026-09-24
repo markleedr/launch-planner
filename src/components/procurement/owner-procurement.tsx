@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DeliveryWorkspace } from "./delivery-workspace";
@@ -506,9 +507,16 @@ function VariationDecisions({
   return (
     <div className="space-y-3 border-t pt-5">
       <div>
-        <h3 className="font-semibold">Cost and timing variations</h3>
+        <h3 className="flex items-center gap-1.5 font-semibold">
+          Cost and timing variations
+          <HelpTip label="What is a variation?">
+            A variation is a change to cost or timing that your contractor has requested after you
+            awarded the work, for example extra scope or a revised deadline.
+          </HelpTip>
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Submitted changes only update the approved plan after your approval.
+          Approve updates your budget and schedule to the revised figures. Reject keeps the original
+          scope and timing, and lets the contractor know.
         </p>
       </div>
       {variations.map((variation) => {

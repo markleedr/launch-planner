@@ -4,9 +4,11 @@ import { differenceInCalendarDays } from "date-fns";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -259,18 +261,36 @@ function PlannerEditor() {
               label="Gross Realisation Value (GRV)"
               value={formatAudWhole(p.financials.grvCents)}
               hint={`${p.units} × ${formatAudWhole(parseDollarsToCents(p.sellPrice))}`}
+              help={
+                <HelpTip label="What is GRV?">
+                  Total expected sales revenue for the project: units × sell price. This is the base
+                  figure every other budget percentage is measured against.
+                </HelpTip>
+              }
             />
             <Separator />
             <Stat
               label="Media budget"
               value={formatAudWhole(p.financials.mediaBudgetCents)}
               hint={`${formatPercent(p.financials.mediaBudgetPctOfGrv)} of GRV`}
+              help={
+                <HelpTip label="What is media budget?">
+                  The target you set (or calculated with the media calculator) for total campaign
+                  spend. Compare it against &ldquo;Planned spend&rdquo; below.
+                </HelpTip>
+              }
             />
             <Separator />
             <Stat
               label="Planned spend (deliverables)"
               value={formatAudWhole(p.budget.grandTotalCents)}
               hint={`${formatPercent(p.budget.totalPctOfGrv)} of GRV`}
+              help={
+                <HelpTip label="What is planned spend?">
+                  What your itemised deliverables below currently add up to. Compared against your
+                  media budget above in the banner underneath.
+                </HelpTip>
+              }
             />
             <div
               className={
@@ -310,8 +330,22 @@ function PlannerEditor() {
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-2 font-medium">Deliverable</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">Production</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">Media</th>
+                  <th className="w-40 py-2 px-2 text-right font-medium">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      Production
+                      <HelpTip label="What is production cost?">
+                        Printing, delivery, press or fulfilment cost per unit.
+                      </HelpTip>
+                    </span>
+                  </th>
+                  <th className="w-40 py-2 px-2 text-right font-medium">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      Media
+                      <HelpTip label="What is media cost?">
+                        Placement on Meta, Google, radio, TV, magazines or another platform.
+                      </HelpTip>
+                    </span>
+                  </th>
                   <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
                   <th className="w-10 py-2" />
                 </tr>
@@ -499,15 +533,20 @@ function CategoryGroup({
                     allDeliverables={allDeliverables}
                     onSave={(patch) => onUpdate(d.id, patch)}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => onRemove(d.id)}
-                    aria-label="Remove deliverable"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => onRemove(d.id)}
+                        aria-label="Remove deliverable"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
                 </div>
               </td>
             </tr>
@@ -597,10 +636,23 @@ function StatusTile({
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  help,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  help?: React.ReactNode;
+}) {
   return (
     <div>
-      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        {label}
+        {help}
+      </div>
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
     </div>

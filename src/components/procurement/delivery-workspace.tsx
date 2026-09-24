@@ -3,6 +3,7 @@ import { Check, Download, FileUp, Loader2, MessageSquare, Send } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,40 @@ const DELIVERY_LABELS: Record<string, string> = {
   changes_requested: "Changes requested",
   approved: "Approved",
   completed: "Completed",
+};
+
+/** What's currently expected, per delivery status and who's viewing. */
+const STATUS_GUIDANCE: Record<string, { owner: string; contractor: string }> = {
+  awarded: {
+    owner: "Waiting for the contractor to start work.",
+    contractor: "You've been awarded this deliverable. Start work when you're ready.",
+  },
+  in_progress: {
+    owner:
+      "The contractor is working on this deliverable and will submit collateral here for your review.",
+    contractor: "Upload your collateral below when it's ready for review.",
+  },
+  collateral_requested: {
+    owner: "An automatic request for the final collateral has been sent to the contractor.",
+    contractor: "The owner has requested your final collateral. Upload it below.",
+  },
+  collateral_submitted: {
+    owner: "A new version is ready for your review below.",
+    contractor: "Your version is with the owner for review.",
+  },
+  changes_requested: {
+    owner: "You asked for changes. The contractor will submit a new version here.",
+    contractor: "The owner asked for changes. Upload a new version below.",
+  },
+  approved: {
+    owner:
+      "You've approved the latest version. Mark the deliverable complete when you're ready to close it out.",
+    contractor: "Your latest version has been approved.",
+  },
+  completed: {
+    owner: "This deliverable is complete.",
+    contractor: "This deliverable is complete.",
+  },
 };
 
 export function DeliveryWorkspace({
@@ -211,11 +246,16 @@ export function DeliveryWorkspace({
   }
 
   const status = String(thread.delivery_status ?? "awarded");
+  const guidance = STATUS_GUIDANCE[status]?.[mode];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <Badge>{DELIVERY_LABELS[status] ?? status}</Badge>
+        <HelpTip label="What is collateral?">
+          Collateral is the final files a contractor delivers for this piece of work, such as
+          artwork, copy or renders, ready for you to review and approve.
+        </HelpTip>
         <span className="text-xs text-muted-foreground">
           All delivery activity and files stay with this deliverable.
         </span>
@@ -231,6 +271,7 @@ export function DeliveryWorkspace({
           </Button>
         ) : null}
       </div>
+      {guidance && <p className="text-sm text-muted-foreground">{guidance}</p>}
 
       {mode === "owner" && (
         <Card>

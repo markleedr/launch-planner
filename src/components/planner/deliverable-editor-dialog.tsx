@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -99,18 +100,31 @@ export function DeliverableEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant={compact ? "ghost" : "outline"}
-          size={compact ? "icon" : "sm"}
-          className={compact ? "size-8" : undefined}
-          aria-label={`Edit ${deliverable.name}`}
-        >
-          <Pencil className={compact ? "size-4" : "mr-1 size-4"} />
-          {!compact ? "Edit service" : null}
-        </Button>
-      </DialogTrigger>
+      {compact ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                aria-label={`Edit ${deliverable.name}`}
+              >
+                <Pencil className="size-4" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger asChild>
+          <Button type="button" variant="outline" size="sm" aria-label={`Edit ${deliverable.name}`}>
+            <Pencil className="mr-1 size-4" />
+            Edit service
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit service</DialogTitle>

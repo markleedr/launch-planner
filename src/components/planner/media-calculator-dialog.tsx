@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   computeMediaPlan,
   DEFAULT_MEDIA_INPUTS,
@@ -124,7 +125,13 @@ export function MediaCalculatorDialog({
 
             <div>
               <div className="mb-1 flex items-baseline justify-between">
-                <Label>Unqualified lead buffer</Label>
+                <span className="inline-flex items-center gap-1">
+                  <Label>Unqualified lead buffer</Label>
+                  <HelpTip label="What is the unqualified lead buffer?">
+                    Extra leads added on top of your target to cover enquiries that never turn into
+                    genuine buyers.
+                  </HelpTip>
+                </span>
                 <span className="text-sm font-semibold">{inputs.leadBuffer}%</span>
               </div>
               <Slider
@@ -137,7 +144,13 @@ export function MediaCalculatorDialog({
             </div>
 
             <div className="flex items-center justify-between">
-              <Label>Ramping pacing</Label>
+              <span className="inline-flex items-center gap-1">
+                <Label>Ramping pacing</Label>
+                <HelpTip label="What is ramping pacing?">
+                  Spend builds up gradually over the first few weeks of the campaign instead of
+                  staying flat throughout.
+                </HelpTip>
+              </span>
               <Switch
                 checked={inputs.useRamping}
                 onCheckedChange={(v) => setField("useRamping", v)}
@@ -147,8 +160,12 @@ export function MediaCalculatorDialog({
             <div className="space-y-2">
               <div className="grid grid-cols-[minmax(0,1fr)_84px_68px] items-center gap-2">
                 <Label>Channels</Label>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center justify-end gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                   CPS $
+                  <HelpTip label="What is CPS?">
+                    Cost per sale: how much media spend it takes to generate one sale through this
+                    channel.
+                  </HelpTip>
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   Share %
@@ -208,10 +225,22 @@ export function MediaCalculatorDialog({
                 value={Math.round(plan.bufferedLeads).toLocaleString()}
               />
               <Metric label="Weekly spend" value={fmt(plan.weeklySpend)} />
-              <Metric label="Blended cost/sale" value={fmt(plan.blendedCps)} />
+              <Metric
+                label="Blended cost/sale"
+                value={fmt(plan.blendedCps)}
+                help="The average cost per sale across all active channels, weighted by spend."
+              />
               <Metric label="Leads per sale" value={plan.leadsPerSale.toFixed(1)} />
-              <Metric label="Campaign ROI" value={`${plan.roi.toFixed(1)}x`} />
-              <Metric label="Media % of GRV" value={`${plan.mediaPctGdv.toFixed(2)}%`} />
+              <Metric
+                label="Campaign ROI"
+                value={`${plan.roi.toFixed(1)}x`}
+                help="Sales value generated for every dollar spent on media, as a multiple."
+              />
+              <Metric
+                label="Media % of GRV"
+                value={`${plan.mediaPctGdv.toFixed(2)}%`}
+                help="Media budget as a percentage of gross realisation value, the total expected sales revenue."
+              />
             </div>
             <div className="space-y-2 border-t border-background/15 pt-3">
               {MEDIA_CHANNELS.filter((c) => inputs.channels[c.key].active).map((ch) => (
@@ -332,10 +361,20 @@ function NumInput({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, help }: { label: string; value: string; help?: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-background/60">{label}</div>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-background/60">
+        {label}
+        {help && (
+          <HelpTip
+            label={`What is ${label.toLowerCase()}?`}
+            triggerClassName="text-background/50 hover:text-background"
+          >
+            {help}
+          </HelpTip>
+        )}
+      </div>
       <div className="text-base font-semibold tabular-nums">{value}</div>
     </div>
   );
