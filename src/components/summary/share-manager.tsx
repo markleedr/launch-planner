@@ -54,6 +54,8 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ShareRow | null>(null);
+  const expiryInPast = Boolean(expiresAt) && new Date(expiresAt).getTime() < Date.now();
+  const allContactFieldsHidden = hiddenFields.length === PRIVACY_FIELDS.length;
 
   const refresh = useCallback(async () => {
     if (!projectId) return;
@@ -145,7 +147,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="share-provider">Provider or recipient</Label>
+              <Label htmlFor="share-provider">Provider or recipient *</Label>
               <Input
                 id="share-provider"
                 value={providerName}
@@ -158,9 +160,13 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
               <Input
                 id="share-expiry"
                 type="datetime-local"
+                min={nowLocalInputValue()}
                 value={expiresAt}
                 onChange={(event) => setExpiresAt(event.target.value)}
               />
+              {expiryInPast && (
+                <p className="text-xs text-destructive">Pick a time in the future.</p>
+              )}
             </div>
           </div>
 
@@ -183,6 +189,12 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
                 </label>
               ))}
             </div>
+            {allContactFieldsHidden && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                All contact details are hidden. The provider won&apos;t be able to see how to reach
+                your team from this summary.
+              </p>
+            )}
           </fieldset>
 
           {newUrl ? (
@@ -294,7 +306,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         <DialogFooter>
           <Button
             type="button"
-            disabled={busy || !providerName.trim()}
+            disabled={busy || !providerName.trim() || expiryInPast}
             onClick={() => void create()}
           >
             {busy ? (
@@ -319,6 +331,13 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
       />
     </Dialog>
   );
+}
+
+function nowLocalInputValue(): string {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  const offsetMs = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function normaliseShareRow(row: Record<string, unknown>): ShareRow {

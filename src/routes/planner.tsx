@@ -122,6 +122,18 @@ function SaveButton() {
     return () => clearTimeout(t);
   }, [serialized, user, p.currentProjectId, doSave]);
 
+  // Warn before closing the tab in the brief window before auto-save catches up.
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (lastSaved.current !== null && serialized !== lastSaved.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [serialized]);
+
   if (loading) return null;
 
   if (!user) {

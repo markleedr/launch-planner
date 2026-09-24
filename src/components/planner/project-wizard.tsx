@@ -58,6 +58,7 @@ import {
   generateProjectBlurb,
   googleMapsUrl,
   mediaPlanToDeliverables,
+  serializePlanner,
   summariseBudget,
   type Deliverable,
   type ProjectType,
@@ -116,6 +117,24 @@ export function ProjectWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Warn before closing the tab or navigating away with changes this step
+  // hasn't saved yet (the wizard only persists on "Save & continue"/"Skip").
+  const currentSnapshot = JSON.stringify(serializePlanner(p.toSnapshot()));
+  const lastSavedSnapshot = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastSavedSnapshot.current === null) lastSavedSnapshot.current = currentSnapshot;
+  }, [currentSnapshot]);
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (lastSavedSnapshot.current !== null && currentSnapshot !== lastSavedSnapshot.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [currentSnapshot]);
+
   async function persist(): Promise<string | null> {
     if (!user) return null;
     setBusy(true);
@@ -125,11 +144,13 @@ export function ProjectWizard() {
       if (p.currentProjectId) {
         await updateProject(p.currentProjectId, name, p.toSnapshot());
         setSaveState("saved");
+        lastSavedSnapshot.current = JSON.stringify(serializePlanner(p.toSnapshot()));
         return p.currentProjectId;
       }
       const id = await createProject(name, p.toSnapshot());
       p.setCurrentProjectId(id);
       setSaveState("saved");
+      lastSavedSnapshot.current = JSON.stringify(serializePlanner(p.toSnapshot()));
       return id;
     } catch (reason) {
       setSaveError(reason instanceof Error ? reason.message : "Unknown error.");
@@ -277,7 +298,12 @@ function DetailsStep() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  const [postcodeTouched, setPostcodeTouched] = useState(false);
   const mapUrl = googleMapsUrl(p.address);
+  const postcodeError =
+    postcodeTouched && p.address.postcode && !/^\d{4}$/.test(p.address.postcode)
+      ? "Enter a 4-digit postcode."
+      : null;
   const canUploadHero = Boolean(p.currentProjectId);
 
   function regenerateBlurb() {
@@ -402,12 +428,14 @@ function DetailsStep() {
           </Field>
           <Field label="Street address" className="sm:col-span-2">
             <Input
+              autoComplete="street-address"
               value={p.address.street}
               onChange={(event) => p.setAddress({ ...p.address, street: event.target.value })}
             />
           </Field>
           <Field label="Suburb">
             <Input
+              autoComplete="address-level2"
               value={p.address.suburb}
               onChange={(event) => {
                 p.setAddress({ ...p.address, suburb: event.target.value });
@@ -417,6 +445,7 @@ function DetailsStep() {
           </Field>
           <Field label="State">
             <Input
+              autoComplete="address-level1"
               value={p.address.state}
               onChange={(event) => p.setAddress({ ...p.address, state: event.target.value })}
             />
@@ -424,9 +453,20 @@ function DetailsStep() {
           <Field label="Postcode">
             <Input
               inputMode="numeric"
+              autoComplete="postal-code"
+              maxLength={4}
               value={p.address.postcode}
-              onChange={(event) => p.setAddress({ ...p.address, postcode: event.target.value })}
+              onChange={(event) =>
+                p.setAddress({
+                  ...p.address,
+                  postcode: event.target.value.replace(/\D/g, "").slice(0, 4),
+                })
+              }
+              onBlur={() => setPostcodeTouched(true)}
+              aria-invalid={Boolean(postcodeError)}
+              className={postcodeError ? "border-destructive" : undefined}
             />
+            {postcodeError && <p className="text-xs text-destructive">{postcodeError}</p>}
           </Field>
           <div className="flex items-end">
             {mapUrl ? (
