@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -97,6 +99,7 @@ export function ProjectWizard() {
   const [step, setStep] = useState<StepId>("details");
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const currentIndex = STEPS.findIndex((item) => item.id === step);
 
   // PlannerProvider wraps the whole /planner/* layout, so currentProjectId
@@ -125,7 +128,8 @@ export function ProjectWizard() {
       p.setCurrentProjectId(id);
       setSaveState("saved");
       return id;
-    } catch {
+    } catch (reason) {
+      setSaveError(reason instanceof Error ? reason.message : "Unknown error.");
       setSaveState("error");
       return null;
     } finally {
@@ -167,7 +171,17 @@ export function ProjectWizard() {
               </span>
             )}
             {saveState === "error" && (
-              <span className="ml-3 text-destructive">Save will retry on the next step.</span>
+              <span className="ml-3 inline-flex items-center gap-1 text-destructive">
+                Save will retry on the next step.
+                {saveError && (
+                  <HelpTip
+                    label="Why did saving fail?"
+                    triggerClassName="text-destructive/70 hover:text-destructive"
+                  >
+                    {saveError}
+                  </HelpTip>
+                )}
+              </span>
             )}
           </div>
         </div>
@@ -258,9 +272,11 @@ function DetailsStep() {
   const p = usePlanner();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const mapUrl = googleMapsUrl(p.address);
 
   function regenerateBlurb() {
+    setConfirmRegenerate(false);
     p.setProjectBlurb(
       generateProjectBlurb({
         name: p.projectName,
@@ -269,6 +285,14 @@ function DetailsStep() {
         address: p.address,
       }),
     );
+  }
+
+  function requestRegenerateBlurb() {
+    if (p.projectBlurb.trim()) {
+      setConfirmRegenerate(true);
+    } else {
+      regenerateBlurb();
+    }
   }
 
   async function uploadHero(file: File) {
@@ -422,10 +446,19 @@ function DetailsStep() {
               type="button"
               variant="link"
               className="mt-1 h-auto px-0"
-              onClick={regenerateBlurb}
+              onClick={requestRegenerateBlurb}
             >
               Regenerate placeholder copy
             </Button>
+            <ConfirmDialog
+              open={confirmRegenerate}
+              onOpenChange={setConfirmRegenerate}
+              title="Replace your project blurb?"
+              description="This overwrites what you've written with fresh placeholder copy. You can't undo this."
+              confirmLabel="Replace it"
+              destructive
+              onConfirm={regenerateBlurb}
+            />
           </Field>
         </CardContent>
       </Card>

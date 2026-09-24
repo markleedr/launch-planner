@@ -34,7 +34,10 @@ export function ContractorPortal() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
+  const [passwordStatus, setPasswordStatus] = useState<{
+    kind: "error" | "success";
+    message: string;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -75,11 +78,15 @@ export function ContractorPortal() {
 
   async function updatePassword() {
     if (newPassword.length < 8) {
-      setPasswordStatus("Use at least 8 characters.");
+      setPasswordStatus({ kind: "error", message: "Use at least 8 characters." });
       return;
     }
     const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
-    setPasswordStatus(passwordError ? passwordError.message : "Password updated.");
+    setPasswordStatus(
+      passwordError
+        ? { kind: "error", message: passwordError.message }
+        : { kind: "success", message: "Password updated." },
+    );
     if (!passwordError) setNewPassword("");
   }
 
@@ -233,7 +240,13 @@ export function ContractorPortal() {
             <Button onClick={() => void updatePassword()}>Set password</Button>
           </CardContent>
           {passwordStatus && (
-            <p className="px-6 pb-5 text-sm text-muted-foreground">{passwordStatus}</p>
+            <p
+              className={`px-6 pb-5 text-sm ${
+                passwordStatus.kind === "error" ? "text-destructive" : "text-positive"
+              }`}
+            >
+              {passwordStatus.message}
+            </p>
           )}
         </Card>
       </main>

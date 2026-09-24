@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Save } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { HelpTip } from "@/components/ui/help-tip";
 import { PlannerProvider, usePlanner } from "@/components/planner/planner-provider";
 import { RequireSubscription } from "@/components/billing/require-subscription";
 import { useSession } from "@/hooks/use-session";
@@ -28,6 +29,7 @@ function PlannerLayout() {
 function PlannerLayoutInner() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const p = usePlanner();
+  const isWizard = pathname === "/planner/new";
   const active =
     pathname === "/planner/summary"
       ? "summary"
@@ -43,7 +45,10 @@ function PlannerLayoutInner() {
         title={p.projectName || "Project planner"}
         projectId={p.currentProjectId}
         projectNavigation
-        headerActions={<SaveButton />}
+        // The New project wizard shows its own save status per step, so the
+        // header's silent auto-save would otherwise show a second, conflicting
+        // indicator (and double-save) at the same time.
+        headerActions={isWizard ? undefined : <SaveButton />}
       >
         <Outlet />
       </AppShell>
@@ -79,6 +84,7 @@ function SaveButton() {
   const p = usePlanner();
   const { user, loading } = useSession();
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Serialized snapshot - changes whenever any planner state changes.
   const serialized = JSON.stringify(serializePlanner(p.toSnapshot()));
   const lastSaved = useRef<string | null>(null);
@@ -95,7 +101,8 @@ function SaveButton() {
         }
         lastSaved.current = JSON.stringify(serializePlanner(p.toSnapshot()));
         setStatus("saved");
-      } catch {
+      } catch (reason) {
+        setErrorMessage(reason instanceof Error ? reason.message : "Unknown error.");
         setStatus("error");
       }
     },
@@ -132,9 +139,22 @@ function SaveButton() {
         {status === "saving" ? (
           "Saving…"
         ) : status === "error" ? (
-          <button className="text-destructive" onClick={() => void doSave(false)}>
-            Save failed - retry
-          </button>
+          <span className="flex items-center gap-1">
+            <button
+              className="rounded-sm text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => void doSave(false)}
+            >
+              Save failed - retry
+            </button>
+            {errorMessage && (
+              <HelpTip
+                label="Why did saving fail?"
+                triggerClassName="text-destructive/70 hover:text-destructive"
+              >
+                {errorMessage}
+              </HelpTip>
+            )}
+          </span>
         ) : (
           <>
             <Check className="size-3.5" />

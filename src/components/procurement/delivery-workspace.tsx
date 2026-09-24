@@ -3,6 +3,7 @@ import { Check, Download, FileUp, Loader2, MessageSquare, Send } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +90,8 @@ export function DeliveryWorkspace({
   const [uploadNotes, setUploadNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [changesTarget, setChangesTarget] = useState<string | null>(null);
+  const [changesFeedback, setChangesFeedback] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -202,16 +205,16 @@ export function DeliveryWorkspace({
     }
   }
 
-  async function review(versionId: string, decision: "changes_requested" | "approved") {
-    const feedback =
-      decision === "changes_requested"
-        ? (window.prompt("Describe the changes required:")?.trim() ?? "")
-        : "";
-    if (decision === "changes_requested" && !feedback) return;
+  async function review(
+    versionId: string,
+    decision: "changes_requested" | "approved",
+    feedback = "",
+  ) {
+    if (decision === "changes_requested" && !feedback.trim()) return;
     setBusy(true);
     try {
       await reviewCollateral({
-        data: { versionId, decision, feedback, origin: window.location.origin },
+        data: { versionId, decision, feedback: feedback.trim(), origin: window.location.origin },
       });
       await refresh();
       onChanged?.();
@@ -220,6 +223,16 @@ export function DeliveryWorkspace({
     } finally {
       setBusy(false);
     }
+  }
+
+  function requestChanges(versionId: string) {
+    setChangesTarget(versionId);
+    setChangesFeedback("");
+  }
+
+  function confirmChanges() {
+    if (changesTarget) void review(changesTarget, "changes_requested", changesFeedback);
+    setChangesTarget(null);
   }
 
   async function download(fileId: string) {
@@ -343,7 +356,11 @@ export function DeliveryWorkspace({
         </CardHeader>
         <CardContent>
           {collateral.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No collateral has been submitted.</p>
+            <p className="text-sm text-muted-foreground">
+              {mode === "contractor"
+                ? "No collateral submitted yet. Upload your files above when they're ready."
+                : "No collateral submitted yet. It will appear here as soon as the contractor uploads it."}
+            </p>
           ) : (
             <div className="space-y-3">
               {collateral.map((version) => {
@@ -363,7 +380,7 @@ export function DeliveryWorkspace({
                             size="sm"
                             variant="outline"
                             disabled={busy}
-                            onClick={() => void review(String(version.id), "changes_requested")}
+                            onClick={() => requestChanges(String(version.id))}
                           >
                             Request changes
                           </Button>
@@ -419,7 +436,9 @@ export function DeliveryWorkspace({
         <CardContent className="space-y-4">
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {messages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No messages yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No messages yet. Start the conversation below.
+              </p>
             ) : (
               messages.map((message) => (
                 <div key={String(message.id)} className="rounded-md bg-muted px-3 py-2">
@@ -458,6 +477,26 @@ export function DeliveryWorkspace({
       {error && (
         <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
       )}
+
+      <ConfirmDialog
+        open={changesTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setChangesTarget(null);
+        }}
+        title="Request changes"
+        description="Tell the contractor what needs to change before you can approve this version."
+        confirmLabel="Send request"
+        confirmDisabled={!changesFeedback.trim()}
+        onConfirm={confirmChanges}
+      >
+        <Textarea
+          rows={3}
+          value={changesFeedback}
+          onChange={(event) => setChangesFeedback(event.target.value)}
+          placeholder="Describe the changes required"
+          autoFocus
+        />
+      </ConfirmDialog>
     </div>
   );
 }

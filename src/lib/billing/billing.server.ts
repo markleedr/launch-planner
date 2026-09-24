@@ -122,15 +122,15 @@ function checkoutFailureMessage(stage: CheckoutStage, error: unknown): string {
     return message;
   }
   if (stage === "price") {
-    return "Stripe pricing could not be verified. Confirm the recurring A$49 AUD Price ID and secret key use the same Test or Live mode.";
+    return "We couldn't verify your Stripe pricing. Confirm the recurring A$49 AUD Price ID and secret key use the same Test or Live mode.";
   }
   if (stage === "customer") {
     return "The subscription database is not ready. Apply the latest Supabase migrations, then try again.";
   }
   if (stage === "subscription" || stage === "portal") {
-    return "Your Stripe billing account could not be checked. Please try again.";
+    return "We couldn't check your Stripe billing account. Try again.";
   }
-  return "Stripe could not create checkout. Please try again.";
+  return "We couldn't start Stripe checkout. Try again.";
 }
 
 async function latestSubscription(customerId: string): Promise<Stripe.Subscription | null> {
@@ -236,7 +236,6 @@ export async function provisionCheckoutAccount(
 }
 
 export const createCheckoutSession = createServerFn({ method: "POST" })
-
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     let stage: CheckoutStage = "price";

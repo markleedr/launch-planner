@@ -3,6 +3,7 @@ import { Check, Copy, Eye, Link2, Loader2, RefreshCw, ShieldOff } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<ShareRow | null>(null);
 
   const refresh = useCallback(async () => {
     if (!projectId) return;
@@ -102,6 +104,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
   }
 
   async function revoke(id: string) {
+    setRevokeTarget(null);
     setBusy(true);
     try {
       await revokeProjectShareLink({ data: { linkId: id } });
@@ -132,10 +135,10 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Share client summary</DialogTitle>
+          <DialogTitle>Share with a provider</DialogTitle>
           <DialogDescription>
-            Create a unique private link for each provider. Links can be revoked independently and
-            do not show the project navigation.
+            Create a unique private link for each provider you want to share this summary with.
+            Links can be revoked independently and do not show the project navigation.
           </DialogDescription>
         </DialogHeader>
 
@@ -269,7 +272,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
                           size="sm"
                           variant="ghost"
                           disabled={busy}
-                          onClick={() => void revoke(row.id)}
+                          onClick={() => setRevokeTarget(row)}
                         >
                           <ShieldOff className="mr-1 size-3.5" />
                           Revoke
@@ -281,7 +284,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
               })}
               {!loading && rows.length === 0 ? (
                 <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                  No provider links yet.
+                  No provider links yet. Add a provider above and generate one to get started.
                 </p>
               ) : null}
             </div>
@@ -303,6 +306,17 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmDialog
+        open={revokeTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setRevokeTarget(null);
+        }}
+        title={`Revoke the link for ${revokeTarget?.providerName ?? "this provider"}?`}
+        description="They'll immediately lose access to this summary. This can't be undone, but you can create a new link for them at any time."
+        confirmLabel="Revoke"
+        destructive
+        onConfirm={() => revokeTarget && void revoke(revokeTarget.id)}
+      />
     </Dialog>
   );
 }

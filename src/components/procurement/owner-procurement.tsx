@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ export function OwnerProcurement() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [awardTarget, setAwardTarget] = useState<Record<string, unknown> | null>(null);
 
   const refresh = useCallback(async () => {
     if (!p.currentProjectId) {
@@ -81,14 +83,7 @@ export function OwnerProcurement() {
   );
 
   async function award(row: Record<string, unknown>) {
-    const contractor = asRecord(row.contractor);
-    const brief = asRecord(row.brief);
-    const name = String(contractor.organisation_name ?? "this contractor");
-    if (
-      !window.confirm(`Award ${String(brief.name)} to ${name}? Competing proposals will close.`)
-    ) {
-      return;
-    }
+    setAwardTarget(null);
     setBusyId(String(row.id));
     setError(null);
     try {
@@ -133,8 +128,8 @@ export function OwnerProcurement() {
           <CardHeader>
             <CardTitle>Save the project to manage proposals</CardTitle>
             <CardDescription>
-              Procurement activity is linked to a saved project so contractor privacy can be
-              enforced.
+              Save your project first. That keeps every contractor's proposal private to just you
+              and them.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -142,89 +137,106 @@ export function OwnerProcurement() {
     );
   }
 
+  const awardContractorName = awardTarget
+    ? String(asRecord(awardTarget.contractor).organisation_name ?? "this contractor")
+    : "";
+  const awardDeliverableName = awardTarget ? String(asRecord(awardTarget.brief).name ?? "") : "";
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">Private procurement</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Contractor proposals</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Compare independent submissions, award one provider, then manage delivery and collateral
-            in a separate workspace for each deliverable.
+    <>
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Private procurement</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">Contractor proposals</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Compare what each contractor quoted, award the one you want, then track delivery and
+              collateral together in one place for each deliverable.
+            </p>
+          </div>
+          <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
+            <RefreshCw className={`mr-1 size-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        {error && (
+          <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
           </p>
-        </div>
-        <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
-          <RefreshCw className={`mr-1 size-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+        )}
 
-      {error && (
-        <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-
-      {loading ? (
-        <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Loading proposals…
-        </div>
-      ) : groups.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="size-5" />
-              No proposal requests yet
-            </CardTitle>
-            <CardDescription>
-              Add contractors and invite them to selected deliverables from the project wizard.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          {needsDecision.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Needs your decision ({needsDecision.length})
-              </h2>
-              <div className="space-y-6">
-                {needsDecision.map((group) => (
-                  <DeliverableProposalGroup
-                    key={group.deliverableId}
-                    group={group}
-                    busyId={busyId}
-                    onAward={award}
-                    onDecideVariation={decideSubmittedVariation}
-                    onChanged={refresh}
-                  />
-                ))}
+        {loading ? (
+          <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Loading proposals…
+          </div>
+        ) : groups.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="size-5" />
+                No proposal requests yet
+              </CardTitle>
+              <CardDescription>
+                Add contractors and invite them to selected deliverables from the project wizard.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {needsDecision.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Needs your decision ({needsDecision.length})
+                </h2>
+                <div className="space-y-6">
+                  {needsDecision.map((group) => (
+                    <DeliverableProposalGroup
+                      key={group.deliverableId}
+                      group={group}
+                      busyId={busyId}
+                      onAward={setAwardTarget}
+                      onDecideVariation={decideSubmittedVariation}
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          {awardedGroups.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Awarded / in progress ({awardedGroups.length})
-              </h2>
-              <div className="space-y-6">
-                {awardedGroups.map((group) => (
-                  <DeliverableProposalGroup
-                    key={group.deliverableId}
-                    group={group}
-                    busyId={busyId}
-                    onAward={award}
-                    onDecideVariation={decideSubmittedVariation}
-                    onChanged={refresh}
-                  />
-                ))}
+            )}
+            {awardedGroups.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Awarded / in progress ({awardedGroups.length})
+                </h2>
+                <div className="space-y-6">
+                  {awardedGroups.map((group) => (
+                    <DeliverableProposalGroup
+                      key={group.deliverableId}
+                      group={group}
+                      busyId={busyId}
+                      onAward={setAwardTarget}
+                      onDecideVariation={decideSubmittedVariation}
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </main>
+            )}
+          </div>
+        )}
+      </main>
+      <ConfirmDialog
+        open={awardTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setAwardTarget(null);
+        }}
+        title={`Award ${awardDeliverableName} to ${awardContractorName}?`}
+        description="Competing proposals for this deliverable will close and can no longer be awarded."
+        confirmLabel="Award"
+        onConfirm={() => awardTarget && void award(awardTarget)}
+      />
+    </>
   );
 }
 
@@ -382,7 +394,13 @@ function DeliverableProposalGroup({
                     </td>
                     <td className="px-3 py-3 text-right font-semibold tabular-nums">
                       <span className="inline-flex items-center gap-1.5">
-                        {costs ? formatAudWhole(costs.totalCents) : "Awaiting"}
+                        {costs
+                          ? formatAudWhole(costs.totalCents)
+                          : proposal.status === "expired"
+                            ? "Expired"
+                            : proposal.status === "withdrawn"
+                              ? "Withdrawn"
+                              : "Awaiting"}
                         {isLowest && (
                           <Badge variant="secondary" className="font-normal">
                             Lowest
