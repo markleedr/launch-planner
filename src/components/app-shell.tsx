@@ -296,7 +296,7 @@ function SidebarLink({ active, icon, label, onNavigate, projectId, to }: Sidebar
 }
 
 const SIDEBAR_LINK_CLASS =
-  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-sidebar-foreground/65 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-wait disabled:opacity-60 [&_svg]:size-[1.125rem] [&_svg]:shrink-0";
+  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-sidebar-foreground/65 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&_svg]:size-[1.125rem] [&_svg]:shrink-0";
 
 const SIDEBAR_LINK_ACTIVE_CLASS =
   "bg-brand/20 text-white shadow-[inset_3px_0_0_var(--brand)] hover:bg-brand/25 [&_svg]:text-brand";

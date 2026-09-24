@@ -360,7 +360,9 @@ function DeliverableProposalGroup({
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Contractor</th>
+                <th className="sticky left-0 z-10 border-r bg-muted/50 px-3 py-2 font-medium">
+                  Contractor
+                </th>
                 <th className="px-3 py-2 font-medium">Status</th>
                 <th className="px-3 py-2 text-right font-medium">Agency</th>
                 <th className="px-3 py-2 text-right font-medium">Production</th>
@@ -376,7 +378,7 @@ function DeliverableProposalGroup({
                   submittedCostCount > 1 && costs !== null && costs.totalCents === lowestTotalCents;
                 return (
                   <tr key={String(proposal.id)} className="border-b last:border-0">
-                    <td className="px-3 py-3 font-medium">
+                    <td className="sticky left-0 z-10 border-r bg-card px-3 py-3 font-medium">
                       {String(contractor.organisation_name)}
                       {Boolean(
                         contractor.representative_name || contractor.email || contractor.phone,

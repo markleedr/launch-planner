@@ -100,9 +100,9 @@ function NotificationItem({ item, onRead }: { item: NotificationRow; onRead: () 
         aria-hidden="true"
       />
       <div className="min-w-0">
-        <p className="text-sm font-medium">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
           {item.title}
-          {unread && <span className="sr-only"> (unread)</span>}
+          {unread && <span className="text-xs font-medium text-primary">Unread</span>}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>
       </div>

@@ -206,7 +206,7 @@ export function ContractorPortal() {
                 <button
                   key={String(notification.id)}
                   type="button"
-                  className="block w-full py-3 text-left"
+                  className="block w-full rounded-sm py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => {
                     if (!notification.read_at) {
                       void markNotificationRead(String(notification.id)).then(refresh);
@@ -215,7 +215,12 @@ export function ContractorPortal() {
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{String(notification.title)}</span>
-                    {!notification.read_at && <span className="size-2 rounded-full bg-primary" />}
+                    {!notification.read_at && (
+                      <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                        <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
+                        Unread
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{String(notification.body)}</p>
                 </button>
