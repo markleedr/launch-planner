@@ -12,11 +12,14 @@ import { safeLocalRedirect } from "@/lib/auth/redirect";
 export const Route = createFileRoute("/login")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { redirect?: string; checkout?: "success" } => {
+  ): { redirect?: string; checkout?: "success"; mode?: "forgot" | "magic" } => {
     const redirect = safeLocalRedirect(search.redirect, "");
     return {
       ...(redirect ? { redirect } : {}),
       ...(search.checkout === "success" ? { checkout: "success" as const } : {}),
+      ...(search.mode === "forgot" || search.mode === "magic"
+        ? { mode: search.mode as "forgot" | "magic" }
+        : {}),
     };
   },
   head: () => ({ meta: [{ title: "Sign in - Project Planner" }] }),
@@ -25,9 +28,9 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { redirect, checkout } = Route.useSearch();
+  const { redirect, checkout, mode: initialMode } = Route.useSearch();
   const destination = safeLocalRedirect(redirect);
-  const [mode, setMode] = useState<"signin" | "forgot" | "magic">("signin");
+  const [mode, setMode] = useState<"signin" | "forgot" | "magic">(initialMode ?? "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

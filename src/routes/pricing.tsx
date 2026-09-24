@@ -48,8 +48,12 @@ import { BILLING_PLAN } from "@/lib/billing/subscription";
 import { createCheckoutSession, startSignupCheckout } from "@/lib/billing/billing.server";
 
 export const Route = createFileRoute("/pricing")({
-  validateSearch: (s: Record<string, unknown>): { checkout?: "cancel" } =>
-    s.checkout === "cancel" ? { checkout: "cancel" } : {},
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { checkout?: "cancel"; reason?: "resubscribe" } => ({
+    ...(s.checkout === "cancel" ? { checkout: "cancel" as const } : {}),
+    ...(s.reason === "resubscribe" ? { reason: "resubscribe" as const } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Pricing - Launch Planner" },
@@ -75,7 +79,7 @@ function PricingPage() {
   const navigate = useNavigate();
   const { user } = useSession();
   const { active } = useSubscription();
-  const { checkout } = Route.useSearch();
+  const { checkout, reason } = Route.useSearch();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
@@ -162,6 +166,11 @@ function PricingPage() {
                   ))}
                 </ul>
 
+                {reason === "resubscribe" && (
+                  <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                    Your subscription isn&apos;t active. Resubscribe to continue.
+                  </p>
+                )}
                 {checkout === "cancel" && (
                   <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
                     Checkout cancelled - you haven&apos;t been charged.

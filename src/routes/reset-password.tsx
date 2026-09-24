@@ -23,10 +23,14 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [destination, setDestination] = useState<"/projects" | "/account">("/projects");
+  const [expired, setExpired] = useState(false);
 
   // The recovery link puts a token in the URL; the Supabase client parses it and
   // establishes a temporary session (PASSWORD_RECOVERY). Wait for that before
-  // allowing a password change.
+  // allowing a password change. The email says this can take a few minutes, so a
+  // stale or already-used link is a real possibility - if no session shows up
+  // within a few seconds, treat the link as expired instead of leaving the form
+  // disabled with no explanation.
   useEffect(() => {
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -35,8 +39,12 @@ function ResetPasswordPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || session) setReady(true);
     });
+    const timeout = setTimeout(() => {
+      if (active) setExpired(true);
+    }, 4000);
     return () => {
       active = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -102,7 +110,9 @@ function ResetPasswordPage() {
             <CardDescription>
               {ready
                 ? "Choose a new password for your account."
-                : "Open this page from the reset link in your email."}
+                : expired
+                  ? "This link may have expired or already been used."
+                  : "Open this page from the reset link in your email."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -113,6 +123,18 @@ function ResetPasswordPage() {
                   ? "Taking you to set up your profile…"
                   : "Taking you to your projects…"}
               </p>
+            ) : !ready && expired ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Reset links are single-use and can take a few minutes to arrive, so this one may
+                  have already expired. Send yourself a new one.
+                </p>
+                <Button asChild className="w-full">
+                  <Link to="/login" search={{ mode: "forgot" }}>
+                    Send a new reset link
+                  </Link>
+                </Button>
+              </div>
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-1.5">
