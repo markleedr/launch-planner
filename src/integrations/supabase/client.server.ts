@@ -59,7 +59,7 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
       ...(!SUPABASE_ADMIN_KEY ? ["SB_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY)"] : []),
     ];
-    const message = `Missing server-side Supabase environment variable(s): ${missing.join(", ")}. Lovable Cloud secrets are not copied into local development automatically; add the server secret to the local environment or use the Lovable preview.`;
+    const message = `Missing server-side Supabase environment variable(s): ${missing.join(", ")}. Add the server secret in Vercel, or to .env for local development.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }

@@ -5,12 +5,12 @@ let stripeClient: Stripe | undefined;
 function requiredEnv(name: "STRIPE_SECRET_KEY" | "STRIPE_WEBHOOK_SECRET"): string {
   const value = process.env[name]?.trim();
   if (!value) {
-    throw new Error(`Billing isn't configured yet. Add ${name} in Lovable Cloud.`);
+    throw new Error(`Billing isn't configured yet. Add ${name} in Vercel.`);
   }
   return value;
 }
 
-/** Lazy server-only Stripe client using fetch so it runs in Lovable's runtime. */
+/** Lazy server-only Stripe client using fetch so it runs in Vercel's serverless runtime. */
 export function getStripe(): Stripe {
   if (!stripeClient) {
     stripeClient = new Stripe(requiredEnv("STRIPE_SECRET_KEY"), {
@@ -25,7 +25,7 @@ export function getStripe(): Stripe {
 export function getAppOrigin(): string {
   const configured = process.env.APP_ORIGIN?.trim();
   if (!configured) {
-    throw new Error("Billing isn't configured yet. Add APP_ORIGIN in Lovable Cloud.");
+    throw new Error("Billing isn't configured yet. Add APP_ORIGIN in Vercel.");
   }
 
   let url: URL;

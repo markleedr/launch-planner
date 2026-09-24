@@ -7,7 +7,7 @@ import { BILLING_PLAN, normaliseSubscriptionStatus, type SubscriptionStatus } fr
 /** Lazy service-role table access. Only trusted server code can write billing state. */
 async function subscriptionTable() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  // The generated database types can lag migrations deployed by Lovable.
+  // The generated database types can lag applied migrations.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabaseAdmin.from as any)("subscription");
 }
@@ -15,7 +15,7 @@ async function subscriptionTable() {
 function stripePriceId(): string {
   const priceId = process.env.STRIPE_PRICE_ID?.trim();
   if (!priceId) {
-    throw new Error("Billing isn't configured yet. Add STRIPE_PRICE_ID in Lovable Cloud.");
+    throw new Error("Billing isn't configured yet. Add STRIPE_PRICE_ID in Vercel.");
   }
   return priceId;
 }
@@ -125,7 +125,7 @@ function checkoutFailureMessage(stage: CheckoutStage, error: unknown): string {
     return "Stripe pricing could not be verified. Confirm the recurring A$49 AUD Price ID and secret key use the same Test or Live mode.";
   }
   if (stage === "customer") {
-    return "The subscription database is not ready. Publish the latest Lovable database changes, then try again.";
+    return "The subscription database is not ready. Apply the latest Supabase migrations, then try again.";
   }
   if (stage === "subscription" || stage === "portal") {
     return "Your Stripe billing account could not be checked. Please try again.";
