@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wordmark } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyProfile } from "@/lib/profile/profile.server";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Reset password - Project Planner" }] }),
@@ -21,6 +22,7 @@ function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [destination, setDestination] = useState<"/projects" | "/account">("/projects");
 
   // The recovery link puts a token in the URL; the Supabase client parses it and
   // establishes a temporary session (PASSWORD_RECOVERY). Wait for that before
@@ -50,8 +52,28 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+
+      // New pay-first customers land here with onboarding never completed; send
+      // them to set up their profile instead of straight to an empty project list.
+      // A returning user doing a routine password reset already has a profile and
+      // goes straight to their projects, as before.
+      let target: "/projects" | "/account" = "/projects";
+      try {
+        const profile = await getMyProfile();
+        if (!profile.onboardingCompletedAt) target = "/account";
+      } catch {
+        // If the profile can't be checked, fall back to the existing behaviour.
+      }
+
+      setDestination(target);
       setDone(true);
-      setTimeout(() => navigate({ to: "/projects" }), 1200);
+      setTimeout(() => {
+        if (target === "/account") {
+          navigate({ to: "/account", search: { onboarding: true } });
+        } else {
+          navigate({ to: "/projects" });
+        }
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update password.");
     } finally {
@@ -86,7 +108,10 @@ function ResetPasswordPage() {
           <CardContent>
             {done ? (
               <p className="text-sm text-positive">
-                Password updated. Taking you to your projects…
+                Password updated.{" "}
+                {destination === "/account"
+                  ? "Taking you to set up your profile…"
+                  : "Taking you to your projects…"}
               </p>
             ) : (
               <form onSubmit={submit} className="space-y-4">

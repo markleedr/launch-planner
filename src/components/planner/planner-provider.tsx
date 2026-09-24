@@ -76,7 +76,7 @@ interface PlannerContextValue {
   setDeliverables: React.Dispatch<React.SetStateAction<Deliverable[]>>;
   updateDeliverable: (id: string, patch: Partial<Deliverable>) => void;
   removeDeliverable: (id: string) => void;
-  addDeliverable: () => void;
+  addDeliverable: () => string;
   // Checklist & contacts
   checklist: ChecklistItem[];
   setChecklist: (v: ChecklistItem[]) => void;
@@ -210,10 +210,11 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       const start = new Date();
       const end = new Date();
       end.setMonth(end.getMonth() + 6);
+      const id = `custom-${crypto.randomUUID()}`;
       setDeliverables((prev) => [
         ...prev,
         {
-          id: `custom-${crypto.randomUUID()}`,
+          id,
           name: "New service",
           category: "brand",
           productionCostCents: 0,
@@ -227,6 +228,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
           endDate: end,
         },
       ]);
+      return id;
     },
     checklist,
     setChecklist,

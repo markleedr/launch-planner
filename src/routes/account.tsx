@@ -73,14 +73,14 @@ function AccountPage() {
     };
   }, []);
 
-  async function save(completeOnboarding: boolean) {
+  async function save(completeOnboarding: boolean, navigateAfter = completeOnboarding) {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       const result = await saveMyProfile({ data: { ...form, completeOnboarding } });
       setProfile(result);
-      if (completeOnboarding) {
+      if (navigateAfter) {
         navigate({ to: "/projects" });
       } else {
         setNotice("Account details saved.");
@@ -269,8 +269,9 @@ function AccountPage() {
                       type="button"
                       variant="ghost"
                       disabled={busy}
-                      onClick={() => navigate({ to: "/projects" })}
+                      onClick={() => void save(false, true)}
                     >
+                      {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
                       Skip for now
                     </Button>
                   ) : null}

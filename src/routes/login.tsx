@@ -10,7 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeLocalRedirect } from "@/lib/auth/redirect";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): { redirect?: string; checkout?: "success" } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { redirect?: string; checkout?: "success" } => {
     const redirect = safeLocalRedirect(search.redirect, "");
     return {
       ...(redirect ? { redirect } : {}),
@@ -178,6 +180,15 @@ function LoginPage() {
                   Back to sign in
                 </button>
               )}
+              <p className="border-t pt-3 text-sm text-muted-foreground">
+                New to Launch Planner?{" "}
+                <Link
+                  to="/pricing"
+                  className="font-medium text-foreground underline underline-offset-2"
+                >
+                  Subscribe to create your account
+                </Link>
+              </p>
             </div>
           </CardContent>
         </Card>

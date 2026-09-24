@@ -13,7 +13,6 @@ import {
   Lock,
   Palette,
   Shield,
-
   Users,
   Zap,
 } from "lucide-react";
@@ -54,9 +53,17 @@ export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing - Launch Planner" },
-      { name: "description", content: "Launch Planner - unlimited property launch plans, media budgeting, and contractor coordination for $49/month." },
+      {
+        name: "description",
+        content:
+          "Launch Planner - unlimited property launch plans, media budgeting, and contractor coordination for $49/month.",
+      },
       { property: "og:title", content: "Pricing - Launch Planner" },
-      { property: "og:description", content: "Launch Planner - unlimited property launch plans, media budgeting, and contractor coordination for $49/month." },
+      {
+        property: "og:description",
+        content:
+          "Launch Planner - unlimited property launch plans, media budgeting, and contractor coordination for $49/month.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -75,7 +82,6 @@ function PricingPage() {
   const hasSubscription = Boolean(user) && BILLING_ENABLED && active;
 
   async function subscribe() {
-
     if (hasSubscription) {
       navigate({ to: "/projects" });
       return;
@@ -181,6 +187,12 @@ function PricingPage() {
                       ? "Open my projects"
                       : `Subscribe for ${BILLING_PLAN.priceLabel}/month`}
                 </Button>
+                {!hasSubscription && (
+                  <p className="text-center text-xs text-muted-foreground">
+                    You&apos;ll pay on Stripe&apos;s secure checkout, then we&apos;ll email you a
+                    link to set your password.
+                  </p>
+                )}
                 <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full" size="lg" variant="outline">
@@ -225,11 +237,10 @@ function PricingPage() {
             {/* Detailed value prop */}
             <div className="space-y-6 lg:col-span-7">
               <div className="rounded-xl border bg-card p-6">
-                <h2 className="font-display text-xl font-semibold tracking-tight">
-                  What you get
-                </h2>
+                <h2 className="font-display text-xl font-semibold tracking-tight">What you get</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A complete toolkit for property marketing teams, from first brief to final invoice.
+                  A complete toolkit for property marketing teams, from first brief to final
+                  invoice.
                 </p>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <ValueItem
@@ -272,7 +283,8 @@ function PricingPage() {
                     Cancel anytime
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    No lock-in contracts. Manage or cancel your subscription from your account settings.
+                    No lock-in contracts. Manage or cancel your subscription from your account
+                    settings.
                   </p>
                 </div>
                 <div className="rounded-xl border bg-card p-5">
@@ -301,25 +313,31 @@ function PricingPage() {
               No onboarding calls. No setup spreadsheets. Just sign up and start planning.
             </p>
           </div>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             {[
               {
                 step: "1",
-                title: "Create your account",
-                description: "Sign in with your email — no password to remember. Ready in seconds.",
+                title: "Subscribe",
+                description: "Enter your email and card on Stripe's secure checkout.",
               },
               {
                 step: "2",
+                title: "Check your email",
+                description: "We'll send a link to set your password within a few minutes.",
+              },
+              {
+                step: "3",
                 title: "Start a launch plan",
                 description: "Enter the project name, address, GRV, and media budget.",
               },
               {
-                step: "3",
+                step: "4",
                 title: "Add deliverables",
-                description: "Pick from the service catalog or add custom items with timing and costs.",
+                description:
+                  "Pick from the service catalog or add custom items with timing and costs.",
               },
               {
-                step: "4",
+                step: "5",
                 title: "Share and approve",
                 description: "Send a branded summary link or export a PDF for sign-off.",
               },
@@ -352,9 +370,9 @@ function PricingPage() {
             <AccordionItem value="what-is">
               <AccordionTrigger>What is Launch Planner?</AccordionTrigger>
               <AccordionContent>
-                Launch Planner is the full version of the product. It gives you unlimited projects, the
-                media budget calculator, costed deliverables, contractor coordination, and branded
-                project summaries for one flat monthly price.
+                Launch Planner is the full version of the product. It gives you unlimited projects,
+                the media budget calculator, costed deliverables, contractor coordination, and
+                branded project summaries for one flat monthly price.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="change-plan">
@@ -367,8 +385,8 @@ function PricingPage() {
             <AccordionItem value="free-trial">
               <AccordionTrigger>Is there a free trial?</AccordionTrigger>
               <AccordionContent>
-                We don&apos;t offer a free trial. You can explore the calculator and the public pages
-                before subscribing, and you can cancel within the first billing period if it
+                We don&apos;t offer a free trial. You can explore the calculator and the public
+                pages before subscribing, and you can cancel within the first billing period if it
                 isn&apos;t the right fit.
               </AccordionContent>
             </AccordionItem>

@@ -49,7 +49,7 @@ export function OwnerProcurement() {
       setError(null);
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : "The procurement workspace could not be loaded.",
+        reason instanceof Error ? reason.message : "Could not load the procurement workspace.",
       );
     } finally {
       setLoading(false);
@@ -212,6 +212,24 @@ function DeliverableProposalGroup({
     ? new Date(String(group.brief.proposal_deadline))
     : null;
 
+  const proposalCosts = group.proposals.map((proposal) => {
+    const latest = latestRevision(proposal);
+    const values = latest ? proposalValuesFromRow(latest) : null;
+    const costs = values ? calculateProposalCost(values) : null;
+    return { proposal, costs };
+  });
+  const submittedCostCount = proposalCosts.filter((row) => row.costs).length;
+  const lowestTotalCents = proposalCosts.reduce<number | null>((min, row) => {
+    if (!row.costs) return min;
+    return min === null || row.costs.totalCents < min ? row.costs.totalCents : min;
+  }, null);
+  const sortedProposalCosts = [...proposalCosts].sort((a, b) => {
+    if (a.costs && b.costs) return a.costs.totalCents - b.costs.totalCents;
+    if (a.costs) return -1;
+    if (b.costs) return 1;
+    return 0;
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -289,11 +307,10 @@ function DeliverableProposalGroup({
               </tr>
             </thead>
             <tbody>
-              {group.proposals.map((proposal) => {
-                const latest = latestRevision(proposal);
-                const values = latest ? proposalValuesFromRow(latest) : null;
-                const costs = values ? calculateProposalCost(values) : null;
+              {sortedProposalCosts.map(({ proposal, costs }) => {
                 const contractor = asRecord(proposal.contractor);
+                const isLowest =
+                  submittedCostCount > 1 && costs !== null && costs.totalCents === lowestTotalCents;
                 return (
                   <tr key={String(proposal.id)} className="border-b last:border-0">
                     <td className="px-3 py-3 font-medium">
@@ -314,7 +331,14 @@ function DeliverableProposalGroup({
                       {costs ? formatAudWhole(costs.mediaCents) : "-"}
                     </td>
                     <td className="px-3 py-3 text-right font-semibold tabular-nums">
-                      {costs ? formatAudWhole(costs.totalCents) : "Awaiting"}
+                      <span className="inline-flex items-center gap-1.5">
+                        {costs ? formatAudWhole(costs.totalCents) : "Awaiting"}
+                        {isLowest && (
+                          <Badge variant="secondary" className="font-normal">
+                            Lowest
+                          </Badge>
+                        )}
+                      </span>
                     </td>
                     <td className="px-3 py-3 text-right">
                       {proposal.status === "submitted" && !awarded ? (

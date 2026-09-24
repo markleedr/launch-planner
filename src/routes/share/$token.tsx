@@ -5,6 +5,7 @@ import {
   normaliseProjectPartyRow,
   type PublicProjectParty,
 } from "@/components/summary/summary-model";
+import { LetterheadFooter } from "@/components/brand";
 import { deserializePlanner } from "@/lib/planner";
 import { getSharedProject } from "@/lib/procurement/sharing.server";
 
@@ -29,9 +30,10 @@ function SharedProjectSummary() {
 
   if (!snapshot) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6">
-        <p className="text-sm text-muted-foreground">This project summary could not be read.</p>
-      </main>
+      <SharedSummaryError
+        heading="This shared summary can't be shown"
+        body="The project details for this link couldn't be read. Please ask the project owner to check the project and send a new link."
+      />
     );
   }
 
@@ -47,20 +49,24 @@ function SharedProjectSummary() {
   );
 }
 
-function SharedSummaryError() {
+function SharedSummaryError({
+  heading = "This shared summary is unavailable",
+  body = "The link may have expired, been revoked or no longer be valid. Please ask the project owner for a new provider link.",
+}: {
+  heading?: string;
+  body?: string;
+}) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12">
       <div className="max-w-md text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Launch Planner
         </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight">
-          This shared summary is unavailable
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          The link may have expired, been revoked or no longer be valid. Please ask the project
-          owner for a new provider link.
-        </p>
+        <h1 className="mt-3 text-2xl font-bold tracking-tight">{heading}</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+        <div className="mt-8 w-full text-left">
+          <LetterheadFooter />
+        </div>
       </div>
     </main>
   );

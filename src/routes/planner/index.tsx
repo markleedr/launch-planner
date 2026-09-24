@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +63,7 @@ function PlannerEditor() {
     }
   }, [mediaBudget, p]);
   const overBudget = p.budget.varianceVsMediaBudgetCents > 0;
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
@@ -223,7 +224,7 @@ function PlannerEditor() {
           </div>
           <div className="flex gap-2">
             <CatalogDialog onAdd={(items) => p.setDeliverables((prev) => [...prev, ...items])} />
-            <Button onClick={p.addDeliverable} size="sm" variant="outline">
+            <Button onClick={() => setJustAddedId(p.addDeliverable())} size="sm" variant="outline">
               <Plus className="mr-1 size-4" />
               Add custom
             </Button>
@@ -253,6 +254,8 @@ function PlannerEditor() {
                       allDeliverables={p.deliverables}
                       onUpdate={p.updateDeliverable}
                       onRemove={p.removeDeliverable}
+                      justAddedId={justAddedId}
+                      onJustAddedFocused={() => setJustAddedId(null)}
                     />
                   );
                 })}
@@ -330,6 +333,8 @@ function CategoryGroup({
   allDeliverables,
   onUpdate,
   onRemove,
+  justAddedId,
+  onJustAddedFocused,
 }: {
   category: DeliverableCategory;
   items: Deliverable[];
@@ -337,6 +342,8 @@ function CategoryGroup({
   allDeliverables: Deliverable[];
   onUpdate: (id: string, patch: Partial<Deliverable>) => void;
   onRemove: (id: string) => void;
+  justAddedId?: string | null;
+  onJustAddedFocused?: () => void;
 }) {
   return (
     <>
@@ -364,6 +371,13 @@ function CategoryGroup({
                 value={d.name}
                 onChange={(e) => onUpdate(d.id, { name: e.target.value })}
                 className="h-8"
+                autoFocus={d.id === justAddedId}
+                onFocus={(e) => {
+                  if (d.id === justAddedId) {
+                    e.target.select();
+                    onJustAddedFocused?.();
+                  }
+                }}
               />
             </td>
             <td className="py-2 px-2 align-top">

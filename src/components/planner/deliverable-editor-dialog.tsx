@@ -46,13 +46,15 @@ export function DeliverableEditorDialog({
   allDeliverables,
   onSave,
   compact = false,
+  defaultOpen = false,
 }: {
   deliverable: Deliverable;
   allDeliverables: Deliverable[];
   onSave: (patch: Partial<Deliverable>) => void;
   compact?: boolean;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<Deliverable>(deliverable);
 
   useEffect(() => {

@@ -192,7 +192,6 @@ export function MediaCalculatorDialog({
                 Shares are normalised across active channels.
               </p>
             </div>
-
           </div>
 
           {/* Results */}
@@ -212,7 +211,7 @@ export function MediaCalculatorDialog({
               <Metric label="Blended cost/sale" value={fmt(plan.blendedCps)} />
               <Metric label="Leads per sale" value={plan.leadsPerSale.toFixed(1)} />
               <Metric label="Campaign ROI" value={`${plan.roi.toFixed(1)}x`} />
-              <Metric label="Media % of GDV" value={`${plan.mediaPctGdv.toFixed(2)}%`} />
+              <Metric label="Media % of GRV" value={`${plan.mediaPctGdv.toFixed(2)}%`} />
             </div>
             <div className="space-y-2 border-t border-background/15 pt-3">
               {MEDIA_CHANNELS.filter((c) => inputs.channels[c.key].active).map((ch) => (

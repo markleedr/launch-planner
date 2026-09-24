@@ -456,6 +456,7 @@ function DetailsStep() {
 
 function DeliverablesStep() {
   const p = usePlanner();
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   return (
     <Card>
@@ -471,7 +472,12 @@ function DeliverablesStep() {
             <CatalogDialog
               onAdd={(items) => p.setDeliverables((current) => [...current, ...items])}
             />
-            <Button type="button" variant="outline" size="sm" onClick={p.addDeliverable}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setJustAddedId(p.addDeliverable())}
+            >
               <Plus className="mr-1 size-4" />
               Add from scratch
             </Button>
@@ -494,6 +500,7 @@ function DeliverablesStep() {
                 allDeliverables={p.deliverables}
                 onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
                 onRemove={() => p.removeDeliverable(deliverable.id)}
+                justAdded={deliverable.id === justAddedId}
               />
             ))}
           </div>
@@ -508,11 +515,13 @@ function DeliverableBriefEditor({
   allDeliverables,
   onChange,
   onRemove,
+  justAdded = false,
 }: {
   deliverable: Deliverable;
   allDeliverables: Deliverable[];
   onChange: (patch: Partial<Deliverable>) => void;
   onRemove: () => void;
+  justAdded?: boolean;
 }) {
   const total = calculateProposalCost({
     notes: deliverable.notes ?? "",
@@ -556,6 +565,7 @@ function DeliverableBriefEditor({
           deliverable={deliverable}
           allDeliverables={allDeliverables}
           onSave={onChange}
+          defaultOpen={justAdded}
         />
         <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
           <Trash2 className="size-4" />
@@ -720,7 +730,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
       setError(
         reason instanceof Error
           ? reason.message
-          : "The Lovable workflow database is not available yet.",
+          : "We couldn't load your contractor directory right now. Try again in a moment.",
       );
     } finally {
       setLoading(false);
