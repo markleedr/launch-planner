@@ -316,6 +316,7 @@ function DeliverableProposalGroup({
                 value={nextDeadline}
                 onChange={(event) => setNextDeadline(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </div>
             <Button
               className="self-end"

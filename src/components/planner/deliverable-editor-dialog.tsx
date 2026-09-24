@@ -239,8 +239,8 @@ export function DeliverableEditorDialog({
               />
             </Field>
             <p className="text-xs text-muted-foreground">
-              Leave empty to use the deliverable&apos;s scheduled start date when proposals are
-              issued.
+              Due by 5:00pm on this date. Leave empty to use the deliverable&apos;s scheduled start
+              date when proposals are issued.
             </p>
           </section>
 

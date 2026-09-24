@@ -49,6 +49,8 @@ import {
   CATEGORY_LABELS,
   formatAud,
   formatAudWhole,
+  formatAuDate,
+  formatProjectAddress,
   HERO_IMAGE_LIBRARY,
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
@@ -159,7 +161,8 @@ export function ProjectWizard() {
             <p className="text-xs font-medium text-muted-foreground">New project</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">{STEPS[currentIndex].label}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Everything is optional. Skip a step now and return whenever you are ready.
+              Everything is optional. Skip a step now and return whenever you are ready. Your
+              progress saves automatically as you move between steps.
             </p>
           </div>
           <div className="text-right text-xs text-muted-foreground">
@@ -225,7 +228,7 @@ export function ProjectWizard() {
       {step === "deliverables" && <DeliverablesStep />}
       {step === "media" && <MediaStep />}
       {step === "parties" && <PartiesStep ensureProject={persist} />}
-      {step === "review" && <ReviewStep />}
+      {step === "review" && <ReviewStep onEdit={(index) => void go(index)} />}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
         <Button
@@ -274,6 +277,7 @@ function DetailsStep() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const mapUrl = googleMapsUrl(p.address);
+  const canUploadHero = Boolean(p.currentProjectId);
 
   function regenerateBlurb() {
     setConfirmRegenerate(false);
@@ -491,7 +495,11 @@ function DetailsStep() {
               </button>
             ))}
           </div>
-          <Label className="flex cursor-pointer items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm">
+          <Label
+            className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
+              canUploadHero ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+            }`}
+          >
             {uploading ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
@@ -502,13 +510,18 @@ function DetailsStep() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
-              disabled={uploading}
+              disabled={uploading || !canUploadHero}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void uploadHero(file);
               }}
             />
           </Label>
+          {!canUploadHero && (
+            <p className="text-xs text-muted-foreground">
+              Save this step first to upload your own image. Pick a built-in image above for now.
+            </p>
+          )}
           {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
         </CardContent>
       </Card>
@@ -1076,7 +1089,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           )}
 
           <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Organisation">
+            <Field label="Organisation" required>
               <Input
                 value={form.organisationName}
                 onChange={(event) => setForm({ ...form, organisationName: event.target.value })}
@@ -1124,7 +1137,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 onChange={(event) => setForm({ ...form, website: event.target.value })}
               />
             </Field>
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
               <Button
                 type="button"
                 onClick={() => void addParty()}
@@ -1133,6 +1146,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 <Plus className="mr-1 size-4" />
                 Add to project and directory
               </Button>
+              <span className="text-xs text-muted-foreground">* Required</span>
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -1161,6 +1175,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 value={deadline}
                 onChange={(event) => setDeadline(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </Field>
           </div>
 
@@ -1192,52 +1207,108 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
-function ReviewStep() {
+function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
   const p = usePlanner();
   const mapUrl = googleMapsUrl(p.address);
-  const sections = useMemo(
-    () => [
-      { label: "Project details", value: p.projectName || "Not supplied" },
-      { label: "Deliverables", value: `${p.deliverables.length}` },
-      {
-        label: "Media budget",
-        value: p.mediaBudget ? `$${Number(p.mediaBudget).toLocaleString("en-AU")}` : "Not supplied",
-      },
-      { label: "Project parties", value: `${p.projectParties.length}` },
-    ],
-    [p.deliverables.length, p.mediaBudget, p.projectName, p.projectParties.length],
-  );
+  const address = formatProjectAddress(p.address) || p.location;
+  const launchDate = p.launchDate ? new Date(`${p.launchDate}T00:00:00`) : null;
+  const mediaTotalCents = summariseBudget(p.deliverables, {
+    mediaBudgetCents: p.financials.mediaBudgetCents,
+    grvCents: p.financials.grvCents,
+  }).mediaTotalCents;
+  const partiesByRole = useMemo(() => {
+    const counts = new Map<ProjectPartyRole, number>();
+    for (const party of p.projectParties) {
+      counts.set(party.role, (counts.get(party.role) ?? 0) + 1);
+    }
+    return [...counts.entries()];
+  }, [p.projectParties]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Ready to plan</CardTitle>
-          <CardDescription>
-            Your project remains editable after the wizard. Missing information is omitted from
-            client-facing output.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          {sections.map((item) => (
-            <div key={item.label} className="rounded-md border p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">{item.label}</p>
-              <p className="mt-1 font-semibold">{item.value}</p>
-            </div>
-          ))}
+      <div className="space-y-4">
+        <ReviewSection title="Project details" onEdit={() => onEdit(0)}>
+          <ReviewRow label="Name" value={p.projectName || "Not supplied"} />
+          <ReviewRow label="Type" value={PROJECT_TYPE_LABELS[p.projectType]} />
+          <ReviewRow label="Units" value={p.units > 0 ? String(p.units) : "Not supplied"} />
+          <ReviewRow
+            label="Sell price per unit"
+            value={p.sellPrice ? formatAud(Number(p.sellPrice) * 100) : "Not supplied"}
+          />
+          <ReviewRow
+            label="Launch date"
+            value={launchDate ? formatAuDate(launchDate) : "Not set"}
+          />
+          <ReviewRow label="Address" value={address || "Not supplied"} />
+          {p.projectBlurb ? (
+            <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{p.projectBlurb}</p>
+          ) : null}
           {mapUrl && (
             <a
               href={mapUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 rounded-md border p-4 text-sm hover:bg-muted sm:col-span-2"
+              className="mt-2 flex items-center gap-2 text-sm text-foreground hover:underline"
             >
               <MapPin className="size-4" />
-              Location is ready for the summary map
+              View on Google Maps
             </a>
           )}
-        </CardContent>
-      </Card>
+        </ReviewSection>
+
+        <ReviewSection title="Deliverables" onEdit={() => onEdit(1)}>
+          {p.deliverables.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No deliverables added yet.</p>
+          ) : (
+            <>
+              <ReviewRow
+                label="Total deliverables"
+                value={`${p.deliverables.length} across ${p.grouped.length} ${p.grouped.length === 1 ? "category" : "categories"}`}
+              />
+              <ReviewRow
+                label="Approved plan total"
+                value={formatAudWhole(p.budget.grandTotalCents)}
+              />
+              <div className="mt-2 space-y-1">
+                {p.grouped.map(({ category, items }) => (
+                  <div key={category} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{CATEGORY_LABELS[category]}</span>
+                    <span>
+                      {items.length} {items.length === 1 ? "item" : "items"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </ReviewSection>
+
+        <ReviewSection title="Media plan" onEdit={() => onEdit(2)}>
+          <ReviewRow
+            label="Media budget"
+            value={p.mediaBudget ? formatAud(Number(p.mediaBudget) * 100) : "Not supplied"}
+          />
+          <ReviewRow label="Media costed on deliverables" value={formatAudWhole(mediaTotalCents)} />
+        </ReviewSection>
+
+        <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
+          {p.projectParties.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No contractors added yet. You can add them later from Quotes.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {partiesByRole.map(([role, count]) => (
+                <div key={role} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{PROJECT_PARTY_ROLE_LABELS[role]}</span>
+                  <span>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ReviewSection>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>What happens next</CardTitle>
@@ -1264,18 +1335,54 @@ function ReviewStep() {
   );
 }
 
+function ReviewSection({
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
 function Field({
   label,
   children,
   className = "",
+  required = false,
 }: {
   label: string;
   children: React.ReactNode;
   className?: string;
+  required?: boolean;
 }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
       {children}
     </div>
   );

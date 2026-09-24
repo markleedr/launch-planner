@@ -301,6 +301,7 @@ export function DeliveryWorkspace({
                 value={cutoff}
                 onChange={(event) => setCutoff(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </Field>
             <Field label="Request before cut-off (business days)">
               <Input
