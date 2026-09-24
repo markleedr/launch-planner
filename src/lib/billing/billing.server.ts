@@ -3,7 +3,6 @@ import type Stripe from "stripe";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAppOrigin, getStripe, stripeCurrentPeriodEnd, stripeCustomerId } from "./stripe.server";
 import { BILLING_PLAN, normaliseSubscriptionStatus, type SubscriptionStatus } from "./subscription";
-import { ensureWelcomeForPaidUser } from "@/lib/profile/profile.server";
 
 /** Lazy service-role table access. Only trusted server code can write billing state. */
 async function subscriptionTable() {
@@ -97,9 +96,6 @@ export async function persistStripeSubscription(subscription: Stripe.Subscriptio
     current_period_end: stripeCurrentPeriodEnd(subscription)?.toISOString() ?? null,
   });
   if (error) throw error;
-  if (["active", "trialing"].includes(subscription.status)) {
-    await ensureWelcomeForPaidUser(userId, getAppOrigin());
-  }
 }
 
 function preferredSubscription(subscriptions: Stripe.Subscription[]): Stripe.Subscription | null {
