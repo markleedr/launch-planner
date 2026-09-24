@@ -83,7 +83,7 @@ function Home() {
       title: "Media Spend Calculator",
       desc: "Forecast leads, budget and ROI across Meta, Google and portals before you spend a dollar.",
       image: calculatorShot,
-      alt: "Launch Planner media spend calculator showing a $246,000 media investment for the River Bend project",
+      alt: "Launch Planner media spend calculator showing a $480,606 media investment for the River Bend project",
     },
     {
       icon: ListChecks,
@@ -107,7 +107,6 @@ function Home() {
       alt: "River Bend contacts directory with contractors allocated to each deliverable",
     },
   ];
-
 
   const coordinationPillars = [
     {
@@ -408,10 +407,7 @@ function Home() {
 
           <div className="space-y-16 sm:space-y-24">
             {features.map((f, i) => (
-              <div
-                key={f.title}
-                className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center"
-              >
+              <div key={f.title} className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
                 <div className={i % 2 === 1 ? "lg:order-2" : ""}>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand mb-5">
                     <f.icon className="h-5 w-5" />
@@ -423,12 +419,7 @@ function Home() {
                 </div>
                 <div className={i % 2 === 1 ? "lg:order-1" : ""}>
                   <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
-                    <img
-                      src={f.image}
-                      alt={f.alt}
-                      loading="lazy"
-                      className="w-full h-auto"
-                    />
+                    <img src={f.image} alt={f.alt} loading="lazy" className="w-full h-auto" />
                   </div>
                 </div>
               </div>
@@ -436,7 +427,6 @@ function Home() {
           </div>
         </div>
       </section>
-
 
       {/* ============ COORDINATION ============ */}
       <section className="py-20 sm:py-28 bg-foreground text-background">
