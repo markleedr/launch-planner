@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -78,15 +79,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Launch Planner - plan, scope & cost property projects." },
-      { name: "description", content: "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors." },
+      {
+        name: "description",
+        content:
+          "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Launch Planner - plan, scope & cost property projects." },
-      { property: "og:description", content: "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors." },
+      {
+        property: "og:description",
+        content:
+          "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Launch Planner - plan, scope & cost property projects." },
-      { name: "twitter:description", content: "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors." },
+      {
+        name: "twitter:description",
+        content:
+          "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors.",
+      },
       {
         property: "og:image",
         content:
@@ -150,8 +163,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <TooltipProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
