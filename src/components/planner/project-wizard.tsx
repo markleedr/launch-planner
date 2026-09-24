@@ -35,6 +35,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CatalogDialog } from "./catalog-dialog";
 import { DeliverableEditorDialog } from "./deliverable-editor-dialog";
+import { DollarInput } from "./dollar-input";
 import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import {
   ContractorAssignmentBoard,
@@ -365,14 +366,11 @@ function DetailsStep() {
               onChange={(event) => p.setUnits(Math.max(0, Number(event.target.value)))}
             />
           </Field>
-          <Field label="Sell price per unit ($)">
-            <Input value={p.sellPrice} onChange={(event) => p.setSellPrice(event.target.value)} />
+          <Field label="Sell price per unit">
+            <DollarInput value={p.sellPrice} onChange={p.setSellPrice} />
           </Field>
-          <Field label="Media budget ($)">
-            <Input
-              value={p.mediaBudget}
-              onChange={(event) => p.setMediaBudget(event.target.value)}
-            />
+          <Field label="Media budget">
+            <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
           </Field>
           <Field label="Launch date">
             <Input
@@ -724,15 +722,12 @@ function MediaStep() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="media-budget">Media budget ($)</Label>
-            <Input
+            <Label htmlFor="media-budget">Media budget</Label>
+            <DollarInput
               id="media-budget"
-              type="number"
-              min="0"
-              inputMode="numeric"
               placeholder="e.g. 300000"
               value={p.mediaBudget}
-              onChange={(e) => p.setMediaBudget(e.target.value)}
+              onChange={p.setMediaBudget}
             />
             <p className="pt-1 text-3xl font-bold">
               {p.financials.mediaBudgetCents

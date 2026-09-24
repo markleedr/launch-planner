@@ -18,7 +18,12 @@ import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import { DeliveryWorkspace } from "./delivery-workspace";
 import { ProposalPricing } from "./proposal-pricing";
-import { emptyProposalValues, proposalValuesFromRow, type ProposalValues } from "@/lib/procurement";
+import {
+  calculateProposalCost,
+  emptyProposalValues,
+  proposalValuesFromRow,
+  type ProposalValues,
+} from "@/lib/procurement";
 import {
   listContractorProposals,
   listNotifications,
@@ -308,8 +313,13 @@ function ContractorProposalCard({
         (a, b) => Number(b.revision) - Number(a.revision),
       )
     : [];
+  const proposalTotalCents = calculateProposalCost(values).totalCents;
 
   async function submit() {
+    if (proposalTotalCents <= 0) {
+      setError("Add at least one cost before submitting your proposal.");
+      return;
+    }
     setBusy(true);
     try {
       await submitProposal({ data: { proposalId: String(proposal.id), values } });
@@ -396,9 +406,11 @@ function ContractorProposalCard({
             <ProposalPricing values={values} onChange={setValues} />
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Submitting again before the deadline creates a new retained revision.
+                {proposalTotalCents <= 0
+                  ? "Add at least one cost before you can submit."
+                  : "Submitting again before the deadline creates a new retained revision."}
               </p>
-              <Button disabled={busy} onClick={() => void submit()}>
+              <Button disabled={busy || proposalTotalCents <= 0} onClick={() => void submit()}>
                 {busy ? (
                   <Loader2 className="mr-1 size-4 animate-spin" />
                 ) : (

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,18 +34,22 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loginFailed, setLoginFailed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function switchMode(next: "signin" | "forgot" | "magic") {
     setMode(next);
     setError(null);
+    setLoginFailed(false);
     setNotice(null);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setLoginFailed(false);
     setNotice(null);
     setBusy(true);
     try {
@@ -72,6 +76,7 @@ function LoginPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
+      if (mode === "signin") setLoginFailed(true);
     } finally {
       setBusy(false);
     }
@@ -138,19 +143,43 @@ function LoginPage() {
                       </button>
                     )}
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <div className="space-y-1">
+                  <p className="text-sm text-destructive">{error}</p>
+                  {loginFailed && (
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-foreground underline underline-offset-2"
+                      onClick={() => switchMode("forgot")}
+                    >
+                      Reset your password
+                    </button>
+                  )}
+                </div>
+              )}
               {notice && <p className="text-sm text-positive">{notice}</p>}
 
               <Button type="submit" className="w-full" disabled={busy}>

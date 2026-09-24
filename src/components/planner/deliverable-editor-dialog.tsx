@@ -57,9 +57,14 @@ export function DeliverableEditorDialog({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<Deliverable>(deliverable);
+  const [nameTouched, setNameTouched] = useState(false);
+  const nameError = nameTouched && !draft.name.trim() ? "Service name is required." : null;
 
   useEffect(() => {
-    if (open) setDraft(deliverable);
+    if (open) {
+      setDraft(deliverable);
+      setNameTouched(false);
+    }
   }, [deliverable, open]);
 
   const total = useMemo(
@@ -133,7 +138,14 @@ export function DeliverableEditorDialog({
 
         <div className="grid gap-5 py-2">
           <Field label="Service name *">
-            <Input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
+            <Input
+              value={draft.name}
+              onChange={(event) => patch({ name: event.target.value })}
+              onBlur={() => setNameTouched(true)}
+              aria-invalid={Boolean(nameError)}
+              className={nameError ? "border-destructive" : undefined}
+            />
+            {nameError && <p className="text-xs text-destructive">{nameError}</p>}
           </Field>
 
           <Field label="Description">
@@ -318,6 +330,9 @@ export function DeliverableEditorDialog({
                 value={draft.quantity ?? 1}
                 onChange={(event) => patch({ quantity: Math.max(0, Number(event.target.value)) })}
               />
+              <p className="text-xs text-muted-foreground">
+                Multiplies the third-party production cost per unit.
+              </p>
             </Field>
             <Field label="Months">
               <Input
@@ -326,6 +341,9 @@ export function DeliverableEditorDialog({
                 value={draft.months ?? 0}
                 onChange={(event) => patch({ months: Math.max(0, Number(event.target.value)) })}
               />
+              <p className="text-xs text-muted-foreground">
+                Multiplies the ongoing agency and media monthly costs.
+              </p>
             </Field>
           </div>
 

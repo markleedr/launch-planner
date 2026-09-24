@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DollarInput } from "@/components/planner/dollar-input";
 import { Gantt, CriticalPathSummary } from "@/components/planner/gantt";
 import { ScheduleDialog } from "@/components/planner/schedule-dialog";
 import { CriticalIssueChecklist } from "@/components/planner/checklist";
@@ -577,22 +578,6 @@ function CentsInput({ cents, onChange }: { cents: number; onChange: (cents: numb
         value={toDollars(cents)}
         onChange={(e) => onChange(toCents(Math.max(0, Number(e.target.value))))}
         className="h-8 pl-5 text-right tabular-nums"
-      />
-    </div>
-  );
-}
-
-function DollarInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-        $
-      </span>
-      <Input
-        inputMode="numeric"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="pl-6"
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +48,9 @@ function ResetPasswordPage() {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  const confirmMismatch = confirm.length > 0 && password !== confirm;
+  const confirmMatches = confirm.length > 0 && password === confirm;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -159,14 +162,32 @@ function ResetPasswordPage() {
                     minLength={8}
                     autoComplete="new-password"
                     disabled={!ready}
+                    aria-invalid={confirmMismatch}
+                    className={confirmMismatch ? "border-destructive" : undefined}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                   />
+                  {confirmMismatch && (
+                    <p className="flex items-center gap-1 text-xs text-destructive">
+                      <X className="size-3.5" />
+                      Passwords don&apos;t match.
+                    </p>
+                  )}
+                  {confirmMatches && (
+                    <p className="flex items-center gap-1 text-xs text-positive">
+                      <Check className="size-3.5" />
+                      Passwords match.
+                    </p>
+                  )}
                 </div>
 
                 {error && <p className="text-sm text-destructive">{error}</p>}
 
-                <Button type="submit" className="w-full" disabled={busy || !ready}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={busy || !ready || confirmMismatch}
+                >
                   {busy ? "Saving…" : "Update password"}
                 </Button>
               </form>
