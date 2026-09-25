@@ -51,10 +51,14 @@ export type DeliverableCategory =
   | "listing_portals"
   | "content"
   | "ppc_advertising"
+  | "paid_social"
   | "landing_page_website"
   | "call_tracking"
   | "email_marketing"
-  | "sms_marketing";
+  | "sms_marketing"
+  | "site_signage"
+  | "radio"
+  | "tv";
 
 export type SetupTimeUnit = "business_days" | "weeks";
 

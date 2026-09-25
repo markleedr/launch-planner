@@ -71,6 +71,14 @@ const RECOMMENDATION_IDS: Record<string, string> = {
   "EDM - Monthly": "edm",
 };
 
+/** Services filed under a different category in the planner than in the approved list. */
+const CATEGORY_OVERRIDES: Record<string, DeliverableCategory> = {
+  "Boosting Posts": "paid_social",
+  "Site Signage": "site_signage",
+  Hoarding: "site_signage",
+  "OOH Signage": "outdoor",
+};
+
 function slugify(value: string): string {
   return value
     .normalize("NFKD")
@@ -103,7 +111,7 @@ const IMPORTED_SERVICE_CATALOG: CatalogItem[] = RAW_SERVICE_TEMPLATES.filter(
     rawTemplate.service === "Landing Page - Complex"
       ? { ...rawTemplate, service: "Landing Page", oneOffCostCents: 102_500 }
       : rawTemplate;
-  const category = CATEGORY_MAP[template.category];
+  const category = CATEGORY_OVERRIDES[template.service] ?? CATEGORY_MAP[template.category];
   if (!category) throw new Error(`Unknown service category: ${template.category}`);
   const unit = setupUnit(template.deliveryUnit);
   const setupValue = template.deliveryQuantity;

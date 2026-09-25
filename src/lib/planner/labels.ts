@@ -52,22 +52,51 @@ export const CHANNEL_LABELS: Record<ChannelCode, string> = {
 export const CATEGORY_LABELS: Record<DeliverableCategory, string> = {
   digital_performance: "Digital & performance",
   outdoor: "Outdoor",
-  print_press: "Print & press",
+  print_press: "Press",
   brand_collateral: "Brand & collateral",
   physical_display: "Physical & display",
   website_build: "Website & digital build",
   pr_events: "PR & events",
   brand: "Brand",
   render_photography: "Render & photography",
-  collateral: "Collateral",
+  collateral: "Sales collateral",
   listing_portals: "Listing portals",
   content: "Content",
   ppc_advertising: "PPC advertising",
+  paid_social: "Paid social",
   landing_page_website: "Landing page / website",
   call_tracking: "Call tracking",
   email_marketing: "Email",
   sms_marketing: "SMS marketing",
+  site_signage: "Site signage",
+  radio: "Radio",
+  tv: "TV",
 };
+
+/** Display order for categories wherever the catalogue is listed. */
+export const CATEGORY_ORDER: DeliverableCategory[] = [
+  "brand",
+  "content",
+  "render_photography",
+  "collateral",
+  "landing_page_website",
+  "ppc_advertising",
+  "paid_social",
+  "listing_portals",
+  "call_tracking",
+  "email_marketing",
+  "sms_marketing",
+  "outdoor",
+  "site_signage",
+  "physical_display",
+  "print_press",
+  "radio",
+  "tv",
+  "pr_events",
+  "digital_performance",
+  "website_build",
+  "brand_collateral",
+];
 
 export const PROJECT_TYPES = Object.keys(PROJECT_TYPE_LABELS) as ProjectType[];
 export const BUYER_TYPES = Object.keys(BUYER_TYPE_LABELS) as BuyerType[];

@@ -16,8 +16,7 @@ import { usePlanner } from "@/components/planner/planner-provider";
 import {
   catalogItemToDeliverable,
   CATEGORY_LABELS,
-  CHANNEL_LABELS,
-  CHANNELS,
+  CATEGORY_ORDER,
   DELIVERABLE_CATALOG,
   type CatalogItem,
   type ChannelCode,
@@ -25,18 +24,22 @@ import {
   type DeliverableCategory,
 } from "@/lib/planner";
 
-/** Which catalog categories each marketing channel surfaces. */
-const CHANNEL_CATEGORIES: Record<ChannelCode, DeliverableCategory[]> = {
-  ppc: ["ppc_advertising", "digital_performance", "listing_portals", "call_tracking"],
-  paid_social: ["content", "digital_performance", "render_photography"],
-  ooh: ["outdoor", "physical_display"],
-  radio: ["content", "brand"],
-  tv: ["content", "render_photography"],
-  press: ["print_press", "content"],
-  email: ["email_marketing", "sms_marketing", "landing_page_website"],
-  pr: ["pr_events", "brand"],
-  signage: ["physical_display", "collateral", "outdoor"],
+/** The catalogue category each selected marketing channel pre-selects. */
+const CHANNEL_CATEGORY: Record<ChannelCode, DeliverableCategory> = {
+  ppc: "ppc_advertising",
+  paid_social: "paid_social",
+  ooh: "outdoor",
+  radio: "radio",
+  tv: "tv",
+  press: "print_press",
+  email: "email_marketing",
+  pr: "pr_events",
+  signage: "site_signage",
 };
+
+const CATALOG_CATEGORIES = CATEGORY_ORDER.filter((category) =>
+  DELIVERABLE_CATALOG.some((item) => item.category === category),
+);
 
 /** "Add from catalog" - pick one or more common deliverables to add. */
 export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void }) {
@@ -44,12 +47,22 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [categories, setCategories] = useState<Set<DeliverableCategory>>(new Set());
 
   function toggle(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleCategory(category: DeliverableCategory) {
+    setCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
       return next;
     });
   }
@@ -67,28 +80,26 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
     if (next) {
       setSelected(new Set());
       setQuery("");
+      setCategories(
+        new Set(
+          p.channels.flatMap((code) => (CHANNEL_CATEGORY[code] ? [CHANNEL_CATEGORY[code]] : [])),
+        ),
+      );
     }
     setOpen(next);
   }
 
   const normalizedQuery = query.trim().toLowerCase();
-  const activeCategories = new Set(p.channels.flatMap((c) => CHANNEL_CATEGORIES[c] ?? []));
   const filtered = DELIVERABLE_CATALOG.filter((item) => {
     const matchesQuery =
       !normalizedQuery ||
       [item.name, CATEGORY_LABELS[item.category]].some((value) =>
         value.toLowerCase().includes(normalizedQuery),
       );
-    const matchesChannel = activeCategories.size === 0 || activeCategories.has(item.category);
-    return matchesQuery && matchesChannel;
+    const matchesCategory = categories.size === 0 || categories.has(item.category);
+    return matchesQuery && matchesCategory;
   });
   const grouped = groupByCategory(filtered);
-
-  function toggleChannel(code: ChannelCode) {
-    p.setChannels(
-      p.channels.includes(code) ? p.channels.filter((c) => c !== code) : [...p.channels, code],
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -117,21 +128,32 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {CHANNELS.map((code) => {
-            const active = p.channels.includes(code);
+        <div className="flex flex-wrap items-center gap-2">
+          {CATALOG_CATEGORIES.map((category) => {
+            const active = categories.has(category);
             return (
               <Button
-                key={code}
+                key={category}
                 type="button"
                 size="sm"
                 variant={active ? "default" : "outline"}
-                onClick={() => toggleChannel(code)}
+                aria-pressed={active}
+                onClick={() => toggleCategory(category)}
               >
-                {CHANNEL_LABELS[code]}
+                {CATEGORY_LABELS[category]}
               </Button>
             );
           })}
+          {categories.size > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setCategories(new Set())}
+            >
+              Show all
+            </Button>
+          ) : null}
         </div>
 
         <div className="space-y-4 py-2">
@@ -186,6 +208,6 @@ function groupByCategory(items: CatalogItem[]) {
     map.set(item.category, list);
   }
   return [...map.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0]))
     .map(([category, list]) => ({ category, items: list }));
 }

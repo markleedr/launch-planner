@@ -20,12 +20,16 @@ const CATEGORY_SPECIALTY: Record<DeliverableCategory, PortalContractorSpecialty>
   landing_page_website: "digital_agency",
   listing_portals: "digital_agency",
   outdoor: "media_agency",
+  paid_social: "digital_agency",
   physical_display: "creative_agency",
   ppc_advertising: "digital_agency",
   pr_events: "content_agency",
   print_press: "media_agency",
+  radio: "media_agency",
   render_photography: "creative_agency",
+  site_signage: "creative_agency",
   sms_marketing: "content_agency",
+  tv: "media_agency",
   website_build: "digital_agency",
 };
 
