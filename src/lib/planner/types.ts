@@ -142,6 +142,8 @@ export interface Deliverable {
   ownerContactId?: string;
   /** Contact ids of suppliers allocated to produce this deliverable. */
   supplierIds?: string[];
+  /** No supplier is needed for this deliverable (e.g. agency-only work). */
+  supplierNotApplicable?: boolean;
   /** Awarded portal contractor party id, if procurement has completed. */
   awardedContractorPartyId?: string;
   /** Date collateral must be supplied for this deliverable. */
