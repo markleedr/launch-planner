@@ -29,9 +29,9 @@ import { Route as PlannerProcurementRouteImport } from './routes/planner/procure
 import { Route as PlannerNewRouteImport } from './routes/planner/new'
 import { Route as ApiWorkflowsProcessRouteImport } from './routes/api/workflows/process'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
+import { Route as ApiPublicAuthWebhookRouteImport } from './routes/api/public/auth/webhook'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -134,11 +134,6 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
-  id: '/lovable/email/auth/webhook',
-  path: '/lovable/email/auth/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   id: '/lovable/email/auth/preview',
   path: '/lovable/email/auth/preview',
@@ -147,6 +142,11 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAuthWebhookRoute = ApiPublicAuthWebhookRouteImport.update({
+  id: '/api/public/auth/webhook',
+  path: '/api/public/auth/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -170,9 +170,9 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/planner/': typeof PlannerIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
+  '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
@@ -194,9 +194,9 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/planner': typeof PlannerIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
+  '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
@@ -220,9 +220,9 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/planner/': typeof PlannerIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
+  '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
@@ -247,9 +247,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/planner/'
     | '/api/workflows/process'
+    | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
     | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -271,9 +271,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/planner'
     | '/api/workflows/process'
+    | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
     | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
   id:
     | '__root__'
@@ -296,9 +296,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/planner/'
     | '/api/workflows/process'
+    | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
     | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
@@ -318,9 +318,9 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiWorkflowsProcessRoute: typeof ApiWorkflowsProcessRoute
+  ApiPublicAuthWebhookRoute: typeof ApiPublicAuthWebhookRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
-  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
@@ -466,13 +466,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/auth/webhook': {
-      id: '/lovable/email/auth/webhook'
-      path: '/lovable/email/auth/webhook'
-      fullPath: '/lovable/email/auth/webhook'
-      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/lovable/email/auth/preview': {
       id: '/lovable/email/auth/preview'
       path: '/lovable/email/auth/preview'
@@ -485,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/stripe/webhook'
       fullPath: '/api/public/stripe/webhook'
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/webhook': {
+      id: '/api/public/auth/webhook'
+      path: '/api/public/auth/webhook'
+      fullPath: '/api/public/auth/webhook'
+      preLoaderRoute: typeof ApiPublicAuthWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -523,9 +523,9 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiWorkflowsProcessRoute: ApiWorkflowsProcessRoute,
+  ApiPublicAuthWebhookRoute: ApiPublicAuthWebhookRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
-  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
