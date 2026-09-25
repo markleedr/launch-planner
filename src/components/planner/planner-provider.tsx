@@ -47,8 +47,8 @@ interface PlannerContextValue {
   setProjectType: (v: ProjectType) => void;
   units: number;
   setUnits: (v: number) => void;
-  sellPrice: string;
-  setSellPrice: (v: string) => void;
+  grv: string;
+  setGrv: (v: string) => void;
   mediaBudget: string;
   setMediaBudget: (v: string) => void;
   launchDate: string;
@@ -111,7 +111,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   );
   const [projectType, setProjectType] = useState<ProjectType>("multi_residential");
   const [units, setUnits] = useState(20);
-  const [sellPrice, setSellPrice] = useState("750000");
+  const [grv, setGrv] = useState("15000000");
   const [mediaBudget, setMediaBudget] = useState("300000");
   const [launchDate, setLaunchDate] = useState("");
   const [location, setLocation] = useState("");
@@ -141,10 +141,10 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     () =>
       summariseFinancials({
         units,
-        sellPriceCents: parseDollarsToCents(sellPrice),
+        grvCents: parseDollarsToCents(grv),
         mediaBudgetCents: parseDollarsToCents(mediaBudget),
       }),
-    [units, sellPrice, mediaBudget],
+    [units, grv, mediaBudget],
   );
 
   const budget = useMemo(
@@ -176,8 +176,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     setProjectType,
     units,
     setUnits,
-    sellPrice,
-    setSellPrice,
+    grv,
+    setGrv,
     mediaBudget,
     setMediaBudget,
     launchDate,
@@ -250,7 +250,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       );
       setProjectType("multi_residential");
       setUnits(20);
-      setSellPrice("750000");
+      setGrv("15000000");
       setMediaBudget("300000");
       setLaunchDate("");
       setLocation("");
@@ -272,7 +272,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       projectBlurb,
       projectType,
       units,
-      sellPrice,
+      grv,
       mediaBudget,
       launchDate,
       location,
@@ -294,7 +294,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       setProjectBlurb(snap.projectBlurb);
       setProjectType(snap.projectType);
       setUnits(snap.units);
-      setSellPrice(snap.sellPrice);
+      setGrv(snap.grv);
       setMediaBudget(snap.mediaBudget);
       setLaunchDate(snap.launchDate);
       setLocation(snap.location);

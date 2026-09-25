@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 
 /** A plain-dollar text field with a fixed "$" prefix, for the raw dollar-string
- *  fields (sell price, media budget) rather than the cents-based deliverable
+ *  fields (GRV, media budget) rather than the cents-based deliverable
  *  cost fields, which use their own numeric MoneyInput. */
 export function DollarInput({
   id,

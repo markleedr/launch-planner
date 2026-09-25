@@ -151,7 +151,8 @@ export interface Deliverable {
 /** Inputs that define a project's financial envelope. */
 export interface ProjectFinancials {
   units: number;
-  sellPriceCents: number;
+  /** Gross realisation value: total expected sales revenue, entered directly. */
+  grvCents: number;
   mediaBudgetCents: number;
 }
 

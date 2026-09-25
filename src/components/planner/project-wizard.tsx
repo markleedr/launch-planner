@@ -392,8 +392,13 @@ function DetailsStep() {
               onChange={(event) => p.setUnits(Math.max(0, Number(event.target.value)))}
             />
           </Field>
-          <Field label="Sell price per unit">
-            <DollarInput value={p.sellPrice} onChange={p.setSellPrice} />
+          <Field label="Gross realisation value (GRV)">
+            <DollarInput value={p.grv} onChange={p.setGrv} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {p.units > 0 && p.financials.grvCents > 0
+                ? `About ${formatAudWhole(p.financials.averageSellPriceCents)} average per lot, unit or home`
+                : "Total expected sales value across the whole project"}
+            </p>
           </Field>
           <Field label="Media budget">
             <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
@@ -733,7 +738,7 @@ function MediaStep() {
         <CardContent>
           <MediaCalculatorDialog
             initialSalesTarget={p.units}
-            initialPricePoint={Number(p.sellPrice)}
+            initialPricePoint={p.financials.averageSellPriceCents / 100}
             onApply={(budget, details) => {
               p.setMediaBudget(String(budget));
               const generated = mediaPlanToDeliverables(details.inputs, details.plan);
@@ -1267,8 +1272,18 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
           <ReviewRow label="Type" value={PROJECT_TYPE_LABELS[p.projectType]} />
           <ReviewRow label="Units" value={p.units > 0 ? String(p.units) : "Not supplied"} />
           <ReviewRow
-            label="Sell price per unit"
-            value={p.sellPrice ? formatAud(Number(p.sellPrice) * 100) : "Not supplied"}
+            label="Gross realisation value"
+            value={
+              p.financials.grvCents > 0 ? formatAudWhole(p.financials.grvCents) : "Not supplied"
+            }
+          />
+          <ReviewRow
+            label="Average sell price"
+            value={
+              p.financials.averageSellPriceCents > 0
+                ? formatAudWhole(p.financials.averageSellPriceCents)
+                : "Not supplied"
+            }
           />
           <ReviewRow
             label="Launch date"

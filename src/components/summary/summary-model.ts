@@ -35,7 +35,7 @@ export function normaliseProjectPartyRow(row: Record<string, unknown>): PublicPr
 export function deriveProjectSummary(snapshot: PlannerSnapshot) {
   const financials = summariseFinancials({
     units: snapshot.units,
-    sellPriceCents: parseDollarsToCents(snapshot.sellPrice),
+    grvCents: parseDollarsToCents(snapshot.grv),
     mediaBudgetCents: parseDollarsToCents(snapshot.mediaBudget),
   });
   const budget = summariseBudget(snapshot.deliverables, {

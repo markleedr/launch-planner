@@ -1,18 +1,18 @@
 /**
  * Gross Realisation Value (GRV) and media-budget benchmarking.
  *
- * GRV is the total expected sales revenue of the project. Per the agreed v1
- * financial model: GRV = number of units x sell price (per unit).
+ * GRV is the total expected sales revenue of the project and is entered
+ * directly. The average sell price per lot, unit or home is derived from it.
  */
 
 import type { ProjectFinancials } from "./types";
 
-/** GRV in cents = units x sell price. Negative/!finite inputs clamp to 0. */
-export function computeGrvCents(units: number, sellPriceCents: number): number {
-  if (!Number.isFinite(units) || !Number.isFinite(sellPriceCents)) return 0;
+/** Average sell price in cents = GRV ÷ units. 0 when either input is unusable. */
+export function averageSellPriceCents(grvCents: number, units: number): number {
+  if (!Number.isFinite(grvCents) || !Number.isFinite(units)) return 0;
   const u = Math.max(0, Math.trunc(units));
-  const p = Math.max(0, Math.round(sellPriceCents));
-  return u * p;
+  const g = Math.max(0, Math.round(grvCents));
+  return u > 0 ? Math.round(g / u) : 0;
 }
 
 /**
@@ -26,15 +26,17 @@ export function mediaBudgetPctOfGrv(mediaBudgetCents: number, grvCents: number):
 
 export interface FinancialSummary {
   grvCents: number;
+  averageSellPriceCents: number;
   mediaBudgetCents: number;
   mediaBudgetPctOfGrv: number;
 }
 
 /** Roll a project's financial inputs into the headline summary numbers. */
 export function summariseFinancials(f: ProjectFinancials): FinancialSummary {
-  const grvCents = computeGrvCents(f.units, f.sellPriceCents);
+  const grvCents = Number.isFinite(f.grvCents) ? Math.max(0, Math.round(f.grvCents)) : 0;
   return {
     grvCents,
+    averageSellPriceCents: averageSellPriceCents(grvCents, f.units),
     mediaBudgetCents: f.mediaBudgetCents,
     mediaBudgetPctOfGrv: mediaBudgetPctOfGrv(f.mediaBudgetCents, grvCents),
   };

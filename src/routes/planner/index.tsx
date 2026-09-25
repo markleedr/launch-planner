@@ -185,8 +185,8 @@ function PlannerEditor() {
               />
             </Field>
 
-            <Field label="Sell price (per unit)">
-              <DollarInput value={p.sellPrice} onChange={p.setSellPrice} />
+            <Field label="Gross realisation value (GRV)">
+              <DollarInput value={p.grv} onChange={p.setGrv} />
             </Field>
 
             <Field label="Media budget">
@@ -194,7 +194,7 @@ function PlannerEditor() {
                 <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
                 <MediaCalculatorDialog
                   initialSalesTarget={p.units}
-                  initialPricePoint={parseDollarsToCents(p.sellPrice) / 100}
+                  initialPricePoint={p.financials.averageSellPriceCents / 100}
                   onApply={(dollars) => p.setMediaBudget(String(dollars))}
                 />
               </div>
@@ -261,11 +261,15 @@ function PlannerEditor() {
             <Stat
               label="Gross Realisation Value (GRV)"
               value={formatAudWhole(p.financials.grvCents)}
-              hint={`${p.units} × ${formatAudWhole(parseDollarsToCents(p.sellPrice))}`}
+              hint={
+                p.units > 0 && p.financials.grvCents > 0
+                  ? `About ${formatAudWhole(p.financials.averageSellPriceCents)} per lot, unit or home`
+                  : "Enter the project's total expected sales value"
+              }
               help={
                 <HelpTip label="What is GRV?">
-                  Total expected sales revenue for the project: units × sell price. This is the base
-                  figure every other budget percentage is measured against.
+                  Total expected sales revenue for the project, as entered in the details. This is
+                  the base figure every other budget percentage is measured against.
                 </HelpTip>
               }
             />
