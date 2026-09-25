@@ -37,6 +37,7 @@ import { CatalogDialog } from "./catalog-dialog";
 import { DeliverableEditorDialog } from "./deliverable-editor-dialog";
 import { DollarInput } from "./dollar-input";
 import { MediaCalculatorDialog } from "./media-calculator-dialog";
+import { RecommendDialog } from "./recommend-dialog";
 import {
   ContractorAssignmentBoard,
   type ContractorOption,
@@ -586,7 +587,8 @@ function DeliverablesStep() {
               Add proven templates or create a custom brief. Everything remains editable.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <RecommendDialog />
             <CatalogDialog
               onAdd={(items) => p.setDeliverables((current) => [...current, ...items])}
             />
