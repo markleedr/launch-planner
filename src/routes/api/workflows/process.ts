@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { processPendingEmailOutbox } from "@/lib/procurement/notifications.server";
-import { processProposalDeadlines } from "@/lib/procurement/procurement.server";
-import { dispatchScheduledCollateralRequests } from "@/lib/procurement/delivery.server";
 
 export const Route = createFileRoute("/api/workflows/process")({
   server: {
@@ -10,14 +8,9 @@ export const Route = createFileRoute("/api/workflows/process")({
         if (!isAuthorised(request)) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const origin = appOrigin();
         try {
-          const [proposals, collateral, email] = await Promise.all([
-            processProposalDeadlines(origin),
-            dispatchScheduledCollateralRequests({ origin }),
-            processPendingEmailOutbox(),
-          ]);
-          return Response.json({ ok: true, proposals, collateral, email });
+          const email = await processPendingEmailOutbox();
+          return Response.json({ ok: true, email });
         } catch (error) {
           console.error("[Project workflows] Scheduled processing failed.", {
             message: error instanceof Error ? error.message : "Unknown error",
@@ -39,10 +32,4 @@ function isAuthorised(request: Request): boolean {
     process.env.SUPABASE_SECRET_KEY,
   ].filter((value): value is string => Boolean(value));
   return validTokens.some((value) => value === token);
-}
-
-/** Canonical public origin, shared with Stripe redirects and email links. */
-function appOrigin(): string {
-  const value = process.env.APP_ORIGIN?.trim() || "https://launchplanner.com.au";
-  return new URL(value).origin;
 }

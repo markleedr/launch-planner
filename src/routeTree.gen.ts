@@ -18,14 +18,12 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
-import { Route as ContractorRouteImport } from './routes/contractor'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlannerIndexRouteImport } from './routes/planner/index'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
 import { Route as PlannerSummaryRouteImport } from './routes/planner/summary'
-import { Route as PlannerProcurementRouteImport } from './routes/planner/procurement'
 import { Route as PlannerNewRouteImport } from './routes/planner/new'
 import { Route as ApiWorkflowsProcessRouteImport } from './routes/api/workflows/process'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -78,11 +76,6 @@ const DataDeletionRoute = DataDeletionRouteImport.update({
   path: '/data-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContractorRoute = ContractorRouteImport.update({
-  id: '/contractor',
-  path: '/contractor',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CalculatorRoute = CalculatorRouteImport.update({
   id: '/calculator',
   path: '/calculator',
@@ -111,11 +104,6 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
 const PlannerSummaryRoute = PlannerSummaryRouteImport.update({
   id: '/summary',
   path: '/summary',
-  getParentRoute: () => PlannerRoute,
-} as any)
-const PlannerProcurementRoute = PlannerProcurementRouteImport.update({
-  id: '/procurement',
-  path: '/procurement',
   getParentRoute: () => PlannerRoute,
 } as any)
 const PlannerNewRoute = PlannerNewRouteImport.update({
@@ -154,7 +142,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/calculator': typeof CalculatorRoute
-  '/contractor': typeof ContractorRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRouteWithChildren
@@ -165,7 +152,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
-  '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
   '/planner/': typeof PlannerIndexRoute
@@ -179,7 +165,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/calculator': typeof CalculatorRoute
-  '/contractor': typeof ContractorRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -189,7 +174,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
-  '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
   '/planner': typeof PlannerIndexRoute
@@ -204,7 +188,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/calculator': typeof CalculatorRoute
-  '/contractor': typeof ContractorRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRouteWithChildren
@@ -215,7 +198,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
-  '/planner/procurement': typeof PlannerProcurementRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
   '/planner/': typeof PlannerIndexRoute
@@ -231,7 +213,6 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/calculator'
-    | '/contractor'
     | '/data-deletion'
     | '/login'
     | '/planner'
@@ -242,7 +223,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/welcome'
     | '/planner/new'
-    | '/planner/procurement'
     | '/planner/summary'
     | '/share/$token'
     | '/planner/'
@@ -256,7 +236,6 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/calculator'
-    | '/contractor'
     | '/data-deletion'
     | '/login'
     | '/pricing'
@@ -266,7 +245,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/welcome'
     | '/planner/new'
-    | '/planner/procurement'
     | '/planner/summary'
     | '/share/$token'
     | '/planner'
@@ -280,7 +258,6 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/calculator'
-    | '/contractor'
     | '/data-deletion'
     | '/login'
     | '/planner'
@@ -291,7 +268,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/welcome'
     | '/planner/new'
-    | '/planner/procurement'
     | '/planner/summary'
     | '/share/$token'
     | '/planner/'
@@ -306,7 +282,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   CalculatorRoute: typeof CalculatorRoute
-  ContractorRoute: typeof ContractorRoute
   DataDeletionRoute: typeof DataDeletionRoute
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRouteWithChildren
@@ -389,13 +364,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/contractor': {
-      id: '/contractor'
-      path: '/contractor'
-      fullPath: '/contractor'
-      preLoaderRoute: typeof ContractorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/calculator': {
       id: '/calculator'
       path: '/calculator'
@@ -436,13 +404,6 @@ declare module '@tanstack/react-router' {
       path: '/summary'
       fullPath: '/planner/summary'
       preLoaderRoute: typeof PlannerSummaryRouteImport
-      parentRoute: typeof PlannerRoute
-    }
-    '/planner/procurement': {
-      id: '/planner/procurement'
-      path: '/procurement'
-      fullPath: '/planner/procurement'
-      preLoaderRoute: typeof PlannerProcurementRouteImport
       parentRoute: typeof PlannerRoute
     }
     '/planner/new': {
@@ -492,14 +453,12 @@ declare module '@tanstack/react-router' {
 
 interface PlannerRouteChildren {
   PlannerNewRoute: typeof PlannerNewRoute
-  PlannerProcurementRoute: typeof PlannerProcurementRoute
   PlannerSummaryRoute: typeof PlannerSummaryRoute
   PlannerIndexRoute: typeof PlannerIndexRoute
 }
 
 const PlannerRouteChildren: PlannerRouteChildren = {
   PlannerNewRoute: PlannerNewRoute,
-  PlannerProcurementRoute: PlannerProcurementRoute,
   PlannerSummaryRoute: PlannerSummaryRoute,
   PlannerIndexRoute: PlannerIndexRoute,
 }
@@ -511,7 +470,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   CalculatorRoute: CalculatorRoute,
-  ContractorRoute: ContractorRoute,
   DataDeletionRoute: DataDeletionRoute,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRouteWithChildren,

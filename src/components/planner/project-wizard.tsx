@@ -6,7 +6,6 @@ import {
   Building2,
   Check,
   ImagePlus,
-  Info,
   Loader2,
   MapPin,
   Plus,
@@ -36,11 +35,6 @@ import { DeliverableEditorDialog } from "./deliverable-editor-dialog";
 import { DollarInput } from "./dollar-input";
 import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import { RecommendDialog } from "./recommend-dialog";
-import {
-  ContractorAssignmentBoard,
-  type ContractorOption,
-  type ExistingProposal,
-} from "./contractor-assignment-board";
 import { usePlanner } from "./planner-provider";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,24 +56,12 @@ import {
   type Deliverable,
   type ProjectType,
 } from "@/lib/planner";
-import {
-  PROJECT_PARTY_ROLE_LABELS,
-  PORTAL_CONTRACTOR_ROLES,
-  PROJECT_PARTY_ROLES,
-} from "@/lib/procurement/labels";
-import type {
-  PortalContractorSpecialty,
-  ProjectPartyRole,
-  ProposalStatus,
-} from "@/lib/procurement";
-import { calculateProposalCost, groupDeliverablesForContractors } from "@/lib/procurement";
+import { PROJECT_PARTY_ROLE_LABELS, PROJECT_PARTY_ROLES } from "@/lib/procurement/labels";
+import type { ProjectPartyRole } from "@/lib/procurement";
+import { calculateProposalCost } from "@/lib/procurement";
 import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
 import { attachProjectParty, saveDirectoryParty } from "@/lib/procurement/procurement.server";
-import {
-  listDirectoryParties,
-  listOwnerProposals,
-  listProjectParties,
-} from "@/lib/procurement/procurement-store";
+import { listDirectoryParties, listProjectParties } from "@/lib/procurement/procurement-store";
 
 const STEPS = [
   { id: "details", label: "Project details" },
@@ -827,8 +809,6 @@ function MediaStep() {
 function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | null> }) {
   const p = usePlanner();
   const [directory, setDirectory] = useState<Array<Record<string, unknown>>>([]);
-  const [projectContractors, setProjectContractors] = useState<Array<Record<string, unknown>>>([]);
-  const [proposalRows, setProposalRows] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -839,18 +819,15 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     website: "",
     role: "creative_agency" as ProjectPartyRole,
   });
-  const [selectedAssignments, setSelectedAssignments] = useState<Record<string, string[]>>({});
-  const [deadline, setDeadline] = useState("");
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
   const [openAddRole, setOpenAddRole] = useState<ProjectPartyRole | null>(null);
 
   async function refresh(projectId?: string | null) {
     try {
       setLoading(true);
-      const [all, assigned, proposals] = await Promise.all([
+      const [all, assigned] = await Promise.all([
         listDirectoryParties(),
         projectId ? listProjectParties(projectId) : Promise.resolve([]),
-        projectId ? listOwnerProposals(projectId) : Promise.resolve([]),
       ]);
       setDirectory(all as Array<Record<string, unknown>>);
       const assignedRows = assigned as Array<Record<string, unknown>>;
@@ -861,17 +838,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           role: row.role as ProjectPartyRole,
         })),
       );
-      setProjectContractors(
-        assignedRows
-          .map((row) => {
-            const party = asRecord(row.party);
-            return { ...party, project_role: row.role };
-          })
-          .filter((party) =>
-            PORTAL_CONTRACTOR_ROLES.includes(party.project_role as PortalContractorSpecialty),
-          ),
-      );
-      setProposalRows(proposals as Array<Record<string, unknown>>);
       setError(null);
     } catch (reason) {
       setError(
@@ -945,17 +911,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     }
   }
 
-  const contractorOptions = useMemo<ContractorOption[]>(
-    () =>
-      projectContractors.map((party) => ({
-        email: party.email ? String(party.email) : undefined,
-        id: String(party.id),
-        name: String(party.organisation_name),
-        role: party.project_role as PortalContractorSpecialty,
-      })),
-    [projectContractors],
-  );
-
   // Parties already attached to this project, grouped by category, joined
   // with the directory for display fields (project_party only stores the
   // role + a reference to the directory entry).
@@ -991,67 +946,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     return map;
   }, [directory, p.projectParties]);
 
-  const assignmentGroups = useMemo(
-    () =>
-      groupDeliverablesForContractors(
-        p.deliverables,
-        contractorOptions.map((contractor) => contractor.role),
-      ),
-    [contractorOptions, p.deliverables],
-  );
-
-  const existingByDeliverable = useMemo(() => {
-    const result = new Map<string, Map<string, ExistingProposal>>();
-    for (const row of proposalRows) {
-      const brief = asRecord(row.brief);
-      const contractor = asRecord(row.contractor);
-      const deliverableId = String(brief.deliverable_id ?? "");
-      const contractorId = String(row.contractor_party_id ?? contractor.id ?? "");
-      if (!deliverableId || !contractorId) continue;
-      const byContractor = result.get(deliverableId) ?? new Map<string, ExistingProposal>();
-      if (!byContractor.has(contractorId)) {
-        byContractor.set(contractorId, {
-          contractorId,
-          status: row.status as ProposalStatus,
-        });
-      }
-      result.set(deliverableId, byContractor);
-    }
-    return result;
-  }, [proposalRows]);
-
-  const selectedRequestCount = Object.values(selectedAssignments).reduce(
-    (total, contractorIds) => total + contractorIds.length,
-    0,
-  );
-  const selectedDeliverableCount = Object.values(selectedAssignments).filter(
-    (contractorIds) => contractorIds.length > 0,
-  ).length;
-
-  function toggleAssignment(deliverableId: string, contractorId: string) {
-    setSelectedAssignments((current) => {
-      const selected = current[deliverableId] ?? [];
-      const next = selected.includes(contractorId)
-        ? selected.filter((id) => id !== contractorId)
-        : [...selected, contractorId];
-      return { ...current, [deliverableId]: next };
-    });
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
-        <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
-        <div>
-          <p className="font-semibold">Checking a box doesn&apos;t send anything.</p>
-          <p className="mt-1 text-muted-foreground">
-            Below, add or reuse contractors, then check a box against a deliverable to note who
-            you&apos;re asking to quote it. Follow up with them yourself, then record their quote
-            and award the work in Procurement.
-          </p>
-        </div>
-      </div>
-
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-semibold">Team & suppliers by category</h3>
@@ -1224,48 +1120,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         })}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Choose who will quote each deliverable</CardTitle>
-          <CardDescription>
-            Deliverables are grouped by the contractor specialties added to this project. Select one
-            or more contractors against each output.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end">
-            <div className="rounded-md bg-muted/40 px-4 py-3 text-sm">
-              <span className="font-semibold">{selectedDeliverableCount}</span>{" "}
-              {selectedDeliverableCount === 1 ? "deliverable" : "deliverables"} selected ·{" "}
-              <span className="font-semibold">{selectedRequestCount}</span>{" "}
-              {selectedRequestCount === 1 ? "contractor" : "contractors"} to follow up with
-            </div>
-            <Field label="Submission deadline">
-              <Input
-                type="date"
-                value={deadline}
-                onChange={(event) => setDeadline(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
-            </Field>
-          </div>
-
-          <ContractorAssignmentBoard
-            contractors={contractorOptions}
-            existingByDeliverable={existingByDeliverable}
-            groups={assignmentGroups}
-            selectedByDeliverable={selectedAssignments}
-            onToggle={toggleAssignment}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
 function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
@@ -1365,7 +1221,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
           {p.projectParties.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No contractors added yet. You can add them later from Quotes.
+              No contractors added yet. You can add them later from the Team & suppliers step.
             </p>
           ) : (
             <div className="space-y-1">

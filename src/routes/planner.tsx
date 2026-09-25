@@ -30,12 +30,7 @@ function PlannerLayoutInner() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const p = usePlanner();
   const isWizard = pathname === "/planner/new";
-  const active =
-    pathname === "/planner/summary"
-      ? "summary"
-      : pathname === "/planner/procurement"
-        ? "procurement"
-        : "plan";
+  const active = pathname === "/planner/summary" ? "summary" : "plan";
 
   return (
     <>

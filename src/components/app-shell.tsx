@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   BarChart3,
-  ClipboardList,
   CreditCard,
   FileText,
   FolderOpen,
@@ -24,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createBillingPortalSession } from "@/lib/billing/billing.server";
 import { cn } from "@/lib/utils";
 
-type AppSection = "projects" | "plan" | "summary" | "procurement" | "account";
+type AppSection = "projects" | "plan" | "summary" | "account";
 
 interface AppShellProps {
   active: AppSection;
@@ -197,14 +196,6 @@ function SidebarContent({
               to="/planner/summary"
               projectId={projectId}
             />
-            <SidebarLink
-              active={active === "procurement"}
-              icon={<ClipboardList />}
-              label="Quotes"
-              onNavigate={onNavigate}
-              to="/planner/procurement"
-              projectId={projectId}
-            />
           </div>
         ) : null}
 
@@ -270,17 +261,10 @@ interface SidebarLinkProps {
   label: string;
   onNavigate?: () => void;
   projectId?: string | null;
-  to:
-    | "/"
-    | "/account"
-    | "/planner"
-    | "/planner/new"
-    | "/planner/procurement"
-    | "/planner/summary"
-    | "/projects";
+  to: "/" | "/account" | "/planner" | "/planner/new" | "/planner/summary" | "/projects";
 }
 
-const PLANNER_TABS = new Set(["/planner", "/planner/summary", "/planner/procurement"]);
+const PLANNER_TABS = new Set(["/planner", "/planner/summary"]);
 
 function SidebarLink({ active, icon, label, onNavigate, projectId, to }: SidebarLinkProps) {
   const search =
