@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +28,8 @@ export function CriticalIssueChecklist({
   onChange: (items: ChecklistItem[]) => void;
 }) {
   const [newTitle, setNewTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const progress = checklistProgress(items);
 
   const sorted = [...items].sort((a, b) => {
@@ -43,6 +45,16 @@ export function CriticalIssueChecklist({
   }
   function remove(id: string) {
     onChange(items.filter((i) => i.id !== id));
+  }
+  function startEdit(item: ChecklistItem) {
+    setEditingId(item.id);
+    setEditTitle(item.title);
+  }
+  function saveEdit() {
+    const title = editTitle.trim();
+    if (!title || !editingId) return;
+    onChange(items.map((i) => (i.id === editingId ? { ...i, title } : i)));
+    setEditingId(null);
   }
   function add() {
     const title = newTitle.trim();
@@ -80,37 +92,89 @@ export function CriticalIssueChecklist({
               aria-label={`Mark ${item.title}`}
             />
             <div className="min-w-0 flex-1">
-              <div className={`text-sm ${item.done ? "text-muted-foreground line-through" : ""}`}>
-                {item.title}
-              </div>
-              {item.description && !item.done && (
-                <div className="text-xs text-muted-foreground">{item.description}</div>
+              {editingId === item.id ? (
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveEdit();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  autoFocus
+                  className="h-8"
+                  aria-label="Issue title"
+                />
+              ) : (
+                <>
+                  <div
+                    className={`text-sm ${item.done ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {item.title}
+                  </div>
+                  {item.description && !item.done && (
+                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                  )}
+                </>
               )}
             </div>
-            <Select
-              value={item.severity}
-              onValueChange={(v) => setSeverity(item.id, v as Severity)}
-            >
-              <SelectTrigger className="h-8 w-28 shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(SEVERITY_LABELS) as Severity[]).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {SEVERITY_LABELS[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              onClick={() => remove(item.id)}
-              aria-label="Remove item"
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            {editingId === item.id ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0"
+                  onClick={saveEdit}
+                  aria-label="Save issue"
+                >
+                  <Check className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0"
+                  onClick={() => setEditingId(null)}
+                  aria-label="Cancel editing"
+                >
+                  <X className="size-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Select
+                  value={item.severity}
+                  onValueChange={(v) => setSeverity(item.id, v as Severity)}
+                >
+                  <SelectTrigger className="h-8 w-28 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(SEVERITY_LABELS) as Severity[]).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {SEVERITY_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0"
+                  onClick={() => startEdit(item)}
+                  aria-label="Edit issue"
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0"
+                  onClick={() => remove(item.id)}
+                  aria-label="Remove item"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </>
+            )}
           </li>
         ))}
       </ul>
