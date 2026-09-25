@@ -38,6 +38,7 @@ const SPECIALTY_ORDER: PortalContractorSpecialty[] = [
   "digital_agency",
   "content_agency",
   "media_agency",
+  "production_agency",
 ];
 
 export function recommendedContractorRole(

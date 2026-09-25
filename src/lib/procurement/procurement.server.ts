@@ -14,6 +14,7 @@ const partyRoleSchema = z.enum([
   "digital_agency",
   "content_agency",
   "media_agency",
+  "production_agency",
   "sales_team",
   "builder",
 ]);
@@ -65,6 +66,7 @@ export const saveDirectoryParty = createServerFn({ method: "POST" })
       "digital_agency",
       "content_agency",
       "media_agency",
+      "production_agency",
     ].includes(data.role);
     const values = {
       owner_user_id: userId,

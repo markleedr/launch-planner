@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  ChevronDown,
   ImagePlus,
   Info,
   Loader2,
@@ -843,8 +842,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
   const [selectedAssignments, setSelectedAssignments] = useState<Record<string, string[]>>({});
   const [deadline, setDeadline] = useState("");
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
-  const [directoryOpen, setDirectoryOpen] = useState(true);
-  const directoryInitialized = useRef(false);
+  const [openAddRole, setOpenAddRole] = useState<ProjectPartyRole | null>(null);
 
   async function refresh(projectId?: string | null) {
     try {
@@ -892,16 +890,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentProjectId]);
 
-  // Collapse the directory to a one-line summary once contractors already
-  // exist on this project, so returning here isn't a full directory-building
-  // screen again. Only decide this once, right after the first load.
-  useEffect(() => {
-    if (loading || directoryInitialized.current) return;
-    directoryInitialized.current = true;
-    setDirectoryOpen(p.projectParties.length === 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
   async function addParty() {
     setError(null);
     const projectId = await ensureProject();
@@ -925,6 +913,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         website: "",
         role: "creative_agency",
       });
+      setOpenAddRole(null);
       await refresh(projectId);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not add this party.");
@@ -966,6 +955,41 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
       })),
     [projectContractors],
   );
+
+  // Parties already attached to this project, grouped by category, joined
+  // with the directory for display fields (project_party only stores the
+  // role + a reference to the directory entry).
+  const partiesByRole = useMemo(() => {
+    const directoryById = new Map(directory.map((party) => [String(party.id), party]));
+    const map = new Map<
+      ProjectPartyRole,
+      Array<{ projectPartyId: string; party?: Record<string, unknown> }>
+    >();
+    for (const projectParty of p.projectParties) {
+      const list = map.get(projectParty.role) ?? [];
+      list.push({
+        projectPartyId: projectParty.id,
+        party: directoryById.get(projectParty.contactId),
+      });
+      map.set(projectParty.role, list);
+    }
+    return map;
+  }, [directory, p.projectParties]);
+
+  // Directory parties not yet added to this project, grouped by category, so
+  // each section can offer a one-click "reuse" alongside its own add form.
+  const availableByRole = useMemo(() => {
+    const addedContactIds = new Set(p.projectParties.map((pp) => pp.contactId));
+    const map = new Map<ProjectPartyRole, Array<Record<string, unknown>>>();
+    for (const party of directory) {
+      if (addedContactIds.has(String(party.id))) continue;
+      const role = party.role as ProjectPartyRole;
+      const list = map.get(role) ?? [];
+      list.push(party);
+      map.set(role, list);
+    }
+    return map;
+  }, [directory, p.projectParties]);
 
   const assignmentGroups = useMemo(
     () =>
@@ -1028,56 +1052,73 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         </div>
       </div>
 
-      <Card>
-        <CardHeader
-          className={p.projectParties.length > 0 ? "cursor-pointer select-none" : undefined}
-          onClick={p.projectParties.length > 0 ? () => setDirectoryOpen((v) => !v) : undefined}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>Contractor directory</CardTitle>
-              <CardDescription>
-                {directoryOpen
-                  ? "Reuse project parties and contractors across future projects. Only portal contractors receive account access."
-                  : `${p.projectParties.length} ${p.projectParties.length === 1 ? "contractor" : "contractors"} in this project. Manage`}
-              </CardDescription>
-            </div>
-            {p.projectParties.length > 0 && (
-              <ChevronDown
-                className={`size-4 shrink-0 text-muted-foreground transition-transform ${directoryOpen ? "" : "-rotate-90"}`}
-              />
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className={`space-y-4 ${directoryOpen ? "" : "hidden"}`}>
-          {loading ? <Loader2 className="size-5 animate-spin" /> : null}
-          {directory.length > 0 && (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {directory.map((party) => {
-                const partyId = String(party.id);
-                const added = p.projectParties.some(
-                  (projectParty) => projectParty.contactId === partyId,
-                );
-                return (
-                  <div key={partyId} className="rounded-md border p-3">
-                    <p className="font-medium">{String(party.organisation_name)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {PROJECT_PARTY_ROLE_LABELS[party.role as ProjectPartyRole]}
-                    </p>
-                    {party.representative_name ? (
-                      <p className="mt-2 text-sm">{String(party.representative_name)}</p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {party.portal_enabled ? (
-                        <Badge variant="secondary">Portal contractor</Badge>
-                      ) : null}
-                      {added ? (
-                        <Badge>
-                          <Check className="mr-1 size-3.5" />
-                          Added to project
-                        </Badge>
-                      ) : (
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold">Team & suppliers by category</h3>
+          <p className="text-sm text-muted-foreground">
+            Fill in a supplier for each category that applies to this project. Add more than one
+            where you want competing quotes.
+          </p>
+        </div>
+        {loading ? <Loader2 className="size-5 animate-spin" /> : null}
+        {PROJECT_PARTY_ROLES.map((role) => {
+          const added = partiesByRole.get(role) ?? [];
+          const available = availableByRole.get(role) ?? [];
+          const isAdding = openAddRole === role;
+          return (
+            <Card key={role}>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">{PROJECT_PARTY_ROLE_LABELS[role]}</CardTitle>
+                    <CardDescription>
+                      {added.length > 0
+                        ? `${added.length} ${added.length === 1 ? "supplier" : "suppliers"} added`
+                        : "Not added yet"}
+                    </CardDescription>
+                  </div>
+                  {added.length === 0 && !isAdding && (
+                    <Badge variant="outline" className="shrink-0 text-muted-foreground">
+                      To do
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {added.length > 0 && (
+                  <ul className="divide-y rounded-md border">
+                    {added.map((item) => (
+                      <li
+                        key={item.projectPartyId}
+                        className="flex items-center justify-between gap-3 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {item.party ? String(item.party.organisation_name) : "Unknown party"}
+                          </p>
+                          {item.party?.representative_name ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {String(item.party.representative_name)}
+                            </p>
+                          ) : null}
+                        </div>
+                        {item.party?.portal_enabled ? (
+                          <Badge variant="secondary" className="shrink-0">
+                            Portal contractor
+                          </Badge>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {available.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {available.map((party) => {
+                      const partyId = String(party.id);
+                      return (
                         <Button
+                          key={partyId}
                           type="button"
                           variant="outline"
                           size="sm"
@@ -1089,80 +1130,100 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                           ) : (
                             <Plus className="mr-1 size-3.5" />
                           )}
-                          Add to project
+                          {String(party.organisation_name)}
                         </Button>
-                      )}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isAdding ? (
+                  <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <Field label="Organisation" required>
+                      <Input
+                        autoFocus
+                        value={form.organisationName}
+                        onChange={(event) =>
+                          setForm({ ...form, organisationName: event.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field label="Representative">
+                      <Input
+                        value={form.representativeName}
+                        onChange={(event) =>
+                          setForm({ ...form, representativeName: event.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <Input
+                        type="email"
+                        value={form.email}
+                        onChange={(event) => setForm({ ...form, email: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <Input
+                        value={form.phone}
+                        onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Website">
+                      <Input
+                        value={form.website}
+                        onChange={(event) => setForm({ ...form, website: event.target.value })}
+                      />
+                    </Field>
+                    <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void addParty()}
+                        disabled={!form.organisationName.trim()}
+                      >
+                        <Plus className="mr-1 size-4" />
+                        Add supplier
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setOpenAddRole(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <span className="text-xs text-muted-foreground">* Required</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Organisation" required>
-              <Input
-                value={form.organisationName}
-                onChange={(event) => setForm({ ...form, organisationName: event.target.value })}
-              />
-            </Field>
-            <Field label="Representative">
-              <Input
-                value={form.representativeName}
-                onChange={(event) => setForm({ ...form, representativeName: event.target.value })}
-              />
-            </Field>
-            <Field label="Role">
-              <Select
-                value={form.role}
-                onValueChange={(value) => setForm({ ...form, role: value as ProjectPartyRole })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_PARTY_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {PROJECT_PARTY_ROLE_LABELS[role]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Email">
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </Field>
-            <Field label="Phone">
-              <Input
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              />
-            </Field>
-            <Field label="Website">
-              <Input
-                value={form.website}
-                onChange={(event) => setForm({ ...form, website: event.target.value })}
-              />
-            </Field>
-            <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
-              <Button
-                type="button"
-                onClick={() => void addParty()}
-                disabled={!form.organisationName.trim()}
-              >
-                <Plus className="mr-1 size-4" />
-                Add to project and directory
-              </Button>
-              <span className="text-xs text-muted-foreground">* Required</span>
-            </div>
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setError(null);
+                      setForm({
+                        organisationName: "",
+                        representativeName: "",
+                        email: "",
+                        phone: "",
+                        website: "",
+                        role,
+                      });
+                      setOpenAddRole(role);
+                    }}
+                  >
+                    <Plus className="mr-1 size-3.5" />
+                    {added.length > 0 ? "Add another supplier" : "Add a supplier"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
 
       <Card>
         <CardHeader>

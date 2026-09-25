@@ -2,7 +2,8 @@ export type PortalContractorSpecialty =
   | "creative_agency"
   | "digital_agency"
   | "content_agency"
-  | "media_agency";
+  | "media_agency"
+  | "production_agency";
 
 export type ReferencePartyRole = "developer" | "architect" | "sales_team" | "builder";
 
