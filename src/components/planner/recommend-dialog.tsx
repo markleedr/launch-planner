@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePlanner } from "@/components/planner/planner-provider";
+import { usePersistentDialog } from "@/components/planner/use-persistent-dialog";
 import {
   catalogItemToDeliverable,
   CHANNEL_LABELS,
@@ -26,7 +27,6 @@ import {
  *  recommended channels, buyer personas and deliverables before applying. */
 export function RecommendDialog() {
   const p = usePlanner();
-  const [open, setOpen] = useState(false);
   const [channelSel, setChannelSel] = useState<Set<ChannelCode>>(new Set());
   const [personaSel, setPersonaSel] = useState<Set<string>>(new Set());
   const [deliverableSel, setDeliverableSel] = useState<Set<string>>(new Set());
@@ -36,13 +36,16 @@ export function RecommendDialog() {
     [p.projectType, p.buyerTypes],
   );
 
-  function handleOpenChange(next: boolean) {
-    if (next) {
-      // Pre-select everything the engine recommends.
+  // Pre-select everything the engine recommends whenever the dialog opens.
+  const [open, setOpen] = usePersistentDialog("recommend", {
+    onOpen: () => {
       setChannelSel(new Set(rec.channels.map((c) => c.code)));
       setPersonaSel(new Set(rec.personas.map((x) => x.id)));
       setDeliverableSel(new Set(rec.suggestedCatalogIds));
-    }
+    },
+  });
+
+  function handleOpenChange(next: boolean) {
     setOpen(next);
   }
 

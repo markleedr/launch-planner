@@ -95,6 +95,14 @@ interface PlannerContextValue {
   resetDraft: () => void;
   toSnapshot: () => PlannerSnapshot;
   hydrate: (snap: PlannerSnapshot) => void;
+  // Dialogs that stay open (with their in-progress values) across tab changes
+  openDialog: string | null;
+  setOpenDialog: (key: string | null) => void;
+  dialogState: Record<string, unknown>;
+  setDialogValue: (key: string, value: unknown) => void;
+  /** True the first time it's called for a key, false after - so a dialog's
+   *  "open by default" request fires once per key rather than every remount. */
+  consumeDefaultOpen: (key: string) => boolean;
 }
 
 const PlannerContext = createContext<PlannerContextValue | null>(null);
@@ -134,6 +142,9 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   );
   const [contacts, setContacts] = useState<Contact[]>(seedContacts);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [openDialog, setOpenDialog] = useState<string | null>(null);
+  const [dialogState, setDialogState] = useState<Record<string, unknown>>({});
+  const consumedDefaultOpens = useRef<Set<string>>(new Set());
   // Set when a saved project is loaded, so the session draft never overwrites it.
   const externallyHydrated = useRef(false);
 
@@ -310,6 +321,25 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       setChecklist(snap.checklist);
       setContacts(snap.contacts);
     },
+    openDialog,
+    setOpenDialog,
+    dialogState,
+    setDialogValue(key, value) {
+      setDialogState((prev) => {
+        if (value === undefined) {
+          if (!(key in prev)) return prev;
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }
+        return { ...prev, [key]: value };
+      });
+    },
+    consumeDefaultOpen(key) {
+      if (consumedDefaultOpens.current.has(key)) return false;
+      consumedDefaultOpens.current.add(key);
+      return true;
+    },
   };
 
   // ---- Session draft persistence -------------------------------------------
@@ -356,6 +386,11 @@ export function usePlanner(): PlannerContextValue {
   const ctx = useContext(PlannerContext);
   if (!ctx) throw new Error("usePlanner must be used within a PlannerProvider");
   return ctx;
+}
+
+/** The planner context when inside a PlannerProvider, otherwise null. */
+export function usePlannerOptional(): PlannerContextValue | null {
+  return useContext(PlannerContext);
 }
 
 function groupByCategory(deliverables: Deliverable[]): GroupedCategory[] {
