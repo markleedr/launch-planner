@@ -80,7 +80,7 @@ export function deserializePlanner(data: unknown): PlannerSnapshot | null {
       projectBlurb: String(o.projectBlurb ?? ""),
       projectType: o.projectType as ProjectType,
       units: Number(o.units) || 0,
-      grv: String(o.grv ?? legacyGrvDollars(o)),
+      grv: storedGrvDollars(o),
       mediaBudget: String(o.mediaBudget ?? ""),
       launchDate: String(o.launchDate ?? ""),
       location: String(o.location ?? ""),
@@ -143,8 +143,12 @@ function deserializeRecurrence(r: Record<string, unknown>): RecurrenceRule {
   return r as unknown as RecurrenceRule;
 }
 
-/** Snapshots before v3 stored a per-unit sell price; GRV is units × that price. */
-function legacyGrvDollars(o: Record<string, unknown>): string {
+/**
+ * The GRV in whole dollars from stored snapshot fields. Snapshots before v3
+ * stored a per-unit sell price instead; GRV is units × that price.
+ */
+export function storedGrvDollars(o: Record<string, unknown>): string {
+  if (o.grv !== undefined && o.grv !== null) return String(o.grv);
   const units = Number(o.units) || 0;
   const sellPrice = Number(String(o.sellPrice ?? "").replace(/[^0-9.]/g, ""));
   if (units <= 0 || !Number.isFinite(sellPrice) || sellPrice <= 0) return "";
