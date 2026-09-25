@@ -224,7 +224,7 @@ function PlannerEditor() {
                 <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
                 <MediaCalculatorDialog
                   initialSalesTarget={p.units}
-                  initialPricePoint={p.financials.averageSellPriceCents / 100}
+                  grvDollars={p.financials.grvCents / 100}
                   onApply={(dollars) => p.setMediaBudget(String(dollars))}
                 />
               </div>

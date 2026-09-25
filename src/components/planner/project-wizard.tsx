@@ -715,6 +715,15 @@ function DeliverableBriefEditor({
   );
 }
 
+/** The campaign runs for `weeks`, ramping up to and ending at the launch
+ *  date (or today, if no launch date is set yet). */
+function campaignStartEndingAt(launchDate: Date | null, weeks: number): Date {
+  const end = launchDate ? new Date(launchDate) : new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - Math.max(1, Math.trunc(weeks)) * 7);
+  return start;
+}
+
 function MediaStep() {
   const p = usePlanner();
   const [applied, setApplied] = useState(false);
@@ -738,10 +747,18 @@ function MediaStep() {
         <CardContent>
           <MediaCalculatorDialog
             initialSalesTarget={p.units}
-            initialPricePoint={p.financials.averageSellPriceCents / 100}
+            grvDollars={p.financials.grvCents / 100}
             onApply={(budget, details) => {
               p.setMediaBudget(String(budget));
-              const generated = mediaPlanToDeliverables(details.inputs, details.plan);
+              const campaignStart = campaignStartEndingAt(
+                p.launchDateObj,
+                details.inputs.campaignWeeks,
+              );
+              const generated = mediaPlanToDeliverables(
+                details.inputs,
+                details.plan,
+                campaignStart,
+              );
               p.setDeliverables((current) => [
                 ...current.filter((item) => !item.id.startsWith("media-")),
                 ...generated,
