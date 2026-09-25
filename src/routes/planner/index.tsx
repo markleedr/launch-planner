@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/select";
 import { DollarInput } from "@/components/planner/dollar-input";
 import { Gantt, CriticalPathSummary } from "@/components/planner/gantt";
-import { ScheduleDialog } from "@/components/planner/schedule-dialog";
 import { CriticalIssueChecklist } from "@/components/planner/checklist";
 import { ContactsAndSuppliers } from "@/components/planner/contacts";
 import { CatalogDialog } from "@/components/planner/catalog-dialog";
@@ -529,11 +528,6 @@ function CategoryGroup({
                     allDeliverables={allDeliverables}
                     onSave={(patch) => onUpdate(d.id, patch)}
                     compact
-                  />
-                  <ScheduleDialog
-                    deliverable={d}
-                    allDeliverables={allDeliverables}
-                    onSave={(patch) => onUpdate(d.id, patch)}
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>

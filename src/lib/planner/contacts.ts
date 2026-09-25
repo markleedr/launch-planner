@@ -56,7 +56,7 @@ export function assignmentCoverage(deliverables: Deliverable[]): AssignmentCover
   let fullyAssigned = 0;
   for (const d of deliverables) {
     const hasOwner = Boolean(d.ownerContactId);
-    const hasSupplier = (d.supplierIds?.length ?? 0) > 0;
+    const hasSupplier = (d.supplierIds?.length ?? 0) > 0 || Boolean(d.supplierNotApplicable);
     if (hasOwner) owned += 1;
     if (hasSupplier) supplied += 1;
     if (hasOwner && hasSupplier) fullyAssigned += 1;
