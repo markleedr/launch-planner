@@ -306,6 +306,10 @@ export function DeliverableEditorDialog({
 
             {timing !== "due_date" ? (
               <Field label="Time needed">
+                <p className="text-xs text-muted-foreground">
+                  Time the contractor needs before this can go live. Weeks count as five business
+                  days for scheduling.
+                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
                     type="number"
@@ -328,15 +332,15 @@ export function DeliverableEditorDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Time the contractor needs before this can go live. Weeks count as five business
-                  days for scheduling.
-                </p>
               </Field>
             ) : null}
 
             {timing !== "lead_time" ? (
               <Field label="Due date">
+                <p className="text-xs text-muted-foreground">
+                  Everything is due by 5:00pm on this date. Contractor requests use it as the
+                  collateral deadline.
+                </p>
                 <Input
                   type="date"
                   value={dateInputValue(draft.collateralCutoffDate)}
@@ -348,10 +352,6 @@ export function DeliverableEditorDialog({
                     })
                   }
                 />
-                <p className="text-xs text-muted-foreground">
-                  Everything is due by 5:00pm on this date. Contractor requests use it as the
-                  collateral deadline.
-                </p>
               </Field>
             ) : null}
           </section>
@@ -361,13 +361,13 @@ export function DeliverableEditorDialog({
             hint="What the agency charges for this service, split by how it is billed."
           >
             <MoneyField
-              label="One-off ($)"
+              label="One-off / set up ($)"
               hint="Charged once: creative, design or producing the output."
               cents={draft.agencyCostCents ?? 0}
               onChange={(cents) => patch({ agencyCostCents: cents })}
             />
             <MoneyField
-              label="Monthly ($ per month)"
+              label="Management per month"
               hint="Charged every month: management, retainer or monitoring."
               cents={draft.agencyMonthlyCostCents ?? 0}
               onChange={(cents) => patch({ agencyMonthlyCostCents: cents })}
@@ -376,6 +376,9 @@ export function DeliverableEditorDialog({
 
           <section className="grid gap-3 border-t pt-5">
             <Label>Production ($/unit)</Label>
+            <p className="-mt-1.5 text-xs text-muted-foreground">
+              Printing, delivery, press, fulfilment or other external production.
+            </p>
             <MoneyInput
               cents={draft.productionCostCents}
               disabled={draft.productionCostTbc}
@@ -386,9 +389,6 @@ export function DeliverableEditorDialog({
               onCheckedChange={(checked) => patch({ productionCostTbc: checked })}
               label="To be confirmed (counts as $0 until set)"
             />
-            <p className="text-xs text-muted-foreground">
-              Printing, delivery, press, fulfilment or other external production.
-            </p>
           </section>
 
           <CostSection
@@ -431,28 +431,28 @@ export function DeliverableEditorDialog({
 
           <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
             <Field label="How many">
+              <p className="text-xs text-muted-foreground">
+                Number of these you need, for example 6 renders or 1 EDM. Multiplies the production
+                cost per unit.
+              </p>
               <Input
                 type="number"
                 min={0}
                 value={draft.quantity ?? 1}
                 onChange={(event) => patch({ quantity: Math.max(0, Number(event.target.value)) })}
               />
-              <p className="text-xs text-muted-foreground">
-                Number of these you need, for example 6 renders or 1 EDM. Multiplies the production
-                cost per unit.
-              </p>
             </Field>
             <Field label="For how many months">
+              <p className="text-xs text-muted-foreground">
+                How many months it repeats, for example 12 for a monthly EDM. Leave at 0 for a
+                one-off. Multiplies the monthly agency and media costs.
+              </p>
               <Input
                 type="number"
                 min={0}
                 value={draft.months ?? 0}
                 onChange={(event) => patch({ months: Math.max(0, Number(event.target.value)) })}
               />
-              <p className="text-xs text-muted-foreground">
-                How many months it repeats, for example 12 for a monthly EDM. Leave at 0 for a
-                one-off. Multiplies the monthly agency and media costs.
-              </p>
             </Field>
             <p className="rounded-md bg-muted px-3 py-2 text-sm sm:col-span-2">
               <span className="text-muted-foreground">Reads as: </span>
@@ -462,6 +462,10 @@ export function DeliverableEditorDialog({
 
           <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
             <Field label="Must be finished first">
+              <p className="text-xs text-muted-foreground">
+                Pick the deliverable this one can&apos;t start without, for example the brand before
+                the website. The schedule and critical path follow it.
+              </p>
               <Select
                 value={dependencyId}
                 onValueChange={(value) => patch({ dependsOn: value === "none" ? [] : [value] })}
@@ -486,10 +490,6 @@ export function DeliverableEditorDialog({
                     })}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Pick the deliverable this one can&apos;t start without, for example the brand before
-                the website. The schedule and critical path follow it.
-              </p>
             </Field>
             <Field label="Recurrence pattern">
               <Select
@@ -563,8 +563,8 @@ function CostSection({
   return (
     <section className="grid gap-3 border-t pt-5">
       <Label>{title}</Label>
+      <p className="-mt-1.5 text-xs text-muted-foreground">{hint}</p>
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>
-      <p className="text-xs text-muted-foreground">{hint}</p>
     </section>
   );
 }
@@ -585,8 +585,8 @@ function MoneyField({
   return (
     <div className="grid gap-1.5">
       <Label className="text-xs font-medium">{label}</Label>
+      <span className="-mt-1 text-xs text-muted-foreground">{hint}</span>
       <MoneyInput cents={cents} disabled={disabled} onChange={onChange} />
-      <span className="text-xs text-muted-foreground">{hint}</span>
     </div>
   );
 }
