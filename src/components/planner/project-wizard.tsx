@@ -11,7 +11,6 @@ import {
   Loader2,
   MapPin,
   Plus,
-  Send,
   SkipForward,
   Trash2,
   Users,
@@ -76,11 +75,7 @@ import type {
 } from "@/lib/procurement";
 import { calculateProposalCost, groupDeliverablesForContractors } from "@/lib/procurement";
 import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
-import {
-  attachProjectParty,
-  inviteContractors,
-  saveDirectoryParty,
-} from "@/lib/procurement/procurement.server";
+import { attachProjectParty, saveDirectoryParty } from "@/lib/procurement/procurement.server";
 import {
   listDirectoryParties,
   listOwnerProposals,
@@ -847,7 +842,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
   });
   const [selectedAssignments, setSelectedAssignments] = useState<Record<string, string[]>>({});
   const [deadline, setDeadline] = useState("");
-  const [inviting, setInviting] = useState(false);
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
   const [directoryOpen, setDirectoryOpen] = useState(true);
   const directoryInitialized = useRef(false);
@@ -1009,7 +1003,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
   const selectedDeliverableCount = Object.values(selectedAssignments).filter(
     (contractorIds) => contractorIds.length > 0,
   ).length;
-  const canInvite = selectedRequestCount > 0 && Boolean(deadline);
 
   function toggleAssignment(deliverableId: string, contractorId: string) {
     setSelectedAssignments((current) => {
@@ -1021,57 +1014,16 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     });
   }
 
-  async function invite() {
-    const projectId = await ensureProject();
-    if (!projectId || !canInvite) return;
-    setInviting(true);
-    setError(null);
-    try {
-      for (const [deliverableId, contractorPartyIds] of Object.entries(selectedAssignments)) {
-        if (contractorPartyIds.length === 0) continue;
-        const deliverable = p.deliverables.find((item) => item.id === deliverableId);
-        if (!deliverable) continue;
-        const scheduled = p.schedule.items.find((item) => item.id === deliverable.id);
-        const collateralCutoff = deliverable.collateralCutoffDate ?? scheduled?.start;
-        await inviteContractors({
-          data: {
-            projectId,
-            deliverable: {
-              id: deliverable.id,
-              name: deliverable.name,
-              description: deliverable.description ?? "",
-              category: deliverable.category,
-              requirements: deliverable.requirements ?? "",
-              requiredFormats: deliverable.requiredFormats ?? [],
-              collateralCutoffAt: collateralCutoff?.toISOString(),
-              collectionLeadBusinessDays: p.standardCollectionBusinessDays,
-            },
-            contractorPartyIds,
-            submissionDeadline: new Date(`${deadline}T17:00:00`).toISOString(),
-            origin: window.location.origin,
-          },
-        });
-      }
-      setSelectedAssignments({});
-      setDeadline("");
-      await refresh(projectId);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not send invitations.");
-    } finally {
-      setInviting(false);
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
         <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
         <div>
-          <p className="font-semibold">A price request does not assign the work.</p>
+          <p className="font-semibold">Checking a box doesn&apos;t send anything.</p>
           <p className="mt-1 text-muted-foreground">
-            Below, add or reuse contractors, then check a box against a deliverable to send that
-            contractor a private price request. You can request competing prices from multiple
-            contractors, then award one in Procurement.
+            Below, add or reuse contractors, then check a box against a deliverable to note who
+            you&apos;re asking to quote it. Follow up with them yourself, then record their quote
+            and award the work in Procurement.
           </p>
         </div>
       </div>
@@ -1226,7 +1178,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
               <span className="font-semibold">{selectedDeliverableCount}</span>{" "}
               {selectedDeliverableCount === 1 ? "deliverable" : "deliverables"} selected ·{" "}
               <span className="font-semibold">{selectedRequestCount}</span>{" "}
-              {selectedRequestCount === 1 ? "price request" : "price requests"}
+              {selectedRequestCount === 1 ? "contractor" : "contractors"} to follow up with
             </div>
             <Field label="Submission deadline">
               <Input
@@ -1245,17 +1197,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
             selectedByDeliverable={selectedAssignments}
             onToggle={toggleAssignment}
           />
-
-          <Button type="button" disabled={!canInvite || inviting} onClick={() => void invite()}>
-            {inviting ? (
-              <Loader2 className="mr-1 size-4 animate-spin" />
-            ) : (
-              <Send className="mr-1 size-4" />
-            )}
-            {selectedRequestCount > 0
-              ? `Send ${selectedRequestCount} price request${selectedRequestCount === 1 ? "" : "s"}`
-              : "Select deliverables and contractors"}
-          </Button>
         </CardContent>
       </Card>
     </div>
