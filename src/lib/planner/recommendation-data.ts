@@ -186,6 +186,16 @@ export const PERSONA_TEMPLATES: PersonaTemplate[] = [
     appliesToBuyerTypes: ["owner_occupier"],
     appliesToProjectTypes: ["multi_residential"],
   },
+  {
+    id: "persona-apartment-upsizer",
+    name: "The Apartment Upsizer",
+    description:
+      "Growing household moving from a smaller property into a larger apartment for more space.",
+    motivations: "Extra bedrooms, larger floorplan, storage, staying close to existing lifestyle.",
+    suggestedChannels: ["paid_social", "ppc", "press"],
+    appliesToBuyerTypes: ["upsizer"],
+    appliesToProjectTypes: ["multi_residential"],
+  },
 ];
 
 /**

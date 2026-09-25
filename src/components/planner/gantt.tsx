@@ -13,6 +13,14 @@ import {
 const ROW_H = 44; // px per row
 const HEADER_H = 28; // px for the tick axis
 
+// Diagonal hatch for the setup/lead-in portion of a bar - reads clearly as
+// "not working time" whether it's sitting on the page background (legend) or
+// on top of a coloured bar (critical/slack), unlike a flat white fill.
+const HATCH_STYLE: React.CSSProperties = {
+  backgroundImage:
+    "repeating-linear-gradient(45deg, color-mix(in oklch, var(--color-foreground) 25%, transparent) 0, color-mix(in oklch, var(--color-foreground) 25%, transparent) 3px, transparent 3px, transparent 7px)",
+};
+
 interface Row {
   kind: "category" | "item";
   key: string;
@@ -169,8 +177,8 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
                         >
                           {/* Lead-in / setup portion */}
                           <div
-                            className="absolute inset-y-0 left-0 border-r border-background/70 bg-background/45"
-                            style={{ width: `${leadFrac * 100}%` }}
+                            className="absolute inset-y-0 left-0 border-r border-background/70 bg-background"
+                            style={{ width: `${leadFrac * 100}%`, ...HATCH_STYLE }}
                           />
                         </button>
                       </PopoverTrigger>
@@ -351,7 +359,9 @@ function GanttLegend() {
       >
         Has slack
       </LegendItem>
-      <LegendItem className="border border-foreground/40 bg-background">Setup / lead-in</LegendItem>
+      <LegendItem className="border border-foreground/40 bg-background" style={HATCH_STYLE}>
+        Setup / lead-in
+      </LegendItem>
       <span className="flex items-center gap-1.5">
         <span className="size-1.5 rounded-full bg-background ring-1 ring-foreground/60" />
         Recurrence
@@ -375,16 +385,18 @@ function GanttLegend() {
 
 function LegendItem({
   className,
+  style,
   help,
   children,
 }: {
   className: string;
+  style?: React.CSSProperties;
   help?: string;
   children: React.ReactNode;
 }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`h-3 w-5 rounded ${className}`} />
+      <span className={`h-3 w-5 rounded ${className}`} style={style} />
       {children}
       {help && <HelpTip label={`What does "${children}" mean?`}>{help}</HelpTip>}
     </span>

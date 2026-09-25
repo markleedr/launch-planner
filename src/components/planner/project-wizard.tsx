@@ -5,13 +5,10 @@ import {
   ArrowRight,
   Building2,
   Check,
-  ChevronDown,
   ImagePlus,
-  Info,
   Loader2,
   MapPin,
   Plus,
-  Send,
   SkipForward,
   Trash2,
   Users,
@@ -37,11 +34,7 @@ import { CatalogDialog } from "./catalog-dialog";
 import { DeliverableEditorDialog } from "./deliverable-editor-dialog";
 import { DollarInput } from "./dollar-input";
 import { MediaCalculatorDialog } from "./media-calculator-dialog";
-import {
-  ContractorAssignmentBoard,
-  type ContractorOption,
-  type ExistingProposal,
-} from "./contractor-assignment-board";
+import { RecommendDialog } from "./recommend-dialog";
 import { usePlanner } from "./planner-provider";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,28 +56,12 @@ import {
   type Deliverable,
   type ProjectType,
 } from "@/lib/planner";
-import {
-  PROJECT_PARTY_ROLE_LABELS,
-  PORTAL_CONTRACTOR_ROLES,
-  PROJECT_PARTY_ROLES,
-} from "@/lib/procurement/labels";
-import type {
-  PortalContractorSpecialty,
-  ProjectPartyRole,
-  ProposalStatus,
-} from "@/lib/procurement";
-import { calculateProposalCost, groupDeliverablesForContractors } from "@/lib/procurement";
+import { PROJECT_PARTY_ROLE_LABELS, PROJECT_PARTY_ROLES } from "@/lib/procurement/labels";
+import type { ProjectPartyRole } from "@/lib/procurement";
+import { calculateProposalCost } from "@/lib/procurement";
 import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
-import {
-  attachProjectParty,
-  inviteContractors,
-  saveDirectoryParty,
-} from "@/lib/procurement/procurement.server";
-import {
-  listDirectoryParties,
-  listOwnerProposals,
-  listProjectParties,
-} from "@/lib/procurement/procurement-store";
+import { attachProjectParty, saveDirectoryParty } from "@/lib/procurement/procurement.server";
+import { listDirectoryParties, listProjectParties } from "@/lib/procurement/procurement-store";
 
 const STEPS = [
   { id: "details", label: "Project details" },
@@ -586,7 +563,8 @@ function DeliverablesStep() {
               Add proven templates or create a custom brief. Everything remains editable.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <RecommendDialog />
             <CatalogDialog
               onAdd={(items) => p.setDeliverables((current) => [...current, ...items])}
             />
@@ -831,8 +809,6 @@ function MediaStep() {
 function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | null> }) {
   const p = usePlanner();
   const [directory, setDirectory] = useState<Array<Record<string, unknown>>>([]);
-  const [projectContractors, setProjectContractors] = useState<Array<Record<string, unknown>>>([]);
-  const [proposalRows, setProposalRows] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -843,20 +819,15 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     website: "",
     role: "creative_agency" as ProjectPartyRole,
   });
-  const [selectedAssignments, setSelectedAssignments] = useState<Record<string, string[]>>({});
-  const [deadline, setDeadline] = useState("");
-  const [inviting, setInviting] = useState(false);
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
-  const [directoryOpen, setDirectoryOpen] = useState(true);
-  const directoryInitialized = useRef(false);
+  const [openAddRole, setOpenAddRole] = useState<ProjectPartyRole | null>(null);
 
   async function refresh(projectId?: string | null) {
     try {
       setLoading(true);
-      const [all, assigned, proposals] = await Promise.all([
+      const [all, assigned] = await Promise.all([
         listDirectoryParties(),
         projectId ? listProjectParties(projectId) : Promise.resolve([]),
-        projectId ? listOwnerProposals(projectId) : Promise.resolve([]),
       ]);
       setDirectory(all as Array<Record<string, unknown>>);
       const assignedRows = assigned as Array<Record<string, unknown>>;
@@ -867,17 +838,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           role: row.role as ProjectPartyRole,
         })),
       );
-      setProjectContractors(
-        assignedRows
-          .map((row) => {
-            const party = asRecord(row.party);
-            return { ...party, project_role: row.role };
-          })
-          .filter((party) =>
-            PORTAL_CONTRACTOR_ROLES.includes(party.project_role as PortalContractorSpecialty),
-          ),
-      );
-      setProposalRows(proposals as Array<Record<string, unknown>>);
       setError(null);
     } catch (reason) {
       setError(
@@ -895,16 +855,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     // The project id is intentionally the only refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentProjectId]);
-
-  // Collapse the directory to a one-line summary once contractors already
-  // exist on this project, so returning here isn't a full directory-building
-  // screen again. Only decide this once, right after the first load.
-  useEffect(() => {
-    if (loading || directoryInitialized.current) return;
-    directoryInitialized.current = true;
-    setDirectoryOpen(p.projectParties.length === 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
 
   async function addParty() {
     setError(null);
@@ -929,6 +879,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         website: "",
         role: "creative_agency",
       });
+      setOpenAddRole(null);
       await refresh(projectId);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not add this party.");
@@ -960,170 +911,110 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     }
   }
 
-  const contractorOptions = useMemo<ContractorOption[]>(
-    () =>
-      projectContractors.map((party) => ({
-        email: party.email ? String(party.email) : undefined,
-        id: String(party.id),
-        name: String(party.organisation_name),
-        role: party.project_role as PortalContractorSpecialty,
-      })),
-    [projectContractors],
-  );
-
-  const assignmentGroups = useMemo(
-    () =>
-      groupDeliverablesForContractors(
-        p.deliverables,
-        contractorOptions.map((contractor) => contractor.role),
-      ),
-    [contractorOptions, p.deliverables],
-  );
-
-  const existingByDeliverable = useMemo(() => {
-    const result = new Map<string, Map<string, ExistingProposal>>();
-    for (const row of proposalRows) {
-      const brief = asRecord(row.brief);
-      const contractor = asRecord(row.contractor);
-      const deliverableId = String(brief.deliverable_id ?? "");
-      const contractorId = String(row.contractor_party_id ?? contractor.id ?? "");
-      if (!deliverableId || !contractorId) continue;
-      const byContractor = result.get(deliverableId) ?? new Map<string, ExistingProposal>();
-      if (!byContractor.has(contractorId)) {
-        byContractor.set(contractorId, {
-          contractorId,
-          status: row.status as ProposalStatus,
-        });
-      }
-      result.set(deliverableId, byContractor);
+  // Parties already attached to this project, grouped by category, joined
+  // with the directory for display fields (project_party only stores the
+  // role + a reference to the directory entry).
+  const partiesByRole = useMemo(() => {
+    const directoryById = new Map(directory.map((party) => [String(party.id), party]));
+    const map = new Map<
+      ProjectPartyRole,
+      Array<{ projectPartyId: string; party?: Record<string, unknown> }>
+    >();
+    for (const projectParty of p.projectParties) {
+      const list = map.get(projectParty.role) ?? [];
+      list.push({
+        projectPartyId: projectParty.id,
+        party: directoryById.get(projectParty.contactId),
+      });
+      map.set(projectParty.role, list);
     }
-    return result;
-  }, [proposalRows]);
+    return map;
+  }, [directory, p.projectParties]);
 
-  const selectedRequestCount = Object.values(selectedAssignments).reduce(
-    (total, contractorIds) => total + contractorIds.length,
-    0,
-  );
-  const selectedDeliverableCount = Object.values(selectedAssignments).filter(
-    (contractorIds) => contractorIds.length > 0,
-  ).length;
-  const canInvite = selectedRequestCount > 0 && Boolean(deadline);
-
-  function toggleAssignment(deliverableId: string, contractorId: string) {
-    setSelectedAssignments((current) => {
-      const selected = current[deliverableId] ?? [];
-      const next = selected.includes(contractorId)
-        ? selected.filter((id) => id !== contractorId)
-        : [...selected, contractorId];
-      return { ...current, [deliverableId]: next };
-    });
-  }
-
-  async function invite() {
-    const projectId = await ensureProject();
-    if (!projectId || !canInvite) return;
-    setInviting(true);
-    setError(null);
-    try {
-      for (const [deliverableId, contractorPartyIds] of Object.entries(selectedAssignments)) {
-        if (contractorPartyIds.length === 0) continue;
-        const deliverable = p.deliverables.find((item) => item.id === deliverableId);
-        if (!deliverable) continue;
-        const scheduled = p.schedule.items.find((item) => item.id === deliverable.id);
-        const collateralCutoff = deliverable.collateralCutoffDate ?? scheduled?.start;
-        await inviteContractors({
-          data: {
-            projectId,
-            deliverable: {
-              id: deliverable.id,
-              name: deliverable.name,
-              description: deliverable.description ?? "",
-              category: deliverable.category,
-              requirements: deliverable.requirements ?? "",
-              requiredFormats: deliverable.requiredFormats ?? [],
-              collateralCutoffAt: collateralCutoff?.toISOString(),
-              collectionLeadBusinessDays: p.standardCollectionBusinessDays,
-            },
-            contractorPartyIds,
-            submissionDeadline: new Date(`${deadline}T17:00:00`).toISOString(),
-            origin: window.location.origin,
-          },
-        });
-      }
-      setSelectedAssignments({});
-      setDeadline("");
-      await refresh(projectId);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not send invitations.");
-    } finally {
-      setInviting(false);
+  // Directory parties not yet added to this project, grouped by category, so
+  // each section can offer a one-click "reuse" alongside its own add form.
+  const availableByRole = useMemo(() => {
+    const addedContactIds = new Set(p.projectParties.map((pp) => pp.contactId));
+    const map = new Map<ProjectPartyRole, Array<Record<string, unknown>>>();
+    for (const party of directory) {
+      if (addedContactIds.has(String(party.id))) continue;
+      const role = party.role as ProjectPartyRole;
+      const list = map.get(role) ?? [];
+      list.push(party);
+      map.set(role, list);
     }
-  }
+    return map;
+  }, [directory, p.projectParties]);
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
-        <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
+      <div className="space-y-3">
         <div>
-          <p className="font-semibold">A price request does not assign the work.</p>
-          <p className="mt-1 text-muted-foreground">
-            Below, add or reuse contractors, then check a box against a deliverable to send that
-            contractor a private price request. You can request competing prices from multiple
-            contractors, then award one in Procurement.
+          <h3 className="text-sm font-semibold">Team & suppliers by category</h3>
+          <p className="text-sm text-muted-foreground">
+            Fill in a supplier for each category that applies to this project. Add more than one
+            where you want competing quotes.
           </p>
         </div>
-      </div>
+        {loading ? <Loader2 className="size-5 animate-spin" /> : null}
+        {PROJECT_PARTY_ROLES.map((role) => {
+          const added = partiesByRole.get(role) ?? [];
+          const available = availableByRole.get(role) ?? [];
+          const isAdding = openAddRole === role;
+          return (
+            <Card key={role}>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">{PROJECT_PARTY_ROLE_LABELS[role]}</CardTitle>
+                    <CardDescription>
+                      {added.length > 0
+                        ? `${added.length} ${added.length === 1 ? "supplier" : "suppliers"} added`
+                        : "Not added yet"}
+                    </CardDescription>
+                  </div>
+                  {added.length === 0 && !isAdding && (
+                    <Badge variant="outline" className="shrink-0 text-muted-foreground">
+                      To do
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {added.length > 0 && (
+                  <ul className="divide-y rounded-md border">
+                    {added.map((item) => (
+                      <li
+                        key={item.projectPartyId}
+                        className="flex items-center justify-between gap-3 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {item.party ? String(item.party.organisation_name) : "Unknown party"}
+                          </p>
+                          {item.party?.representative_name ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {String(item.party.representative_name)}
+                            </p>
+                          ) : null}
+                        </div>
+                        {item.party?.portal_enabled ? (
+                          <Badge variant="secondary" className="shrink-0">
+                            Portal contractor
+                          </Badge>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-      <Card>
-        <CardHeader
-          className={p.projectParties.length > 0 ? "cursor-pointer select-none" : undefined}
-          onClick={p.projectParties.length > 0 ? () => setDirectoryOpen((v) => !v) : undefined}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>Contractor directory</CardTitle>
-              <CardDescription>
-                {directoryOpen
-                  ? "Reuse project parties and contractors across future projects. Only portal contractors receive account access."
-                  : `${p.projectParties.length} ${p.projectParties.length === 1 ? "contractor" : "contractors"} in this project. Manage`}
-              </CardDescription>
-            </div>
-            {p.projectParties.length > 0 && (
-              <ChevronDown
-                className={`size-4 shrink-0 text-muted-foreground transition-transform ${directoryOpen ? "" : "-rotate-90"}`}
-              />
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className={`space-y-4 ${directoryOpen ? "" : "hidden"}`}>
-          {loading ? <Loader2 className="size-5 animate-spin" /> : null}
-          {directory.length > 0 && (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {directory.map((party) => {
-                const partyId = String(party.id);
-                const added = p.projectParties.some(
-                  (projectParty) => projectParty.contactId === partyId,
-                );
-                return (
-                  <div key={partyId} className="rounded-md border p-3">
-                    <p className="font-medium">{String(party.organisation_name)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {PROJECT_PARTY_ROLE_LABELS[party.role as ProjectPartyRole]}
-                    </p>
-                    {party.representative_name ? (
-                      <p className="mt-2 text-sm">{String(party.representative_name)}</p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {party.portal_enabled ? (
-                        <Badge variant="secondary">Portal contractor</Badge>
-                      ) : null}
-                      {added ? (
-                        <Badge>
-                          <Check className="mr-1 size-3.5" />
-                          Added to project
-                        </Badge>
-                      ) : (
+                {available.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {available.map((party) => {
+                      const partyId = String(party.id);
+                      return (
                         <Button
+                          key={partyId}
                           type="button"
                           variant="outline"
                           size="sm"
@@ -1135,133 +1026,102 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                           ) : (
                             <Plus className="mr-1 size-3.5" />
                           )}
-                          Add to project
+                          {String(party.organisation_name)}
                         </Button>
-                      )}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isAdding ? (
+                  <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <Field label="Organisation" required>
+                      <Input
+                        autoFocus
+                        value={form.organisationName}
+                        onChange={(event) =>
+                          setForm({ ...form, organisationName: event.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field label="Representative">
+                      <Input
+                        value={form.representativeName}
+                        onChange={(event) =>
+                          setForm({ ...form, representativeName: event.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <Input
+                        type="email"
+                        value={form.email}
+                        onChange={(event) => setForm({ ...form, email: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <Input
+                        value={form.phone}
+                        onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Website">
+                      <Input
+                        value={form.website}
+                        onChange={(event) => setForm({ ...form, website: event.target.value })}
+                      />
+                    </Field>
+                    <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void addParty()}
+                        disabled={!form.organisationName.trim()}
+                      >
+                        <Plus className="mr-1 size-4" />
+                        Add supplier
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setOpenAddRole(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <span className="text-xs text-muted-foreground">* Required</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Organisation" required>
-              <Input
-                value={form.organisationName}
-                onChange={(event) => setForm({ ...form, organisationName: event.target.value })}
-              />
-            </Field>
-            <Field label="Representative">
-              <Input
-                value={form.representativeName}
-                onChange={(event) => setForm({ ...form, representativeName: event.target.value })}
-              />
-            </Field>
-            <Field label="Role">
-              <Select
-                value={form.role}
-                onValueChange={(value) => setForm({ ...form, role: value as ProjectPartyRole })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_PARTY_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {PROJECT_PARTY_ROLE_LABELS[role]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Email">
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </Field>
-            <Field label="Phone">
-              <Input
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              />
-            </Field>
-            <Field label="Website">
-              <Input
-                value={form.website}
-                onChange={(event) => setForm({ ...form, website: event.target.value })}
-              />
-            </Field>
-            <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
-              <Button
-                type="button"
-                onClick={() => void addParty()}
-                disabled={!form.organisationName.trim()}
-              >
-                <Plus className="mr-1 size-4" />
-                Add to project and directory
-              </Button>
-              <span className="text-xs text-muted-foreground">* Required</span>
-            </div>
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Choose who will quote each deliverable</CardTitle>
-          <CardDescription>
-            Deliverables are grouped by the contractor specialties added to this project. Select one
-            or more contractors against each output.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end">
-            <div className="rounded-md bg-muted/40 px-4 py-3 text-sm">
-              <span className="font-semibold">{selectedDeliverableCount}</span>{" "}
-              {selectedDeliverableCount === 1 ? "deliverable" : "deliverables"} selected ·{" "}
-              <span className="font-semibold">{selectedRequestCount}</span>{" "}
-              {selectedRequestCount === 1 ? "price request" : "price requests"}
-            </div>
-            <Field label="Submission deadline">
-              <Input
-                type="date"
-                value={deadline}
-                onChange={(event) => setDeadline(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
-            </Field>
-          </div>
-
-          <ContractorAssignmentBoard
-            contractors={contractorOptions}
-            existingByDeliverable={existingByDeliverable}
-            groups={assignmentGroups}
-            selectedByDeliverable={selectedAssignments}
-            onToggle={toggleAssignment}
-          />
-
-          <Button type="button" disabled={!canInvite || inviting} onClick={() => void invite()}>
-            {inviting ? (
-              <Loader2 className="mr-1 size-4 animate-spin" />
-            ) : (
-              <Send className="mr-1 size-4" />
-            )}
-            {selectedRequestCount > 0
-              ? `Send ${selectedRequestCount} price request${selectedRequestCount === 1 ? "" : "s"}`
-              : "Select deliverables and contractors"}
-          </Button>
-        </CardContent>
-      </Card>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setError(null);
+                      setForm({
+                        organisationName: "",
+                        representativeName: "",
+                        email: "",
+                        phone: "",
+                        website: "",
+                        role,
+                      });
+                      setOpenAddRole(role);
+                    }}
+                  >
+                    <Plus className="mr-1 size-3.5" />
+                    {added.length > 0 ? "Add another supplier" : "Add a supplier"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
     </div>
   );
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
 function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
@@ -1361,7 +1221,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
           {p.projectParties.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No contractors added yet. You can add them later from Quotes.
+              No contractors added yet. You can add them later from the Team & suppliers step.
             </p>
           ) : (
             <div className="space-y-1">

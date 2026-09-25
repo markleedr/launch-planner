@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -116,25 +117,55 @@ function PlannerEditor() {
     ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
     : null;
 
+  const [activeSection, setActiveSection] = useState<string>(SECTIONS[0].id);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length === 0) return;
+        const topmost = visible.reduce((a, b) =>
+          a.boundingClientRect.top < b.boundingClientRect.top ? a : b,
+        );
+        setActiveSection(topmost.target.id);
+      },
+      { rootMargin: "-140px 0px -70% 0px", threshold: 0 },
+    );
+    for (const section of SECTIONS) {
+      const el = document.getElementById(section.id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <nav
         aria-label="Plan sections"
-        className="sticky top-16 z-20 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b bg-background/95 px-6 py-2 backdrop-blur"
+        className="sticky top-20 z-20 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b bg-muted px-6 py-2.5"
       >
-        {SECTIONS.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection(s.id);
-            }}
-            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {s.label}
-          </a>
-        ))}
+        {SECTIONS.map((s) => {
+          const isActive = activeSection === s.id;
+          return (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection(s.id);
+              }}
+              aria-current={isActive ? "true" : undefined}
+              className={cn(
+                "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors",
+                isActive
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              {s.label}
+            </a>
+          );
+        })}
       </nav>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">

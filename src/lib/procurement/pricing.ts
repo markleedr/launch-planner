@@ -1,4 +1,16 @@
-import type { ProposalValues } from "./types";
+/** A deliverable's cost/timing fields, as captured on a quote or deliverable brief. */
+export interface ProposalValues {
+  notes: string;
+  setupBusinessDays: number;
+  agencyOneOffCents: number;
+  agencyMonthlyCents: number;
+  productionUnitCents: number;
+  productionToBeConfirmed: boolean;
+  mediaOneOffCents: number;
+  mediaMonthlyCents: number;
+  quantity: number;
+  months: number;
+}
 
 function safeCents(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;

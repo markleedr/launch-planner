@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   BarChart3,
-  ClipboardList,
   CreditCard,
   FileText,
   FolderOpen,
@@ -24,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createBillingPortalSession } from "@/lib/billing/billing.server";
 import { cn } from "@/lib/utils";
 
-type AppSection = "projects" | "plan" | "summary" | "procurement" | "account";
+type AppSection = "projects" | "plan" | "summary" | "account";
 
 interface AppShellProps {
   active: AppSection;
@@ -93,8 +92,8 @@ export function AppShell({
       </aside>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur print:hidden">
-          <div className="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 border-b bg-card/95 shadow-sm backdrop-blur print:hidden">
+          <div className="flex min-h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
@@ -119,17 +118,21 @@ export function AppShell({
               <Wordmark className="text-base lg:hidden" />
               {projectNavigation ? (
                 <Link to="/projects" className="min-w-0 rounded-sm hover:underline">
-                  <p className="hidden text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground lg:block">
+                  <p className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:block">
                     Launch Planner
                   </p>
-                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                  <p className="truncate text-xl font-bold tracking-tight text-foreground">
+                    {title}
+                  </p>
                 </Link>
               ) : (
                 <div className="hidden min-w-0 lg:block">
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Launch Planner
                   </p>
-                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                  <p className="truncate text-xl font-bold tracking-tight text-foreground">
+                    {title}
+                  </p>
                 </div>
               )}
             </div>
@@ -191,14 +194,6 @@ function SidebarContent({
               label="Summary"
               onNavigate={onNavigate}
               to="/planner/summary"
-              projectId={projectId}
-            />
-            <SidebarLink
-              active={active === "procurement"}
-              icon={<ClipboardList />}
-              label="Quotes"
-              onNavigate={onNavigate}
-              to="/planner/procurement"
               projectId={projectId}
             />
           </div>
@@ -266,17 +261,10 @@ interface SidebarLinkProps {
   label: string;
   onNavigate?: () => void;
   projectId?: string | null;
-  to:
-    | "/"
-    | "/account"
-    | "/planner"
-    | "/planner/new"
-    | "/planner/procurement"
-    | "/planner/summary"
-    | "/projects";
+  to: "/" | "/account" | "/planner" | "/planner/new" | "/planner/summary" | "/projects";
 }
 
-const PLANNER_TABS = new Set(["/planner", "/planner/summary", "/planner/procurement"]);
+const PLANNER_TABS = new Set(["/planner", "/planner/summary"]);
 
 function SidebarLink({ active, icon, label, onNavigate, projectId, to }: SidebarLinkProps) {
   const search =

@@ -1,9 +1,16 @@
-import { useState } from "react";
-import { Check, Globe, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Check, Globe, Mail, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
@@ -161,6 +168,8 @@ function ContactsDirectory({
   const [editOrg, setEditOrg] = useState("");
   const [editWebsite, setEditWebsite] = useState("");
   const [editType, setEditType] = useState<ContactType>("supplier");
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = contacts.find((c) => c.id === viewingId) ?? null;
 
   function startEdit(c: Contact) {
     setEditingId(c.id);
@@ -308,7 +317,19 @@ function ContactsDirectory({
               </Button>
             </li>
           ) : (
-            <li key={c.id} className="flex items-center gap-3 px-3 py-2">
+            <li
+              key={c.id}
+              className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-accent/50"
+              role="button"
+              tabIndex={0}
+              onClick={() => setViewingId(c.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setViewingId(c.id);
+                }
+              }}
+            >
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{c.name}</div>
                 {c.organisation && c.organisation !== c.name && (
@@ -328,6 +349,7 @@ function ContactsDirectory({
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`Open ${c.name} website`}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Globe className="size-4" />
                   </a>
@@ -337,7 +359,10 @@ function ContactsDirectory({
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                onClick={() => startEdit(c)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit(c);
+                }}
                 aria-label={`Edit ${c.name}`}
               >
                 <Pencil className="size-4" />
@@ -346,7 +371,10 @@ function ContactsDirectory({
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                onClick={() => remove(c.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(c.id);
+                }}
                 aria-label={`Remove ${c.name}`}
               >
                 <Trash2 className="size-4" />
@@ -355,6 +383,76 @@ function ContactsDirectory({
           ),
         )}
       </ul>
+
+      <Dialog open={viewing !== null} onOpenChange={(open) => !open && setViewingId(null)}>
+        <DialogContent>
+          {viewing && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{viewing.name}</DialogTitle>
+                <DialogDescription>{CONTACT_TYPE_LABELS[viewing.type]}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                {viewing.organisation && viewing.organisation !== viewing.name && (
+                  <DetailRow label="Organisation" value={viewing.organisation} />
+                )}
+                {viewing.roleCategory && <DetailRow label="Role" value={viewing.roleCategory} />}
+                {viewing.email && (
+                  <DetailRow
+                    label="Email"
+                    value={
+                      <a
+                        href={`mailto:${viewing.email}`}
+                        className="flex items-center gap-1.5 text-foreground underline underline-offset-2"
+                      >
+                        <Mail className="size-3.5" />
+                        {viewing.email}
+                      </a>
+                    }
+                  />
+                )}
+                {viewing.website && (
+                  <DetailRow
+                    label="Website"
+                    value={
+                      <a
+                        href={viewing.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 text-foreground underline underline-offset-2"
+                      >
+                        <Globe className="size-3.5" />
+                        {viewing.website}
+                      </a>
+                    }
+                  />
+                )}
+                {!viewing.organisation &&
+                  !viewing.roleCategory &&
+                  !viewing.email &&
+                  !viewing.website && (
+                    <p className="text-muted-foreground">
+                      No other details recorded for this contact.
+                    </p>
+                  )}
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setViewingId(null);
+                    startEdit(viewing);
+                  }}
+                >
+                  <Pencil className="mr-1 size-3.5" />
+                  Edit
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
@@ -475,4 +573,13 @@ function StatusBadge({ status }: { status: "full" | "partial" | "none" }) {
   if (status === "full") return <Badge>Assigned</Badge>;
   if (status === "partial") return <Badge variant="secondary">Owner only</Badge>;
   return <Badge variant="outline">Unassigned</Badge>;
+}
+
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
 }
