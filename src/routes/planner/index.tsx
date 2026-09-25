@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { differenceInCalendarDays } from "date-fns";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,6 +81,36 @@ function PlannerEditor() {
   }, [mediaBudget, p]);
   const overBudget = p.budget.varianceVsMediaBudgetCents > 0;
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Deliverable | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<{
+    deliverable: Deliverable;
+    index: number;
+  } | null>(null);
+
+  function requestDeleteDeliverable(id: string) {
+    const deliverable = p.deliverables.find((d) => d.id === id);
+    if (deliverable) setDeleteTarget(deliverable);
+  }
+
+  function confirmDeleteDeliverable() {
+    if (!deleteTarget) return;
+    const index = p.deliverables.findIndex((d) => d.id === deleteTarget.id);
+    setLastDeleted({ deliverable: deleteTarget, index });
+    p.removeDeliverable(deleteTarget.id);
+    setDeleteTarget(null);
+  }
+
+  function undoDeleteDeliverable() {
+    if (!lastDeleted) return;
+    const { deliverable, index } = lastDeleted;
+    p.setDeliverables((prev) => {
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, deliverable);
+      return next;
+    });
+    setLastDeleted(null);
+  }
+
   const checklist = checklistProgress(p.checklist);
   const daysLate = p.launchDateObj
     ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
@@ -193,7 +224,7 @@ function PlannerEditor() {
                 <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
                 <MediaCalculatorDialog
                   initialSalesTarget={p.units}
-                  initialPricePoint={p.financials.averageSellPriceCents / 100}
+                  grvDollars={p.financials.grvCents / 100}
                   onApply={(dollars) => p.setMediaBudget(String(dollars))}
                 />
               </div>
@@ -309,21 +340,49 @@ function PlannerEditor() {
 
       {/* Deliverables & budget */}
       <Card id="budget" className="mt-6 scroll-mt-32">
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle>Deliverables & budget</CardTitle>
-            <CardDescription>
-              Grouped by category. Adjust production and media costs; totals update live.
-            </CardDescription>
+        <CardHeader className="space-y-3">
+          <div className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Deliverables & budget</CardTitle>
+              <CardDescription>
+                Grouped by category. Adjust production and media costs; totals update live.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <RecommendDialog />
+              <CatalogDialog onAdd={(items) => p.setDeliverables((prev) => [...prev, ...items])} />
+              <Button
+                onClick={() => setJustAddedId(p.addDeliverable())}
+                size="sm"
+                variant="outline"
+              >
+                <Plus className="mr-1 size-4" />
+                Add custom
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <RecommendDialog />
-            <CatalogDialog onAdd={(items) => p.setDeliverables((prev) => [...prev, ...items])} />
-            <Button onClick={() => setJustAddedId(p.addDeliverable())} size="sm" variant="outline">
-              <Plus className="mr-1 size-4" />
-              Add custom
-            </Button>
-          </div>
+          {lastDeleted && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+              <span>
+                Removed <strong>{lastDeleted.deliverable.name}</strong>.
+              </span>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={undoDeleteDeliverable}>
+                  <Undo2 className="mr-1 size-4" />
+                  Undo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={() => setLastDeleted(null)}
+                  aria-label="Dismiss"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -362,7 +421,7 @@ function PlannerEditor() {
                       subtotalCents={cat?.totalCents ?? 0}
                       allDeliverables={p.deliverables}
                       onUpdate={p.updateDeliverable}
-                      onRemove={p.removeDeliverable}
+                      onRemove={requestDeleteDeliverable}
                       justAddedId={justAddedId}
                       onJustAddedFocused={() => setJustAddedId(null)}
                     />
@@ -424,6 +483,18 @@ function PlannerEditor() {
           />
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTarget(null);
+        }}
+        title={`Remove "${deleteTarget?.name}"?`}
+        description="You can undo this straight after from the Deliverables & budget section."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={confirmDeleteDeliverable}
+      />
     </main>
   );
 }

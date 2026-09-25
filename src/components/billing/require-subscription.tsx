@@ -19,6 +19,14 @@ export function RequireSubscription({ children }: { children: ReactNode }) {
   const redirect = useRef(currentLocation).current;
   const [syncing, setSyncing] = useState(false);
   const syncAttempted = useRef(false);
+  // Once content has been shown, a background re-check must not blank the
+  // screen again while it repeats - Supabase re-validates the session every
+  // time the tab or window regains focus, and blanking here unmounts (and
+  // so resets) everything below, silently closing open dialogs and losing
+  // in-progress edits. Keep showing the last-known-good content through any
+  // later loading state; only an actual sign-out or lapsed subscription
+  // should navigate away from content that's already on screen.
+  const granted = useRef(false);
 
   const needsSync = Boolean(user) && billingEnabled && !loading && !active;
 
@@ -34,11 +42,16 @@ export function RequireSubscription({ children }: { children: ReactNode }) {
       });
   }, [needsSync, refresh]);
 
+  if (granted.current && (authLoading || loading || syncing)) return <>{children}</>;
   if (authLoading) return null;
   if (!user) return <Navigate to="/login" search={{ redirect }} replace />;
-  if (!billingEnabled) return <>{children}</>;
+  if (!billingEnabled) {
+    granted.current = true;
+    return <>{children}</>;
+  }
   if (loading || syncing) return null;
   if (!active && !syncAttempted.current) return null;
   if (!active) return <Navigate to="/pricing" search={{ reason: "resubscribe" }} />;
+  granted.current = true;
   return <>{children}</>;
 }

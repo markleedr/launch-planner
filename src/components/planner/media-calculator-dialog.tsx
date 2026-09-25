@@ -22,6 +22,7 @@ import {
   formatAudWhole,
   MEDIA_CHANNELS,
   toCents,
+  WEEKS_PER_MONTH,
   type MediaCalcInputs,
   type MediaChannelKey,
   type MediaPlan,
@@ -29,15 +30,20 @@ import {
 
 const fmt = (dollars: number) => formatAudWhole(toCents(dollars));
 
+/** Standard campaign length placeholder: 18 months, converted to the weekly
+ *  pacing engine's native unit. */
+const DEFAULT_CAMPAIGN_WEEKS = Math.round(18 * WEEKS_PER_MONTH);
+
 /** Media spend calculator - works backwards from a sales target to the media
  *  budget required, then applies it to the project. */
 export function MediaCalculatorDialog({
   initialSalesTarget,
-  initialPricePoint,
+  grvDollars,
   onApply,
 }: {
   initialSalesTarget?: number;
-  initialPricePoint?: number;
+  /** The project's GRV ($), used for GDV/ROI instead of an estimated price point. */
+  grvDollars?: number;
   onApply: (
     totalBudgetDollars: number,
     details: { inputs: MediaCalcInputs; plan: MediaPlan },
@@ -52,10 +58,8 @@ export function MediaCalculatorDialog({
           initialSalesTarget && initialSalesTarget > 0
             ? initialSalesTarget
             : DEFAULT_MEDIA_INPUTS.salesTarget,
-        pricePoint:
-          initialPricePoint && initialPricePoint > 0
-            ? initialPricePoint
-            : DEFAULT_MEDIA_INPUTS.pricePoint,
+        campaignWeeks: DEFAULT_CAMPAIGN_WEEKS,
+        grv: grvDollars && grvDollars > 0 ? grvDollars : undefined,
       }),
   });
 
@@ -112,16 +116,18 @@ export function MediaCalculatorDialog({
                 onChange={(v) => setField("costPerLead", v)}
               />
               <NumField
-                label="Campaign weeks"
-                value={inputs.campaignWeeks}
-                onChange={(v) => setField("campaignWeeks", v)}
+                label="Campaign length (months)"
+                value={Math.round(inputs.campaignWeeks / WEEKS_PER_MONTH)}
+                onChange={(months) =>
+                  setField("campaignWeeks", Math.max(1, Math.round(months * WEEKS_PER_MONTH)))
+                }
               />
-              <NumField
-                label="Price point ($)"
-                value={inputs.pricePoint}
-                onChange={(v) => setField("pricePoint", v)}
-                step={50000}
-              />
+              <div className="space-y-1">
+                <Label className="text-xs">GRV</Label>
+                <div className="flex h-8 items-center rounded-md border bg-muted px-3 text-sm tabular-nums">
+                  {inputs.grv ? fmt(inputs.grv) : "Not set"}
+                </div>
+              </div>
             </div>
 
             <div>

@@ -42,8 +42,10 @@ export interface MediaCalcInputs {
   /** Target cost per lead ($). */
   costPerLead: number;
   campaignWeeks: number;
-  /** Approximate sale price per unit ($). */
+  /** Approximate sale price per unit ($). Ignored when `grv` is set. */
   pricePoint: number;
+  /** A known project GRV ($), used for GDV/ROI instead of salesTarget × pricePoint when set. */
+  grv?: number;
   /** Allowance for unqualified lead drop-off (%). */
   leadBuffer: number;
   /** Ramping pacing (spend grows weekly) vs flat. */
@@ -70,7 +72,7 @@ export interface MediaPlan {
   totalBudget: number;
   weeklySpend: number;
   channelTotals: Record<MediaChannelKey, number>;
-  /** Gross development value = salesTarget × pricePoint. */
+  /** Gross development value: input.grv if set, else salesTarget × pricePoint. */
   gdv: number;
   /** Revenue / media spend. */
   roi: number;
@@ -82,6 +84,10 @@ export interface MediaPlan {
 }
 
 export const WEEKLY_GROWTH_RATE = 1.1;
+
+/** Average weeks per calendar month, for converting a month-based campaign
+ *  length to the weekly pacing engine below. */
+export const WEEKS_PER_MONTH = 4.345;
 
 /** Normalised weekly weights for ramping pacing (grow 10%/week, sum to 1). */
 export function generateGrowthWeights(weeks: number): number[] {
@@ -139,7 +145,7 @@ export function computeMediaPlan(input: MediaCalcInputs): MediaPlan {
   const channelTotals = zeroChannels();
   for (const k of activeKeys) channelTotals[k] = totalBudget * eff[k];
 
-  const gdv = input.salesTarget * input.pricePoint;
+  const gdv = input.grv && input.grv > 0 ? input.grv : input.salesTarget * input.pricePoint;
   const roi = totalBudget > 0 ? gdv / totalBudget : 0;
   const mediaPctGdv = gdv > 0 ? (totalBudget / gdv) * 100 : 0;
   const conversionRate = leadsPerSale > 0 ? (1 / leadsPerSale) * 100 : 0;
@@ -212,7 +218,7 @@ export function mediaPlanToDeliverables(
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + Math.max(1, Math.trunc(input.campaignWeeks)) * 7);
-  const months = Math.max(1, Math.ceil(input.campaignWeeks / 4.345));
+  const months = Math.max(1, Math.ceil(input.campaignWeeks / WEEKS_PER_MONTH));
 
   return MEDIA_CHANNELS.filter((channel) => input.channels[channel.key].active).map((channel) => {
     const definition = MEDIA_DELIVERABLES[channel.key];

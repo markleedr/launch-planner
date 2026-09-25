@@ -91,6 +91,18 @@ describe("computeMediaPlan - edge cases", () => {
     });
     expect(plan.blendedCps).toBeCloseTo(0.75 * 9000 + 0.25 * 7000, 6);
   });
+
+  test("a set grv is used for GDV/ROI instead of salesTarget × pricePoint", () => {
+    const plan = computeMediaPlan({ ...DEFAULT_MEDIA_INPUTS, grv: 15_000_000 });
+    expect(plan.gdv).toBe(15_000_000);
+    expect(plan.roi).toBeCloseTo(15_000_000 / plan.totalBudget, 6);
+    expect(plan.mediaPctGdv).toBeCloseTo((plan.totalBudget / 15_000_000) * 100, 6);
+  });
+
+  test("an unset or zero grv falls back to salesTarget × pricePoint", () => {
+    expect(computeMediaPlan({ ...DEFAULT_MEDIA_INPUTS, grv: 0 }).gdv).toBe(62_500_000);
+    expect(computeMediaPlan(DEFAULT_MEDIA_INPUTS).gdv).toBe(62_500_000);
+  });
 });
 
 describe("mediaPlanToDeliverables", () => {
