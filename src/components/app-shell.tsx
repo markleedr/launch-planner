@@ -93,8 +93,8 @@ export function AppShell({
       </aside>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur print:hidden">
-          <div className="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 border-b bg-card/95 shadow-sm backdrop-blur print:hidden">
+          <div className="flex min-h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
@@ -119,17 +119,21 @@ export function AppShell({
               <Wordmark className="text-base lg:hidden" />
               {projectNavigation ? (
                 <Link to="/projects" className="min-w-0 rounded-sm hover:underline">
-                  <p className="hidden text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground lg:block">
+                  <p className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:block">
                     Launch Planner
                   </p>
-                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                  <p className="truncate text-xl font-bold tracking-tight text-foreground">
+                    {title}
+                  </p>
                 </Link>
               ) : (
                 <div className="hidden min-w-0 lg:block">
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Launch Planner
                   </p>
-                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                  <p className="truncate text-xl font-bold tracking-tight text-foreground">
+                    {title}
+                  </p>
                 </div>
               )}
             </div>
