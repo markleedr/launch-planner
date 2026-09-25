@@ -15,6 +15,8 @@ export interface ChecklistItem {
   description?: string;
   severity: Severity;
   done: boolean;
+  /** Optional target date to resolve this issue by. */
+  dueDate?: Date;
 }
 
 export const SEVERITY_LABELS: Record<Severity, string> = {

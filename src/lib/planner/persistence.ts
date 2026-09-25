@@ -63,7 +63,7 @@ export function serializePlanner(s: PlannerSnapshot): Record<string, unknown> {
     buyerTypes: s.buyerTypes,
     channels: s.channels,
     personas: s.personas,
-    checklist: s.checklist,
+    checklist: s.checklist.map(serializeChecklistItem),
     contacts: s.contacts,
     deliverables: s.deliverables.map(serializeDeliverable),
   };
@@ -92,13 +92,24 @@ export function deserializePlanner(data: unknown): PlannerSnapshot | null {
       buyerTypes: asArray<BuyerType>(o.buyerTypes),
       channels: asArray<ChannelCode>(o.channels),
       personas: asArray<BuyerPersona>(o.personas),
-      checklist: asArray<ChecklistItem>(o.checklist),
+      checklist: asArray<Record<string, unknown>>(o.checklist).map(deserializeChecklistItem),
       contacts: asArray<Contact>(o.contacts),
       deliverables: asArray<Record<string, unknown>>(o.deliverables).map(deserializeDeliverable),
     };
   } catch {
     return null;
   }
+}
+
+function serializeChecklistItem(item: ChecklistItem): Record<string, unknown> {
+  return { ...item, dueDate: item.dueDate?.toISOString() };
+}
+
+function deserializeChecklistItem(item: Record<string, unknown>): ChecklistItem {
+  return {
+    ...(item as unknown as ChecklistItem),
+    dueDate: item.dueDate ? new Date(String(item.dueDate)) : undefined,
+  };
 }
 
 function serializeDeliverable(d: Deliverable): Record<string, unknown> {

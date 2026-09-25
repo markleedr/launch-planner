@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   CATEGORY_LABELS,
+  dateInputValue,
   dependencyWouldCreateCycle,
   formatAud,
   setupTimeToBusinessDays,
@@ -610,14 +611,6 @@ function MoneyInput({
       onChange={(event) => onChange(toCents(Math.max(0, Number(event.target.value))))}
     />
   );
-}
-
-function dateInputValue(value?: Date): string {
-  if (!value || Number.isNaN(value.getTime())) return "";
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function CheckRow({
