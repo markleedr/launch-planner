@@ -16,14 +16,17 @@ import {
   CATEGORY_LABELS,
   CHANNEL_LABELS,
   PROJECT_TYPE_LABELS,
+  SEVERITY_LABELS,
+  checklistProgress,
   formatAudWhole,
+  formatPercent,
   formatProjectAddress,
   googleMapsUrl,
   resolveHeroImage,
   type PlannerSnapshot,
 } from "@/lib/planner";
 import { calculateProposalCost, PROJECT_PARTY_ROLE_LABELS } from "@/lib/procurement";
-import { deriveProjectSummary, developerName, type PublicProjectParty } from "./summary-model";
+import { deriveProjectSummary, type PublicProjectParty } from "./summary-model";
 
 const styles = StyleSheet.create({
   page: {
@@ -156,7 +159,18 @@ export function ProjectSummaryPdf({
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
   const mapsUrl = googleMapsUrl(snapshot.address);
   const year = new Date().getFullYear();
-  const footerText = `powered by project profile | ${developerName(parties)} | ${snapshot.projectName} | ${year}`;
+  const developerOrg = parties.find((party) => party.role === "developer")?.organisationName;
+  const footerText = [
+    "powered by project profile",
+    developerOrg,
+    snapshot.projectName,
+    String(year),
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const mediaBudgetUsedPct =
+    financials.mediaBudgetCents > 0 ? budget.grandTotalCents / financials.mediaBudgetCents : 0;
+  const checklist = checklistProgress(snapshot.checklist);
   const sharedByLabel = sharedBy
     ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
     : "";
@@ -182,14 +196,27 @@ export function ProjectSummaryPdf({
         {snapshot.projectBlurb ? <Text style={styles.blurb}>{snapshot.projectBlurb}</Text> : null}
 
         <View style={styles.metrics}>
-          <Metric label="Gross Realisation Value" value={formatAudWhole(financials.grvCents)} />
-          <Metric label="Media budget" value={formatAudWhole(financials.mediaBudgetCents)} />
-          <Metric label="Approved plan" value={formatAudWhole(budget.grandTotalCents)} />
+          <Metric
+            label="Gross Realisation Value"
+            value={formatAudWhole(financials.grvCents)}
+            hint={snapshot.units ? `${snapshot.units} units` : undefined}
+          />
+          <Metric
+            label="Media budget"
+            value={formatAudWhole(financials.mediaBudgetCents)}
+            hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
+          />
+          <Metric
+            label="Approved plan"
+            value={formatAudWhole(budget.grandTotalCents)}
+            hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
+          />
           <Metric
             label={
               budget.varianceVsMediaBudgetCents > 0 ? "Over media budget" : "Under media budget"
             }
             value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
+            hint={`${formatPercent(mediaBudgetUsedPct)} of media budget used`}
           />
         </View>
 
@@ -277,21 +304,35 @@ export function ProjectSummaryPdf({
               </Text>
             </View>
           ))}
-          <View style={styles.row} wrap={false}>
-            <Text style={[styles.cell, styles.bold, { width: "78%" }]}>Total approved plan</Text>
+          <View style={[styles.row, { borderBottomWidth: 0 }]} wrap={false}>
+            <Text style={[styles.cell, styles.bold, { width: "38%" }]}>Total approved plan</Text>
+            <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
+              {formatAudWhole(budget.productionTotalCents)}
+            </Text>
+            <Text style={[styles.cell, styles.bold, { width: "18%", textAlign: "right" }]}>
+              {formatAudWhole(budget.mediaTotalCents)}
+            </Text>
             <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
               {formatAudWhole(budget.grandTotalCents)}
             </Text>
           </View>
+          <Text style={{ marginTop: 5, lineHeight: 1.4 }}>
+            This plan uses {formatPercent(mediaBudgetUsedPct)} of the{" "}
+            {formatAudWhole(financials.mediaBudgetCents)} approved media budget, leaving{" "}
+            {formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}{" "}
+            {budget.varianceVsMediaBudgetCents > 0 ? "over budget" : "unallocated"}.
+          </Text>
         </PdfSection>
 
         <PdfSection title="Deliverables">
           {grouped.map((group) => (
             <View key={group.category} style={{ marginBottom: 8 }}>
-              <Text style={[styles.bold, { marginBottom: 3 }]}>
-                {CATEGORY_LABELS[group.category]}
-              </Text>
-              <TableHeader columns={["Deliverable", "Timing", "Qty / months", "Approved cost"]} />
+              <View wrap={false}>
+                <Text style={[styles.bold, { marginBottom: 3 }]}>
+                  {CATEGORY_LABELS[group.category]}
+                </Text>
+                <TableHeader columns={["Deliverable", "Timing", "Qty / months", "Approved cost"]} />
+              </View>
               {group.items.map((deliverable) => {
                 const total = calculateProposalCost({
                   notes: "",
@@ -311,7 +352,7 @@ export function ProjectSummaryPdf({
                       <Text style={styles.bold}>{deliverable.name}</Text>
                       {deliverable.description ? (
                         <Text style={[styles.muted, { marginTop: 2 }]}>
-                          {deliverable.description}
+                          {truncateForTable(deliverable.description)}
                         </Text>
                       ) : null}
                     </View>
@@ -338,6 +379,22 @@ export function ProjectSummaryPdf({
         </PdfSection>
 
         <PdfSection title="Delivery schedule">
+          {schedule.hasCycle ? (
+            <Text style={{ marginBottom: 6 }}>
+              Two or more deliverables depend on each other, so a schedule couldn&apos;t be
+              calculated. Fix the circular dependency in Launch Planner to see dates here.
+            </Text>
+          ) : schedule.items.length > 0 ? (
+            <Text style={{ marginBottom: 6, lineHeight: 1.4 }}>
+              Runs {formatDate(schedule.projectStart)} to {formatDate(schedule.projectEnd)} (
+              {schedule.projectDurationDays} days). Critical path:{" "}
+              {schedule.criticalPath
+                .map((id) => schedule.items.find((item) => item.id === id)?.name)
+                .filter(Boolean)
+                .join(" → ") || "none identified"}
+              .
+            </Text>
+          ) : null}
           <TableHeader columns={["Deliverable", "Start", "Finish", "Duration"]} />
           {schedule.items.map((item) => (
             <View key={item.id} style={styles.row} wrap={false}>
@@ -374,11 +431,19 @@ export function ProjectSummaryPdf({
         </PdfSection>
 
         {snapshot.checklist.length > 0 ? (
-          <PdfSection title="Project readiness" wrap={false}>
+          <PdfSection title={`Project readiness (${checklist.done}/${checklist.total} reviewed)`}>
+            {checklist.openHigh > 0 ? (
+              <Text style={[styles.bold, { marginBottom: 5 }]}>
+                {checklist.openHigh} high-priority item{checklist.openHigh === 1 ? "" : "s"} still
+                open.
+              </Text>
+            ) : null}
             {snapshot.checklist.map((item) => (
               <View key={item.id} style={styles.row} wrap={false}>
                 <Text style={[styles.cell, { width: "72%" }]}>{item.title}</Text>
-                <Text style={[styles.cell, { width: "14%" }]}>{item.severity}</Text>
+                <Text style={[styles.cell, { width: "14%" }]}>
+                  {SEVERITY_LABELS[item.severity]}
+                </Text>
                 <Text style={[styles.cell, { width: "14%", textAlign: "right" }]}>
                   {item.done ? "Complete" : "Open"}
                 </Text>
@@ -396,11 +461,12 @@ export function ProjectSummaryPdf({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
       <Text style={styles.metricValue}>{value}</Text>
+      {hint ? <Text style={styles.mutedSmall}>{hint}</Text> : null}
     </View>
   );
 }
@@ -430,7 +496,7 @@ function TableHeader({
   widths?: [string, string, string, string];
 }) {
   return (
-    <View style={[styles.row, styles.headerRow]} fixed>
+    <View style={[styles.row, styles.headerRow]}>
       {columns.map((column, index) => (
         <Text
           key={column}
@@ -448,6 +514,19 @@ function TableHeader({
       ))}
     </View>
   );
+}
+
+/**
+ * A deliverable's description can carry a full scope-of-work write-up (headings,
+ * bullet lists) meant for the editable planner view. A summary table row can't
+ * safely hold that: `wrap={false}` keeps a row from splitting mid-line, so a
+ * description taller than one page would overflow past the page edge and get
+ * clipped. Cap it here; the full scope stays available in the app.
+ */
+function truncateForTable(text: string, max = 280): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max).replace(/\s+\S*$/, "")}…`;
 }
 
 function formatDate(value: Date) {
