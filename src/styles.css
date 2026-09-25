@@ -167,4 +167,16 @@
   ::selection {
     background: oklch(0.8452 0.1694 86.69 / 35%);
   }
+
+  /* Number fields read as plain text boxes: no browser spin buttons. */
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
