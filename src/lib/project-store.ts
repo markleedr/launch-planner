@@ -6,13 +6,46 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
-import { deserializePlanner, serializePlanner, type PlannerSnapshot } from "@/lib/planner";
+import {
+  deserializePlanner,
+  serializePlanner,
+  storedGrvDollars,
+  type PlannerSnapshot,
+  type ProjectAddress,
+  type ProjectType,
+} from "@/lib/planner";
 
+/** The summary of a saved project shown on the projects page. */
 export interface ProjectRow {
   id: string;
   name: string;
   updated_at: string;
+  projectType: ProjectType;
+  heroImageId: string;
+  heroImageUrl: string;
+  units: number;
+  grv: string;
+  mediaBudget: string;
+  launchDate: string;
+  suburb: string;
+  state: string;
 }
+
+/** Only the summary fields are pulled out of the JSON plan, not the whole plan. */
+const LIST_COLUMNS = [
+  "id",
+  "name",
+  "updated_at",
+  "projectType:data->>projectType",
+  "heroImageId:data->>heroImageId",
+  "heroImageUrl:data->>heroImageUrl",
+  "units:data->units",
+  "grv:data->>grv",
+  "sellPrice:data->>sellPrice",
+  "mediaBudget:data->>mediaBudget",
+  "launchDate:data->>launchDate",
+  "address:data->address",
+].join(",");
 
 const projectTable = () => supabase.from("project");
 
@@ -28,11 +61,29 @@ async function currentUserId(): Promise<string> {
 export async function listProjects(): Promise<ProjectRow[]> {
   const userId = await currentUserId();
   const { data, error } = await projectTable()
-    .select("id,name,updated_at")
+    .select(LIST_COLUMNS)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(toProjectRow);
+}
+
+function toProjectRow(row: Record<string, unknown>): ProjectRow {
+  const address = (row.address ?? {}) as Partial<ProjectAddress>;
+  return {
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    updated_at: String(row.updated_at ?? ""),
+    projectType: (row.projectType as ProjectType | null) ?? "multi_residential",
+    heroImageId: String(row.heroImageId ?? "apartments"),
+    heroImageUrl: String(row.heroImageUrl ?? ""),
+    units: Number(row.units) || 0,
+    grv: storedGrvDollars(row),
+    mediaBudget: String(row.mediaBudget ?? ""),
+    launchDate: String(row.launchDate ?? ""),
+    suburb: String(address.suburb ?? ""),
+    state: String(address.state ?? ""),
+  };
 }
 
 /** Load one project's name + revived snapshot, or null if not found/invalid. */

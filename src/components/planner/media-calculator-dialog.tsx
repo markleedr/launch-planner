@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { HelpTip } from "@/components/ui/help-tip";
+import { usePersistentDialog } from "@/components/planner/use-persistent-dialog";
 import {
   computeMediaPlan,
   DEFAULT_MEDIA_INPUTS,
@@ -42,11 +43,9 @@ export function MediaCalculatorDialog({
     details: { inputs: MediaCalcInputs; plan: MediaPlan },
   ) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [inputs, setInputs] = useState<MediaCalcInputs>(DEFAULT_MEDIA_INPUTS);
-
-  function handleOpenChange(next: boolean) {
-    if (next) {
+  const [open, setOpen] = usePersistentDialog("media-calc", {
+    onOpen: () =>
       setInputs({
         ...DEFAULT_MEDIA_INPUTS,
         salesTarget:
@@ -57,8 +56,10 @@ export function MediaCalculatorDialog({
           initialPricePoint && initialPricePoint > 0
             ? initialPricePoint
             : DEFAULT_MEDIA_INPUTS.pricePoint,
-      });
-    }
+      }),
+  });
+
+  function handleOpenChange(next: boolean) {
     setOpen(next);
   }
 

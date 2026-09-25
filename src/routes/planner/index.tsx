@@ -244,10 +244,6 @@ function PlannerEditor() {
                 onToggle={(v) => p.setBuyerTypes(toggle(p.buyerTypes, v))}
               />
             </div>
-
-            <div className="sm:col-span-2 flex justify-end">
-              <RecommendDialog />
-            </div>
           </CardContent>
         </Card>
 
@@ -321,7 +317,8 @@ function PlannerEditor() {
               Grouped by category. Adjust production and media costs; totals update live.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <RecommendDialog />
             <CatalogDialog onAdd={(items) => p.setDeliverables((prev) => [...prev, ...items])} />
             <Button onClick={() => setJustAddedId(p.addDeliverable())} size="sm" variant="outline">
               <Plus className="mr-1 size-4" />

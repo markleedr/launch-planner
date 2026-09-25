@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePersistentDialog } from "@/components/planner/use-persistent-dialog";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,9 @@ export function ScheduleDialog({
   allDeliverables: Deliverable[];
   onSave: (patch: Partial<Deliverable>) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePersistentDialog(`schedule:${deliverable.id}`, {
+    onOpen: initFromDeliverable,
+  });
   const [leadDays, setLeadDays] = useState(0);
   const [runDays, setRunDays] = useState(0);
   const [deps, setDeps] = useState<string[]>([]);
@@ -74,7 +77,6 @@ export function ScheduleDialog({
   }
 
   function handleOpenChange(next: boolean) {
-    if (next) initFromDeliverable();
     setOpen(next);
   }
 

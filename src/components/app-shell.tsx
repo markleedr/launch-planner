@@ -14,7 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Wordmark } from "@/components/brand";
+import { BrandLockup, Wordmark } from "@/components/brand";
 import Footer from "@/components/home/Footer";
 import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
@@ -162,8 +162,8 @@ function SidebarContent({
   return (
     <div className="flex h-full w-full flex-col">
       <div className="border-b border-sidebar-border px-5 py-6">
-        <Wordmark className="text-xl text-white" />
-        <p className="mt-1 text-xs text-sidebar-foreground/55">Property marketing workspace</p>
+        <BrandLockup className="text-white" />
+        <p className="mt-3 text-xs text-sidebar-foreground/55">Property marketing workspace</p>
       </div>
 
       <nav aria-label="Primary navigation" className="flex flex-1 flex-col overflow-y-auto p-3">

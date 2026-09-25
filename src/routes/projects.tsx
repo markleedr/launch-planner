@@ -1,27 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Copy, FolderOpen, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { FolderOpen, Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import { ProjectCard } from "@/components/projects/project-card";
 import { RequireSubscription } from "@/components/billing/require-subscription";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -32,7 +15,6 @@ import {
   type ProjectRow,
 } from "@/lib/project-store";
 import { syncSubscription } from "@/lib/billing/billing.server";
-import { formatAuDate } from "@/lib/planner";
 
 export const Route = createFileRoute("/projects")({
   validateSearch: (s: Record<string, unknown>): { checkout?: "success" } =>
@@ -199,138 +181,34 @@ function ProjectsPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="overflow-hidden">
-            <CardHeader className="border-b bg-muted/25 py-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-base">Saved projects</CardTitle>
-                  <CardDescription>
-                    {rows.length} {rows.length === 1 ? "project" : "projects"}
-                  </CardDescription>
-                </div>
-                <FolderOpen className="size-5 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ul className="divide-y">
-                {rows.map((r) => (
-                  <li
-                    key={r.id}
-                    className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-muted/35 sm:px-5"
-                  >
-                    {renamingId === r.id ? (
-                      <RenameField
-                        value={renameValue}
-                        onChange={setRenameValue}
-                        onCommit={() => void commitRename(r.id)}
-                        onCancel={() => setRenamingId(null)}
-                      />
-                    ) : (
-                      <Link to="/planner" search={{ projectId: r.id }} className="min-w-0 flex-1">
-                        <div className="truncate font-medium group-hover:underline">{r.name}</div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          Updated {formatAuDate(new Date(r.updated_at))}
-                        </div>
-                      </Link>
-                    )}
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-9 shrink-0 text-muted-foreground"
-                            disabled={busyId === r.id}
-                            aria-label={`More actions for ${r.name}`}
-                          >
-                            <MoreVertical className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => startRename(r)}>
-                            <Pencil className="mr-2 size-4" />
-                            Rename
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => void duplicate(r.id)}>
-                            <Copy className="mr-2 size-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 size-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete &ldquo;{r.name}&rdquo;?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This removes the project and everything in it, deliverables, proposals
-                            and messages, and can&apos;t be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => void remove(r.id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <section aria-label="Saved projects">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                {rows.length} saved {rows.length === 1 ? "project" : "projects"}
+              </p>
+              <FolderOpen className="size-5 text-muted-foreground" />
+            </div>
+            <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {rows.map((r) => (
+                <li key={r.id} className="flex">
+                  <ProjectCard
+                    project={r}
+                    busy={busyId === r.id}
+                    renaming={renamingId === r.id}
+                    renameValue={renameValue}
+                    onRenameChange={setRenameValue}
+                    onRenameCommit={() => void commitRename(r.id)}
+                    onRenameCancel={() => setRenamingId(null)}
+                    onStartRename={() => startRename(r)}
+                    onDuplicate={() => void duplicate(r.id)}
+                    onDelete={() => void remove(r.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     </AppShell>
-  );
-}
-
-function RenameField({
-  value,
-  onChange,
-  onCommit,
-  onCancel,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onCommit: () => void;
-  onCancel: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.select();
-  }, []);
-
-  return (
-    <Input
-      ref={inputRef}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onCommit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          onCommit();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          onCancel();
-        }
-      }}
-      autoFocus
-      className="min-w-0 flex-1"
-      aria-label="Project name"
-    />
   );
 }

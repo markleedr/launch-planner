@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BudgetSpreadsheet } from "@/components/planner/budget-spreadsheet";
 import { CriticalPathSummary, Gantt } from "@/components/planner/gantt";
 import { BrandTagline, LetterheadFooter, Wordmark } from "@/components/brand";
+import { googleMapsEmbedUrl } from "@/lib/maps";
 import {
   BUYER_TYPE_LABELS,
   CATEGORY_LABELS,
@@ -39,6 +40,7 @@ export function ProjectSummary({
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
   const mapUrl = googleMapsUrl(snapshot.address);
+  const mapEmbedUrl = googleMapsEmbedUrl(address);
   const checklist = checklistProgress(snapshot.checklist);
   const overBudget = budget.varianceVsMediaBudgetCents > 0;
 
@@ -167,7 +169,10 @@ export function ProjectSummary({
             <div className="overflow-hidden rounded-lg border bg-muted">
               <iframe
                 title={`Map of ${address}`}
-                src={`https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`}
+                src={
+                  mapEmbedUrl ??
+                  `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
+                }
                 className="h-72 w-full"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

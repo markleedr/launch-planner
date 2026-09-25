@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
@@ -33,6 +34,8 @@ import {
   type SetupTimeUnit,
 } from "@/lib/planner";
 import { calculateProposalCost } from "@/lib/procurement";
+import { usePlannerOptional } from "./planner-provider";
+import { usePersistentDialog } from "./use-persistent-dialog";
 
 const RECURRENCE_OPTIONS = [
   { value: "none", label: "No recurrence" },
@@ -41,6 +44,46 @@ const RECURRENCE_OPTIONS = [
   { value: "monthly_second_friday", label: "Monthly - second Friday" },
   { value: "monthly_third_monday", label: "Monthly - third Monday" },
 ] as const;
+
+type TimingMode = "lead_time" | "due_date" | "both";
+
+const TIMING_OPTIONS: { value: TimingMode; label: string; description: string }[] = [
+  {
+    value: "lead_time",
+    label: "Lead time",
+    description:
+      "The contractor needs a set period to deliver a standard item. The schedule works back from your launch date using it.",
+  },
+  {
+    value: "due_date",
+    label: "Fixed due date",
+    description:
+      "The contractor doesn't work to a standard turnaround, so you set the date everything must be delivered by.",
+  },
+  {
+    value: "both",
+    label: "Both",
+    description: "Schedule with the lead time and also hold the contractor to a fixed date.",
+  },
+];
+
+/** "1 × EDM, every month for 12 months" or "6 × Hero Render, one-off". */
+function describeCadence(deliverable: Deliverable): string {
+  const quantity = deliverable.quantity ?? 1;
+  const months = deliverable.months ?? 0;
+  const name = deliverable.name.trim() || "item";
+  const cadence =
+    months > 0 ? `every month for ${months} ${months === 1 ? "month" : "months"}` : "one-off";
+  return `${quantity} × ${name}, ${cadence}`;
+}
+
+function timingModeOf(deliverable: Deliverable): TimingMode {
+  const hasDueDate = Boolean(deliverable.collateralCutoffDate);
+  const hasLeadTime = (deliverable.setupTimeValue ?? deliverable.setupLeadDays) > 0;
+  if (hasDueDate && hasLeadTime) return "both";
+  if (hasDueDate) return "due_date";
+  return "lead_time";
+}
 
 export function DeliverableEditorDialog({
   deliverable,
@@ -55,17 +98,38 @@ export function DeliverableEditorDialog({
   compact?: boolean;
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const dialogKey = `edit:${deliverable.id}`;
+  const planner = usePlannerOptional();
+  const [open, setOpen] = usePersistentDialog(dialogKey, { defaultOpen });
   const [draft, setDraft] = useState<Deliverable>(deliverable);
+  const [timing, setTiming] = useState<TimingMode>(() => timingModeOf(deliverable));
   const [nameTouched, setNameTouched] = useState(false);
   const nameError = nameTouched && !draft.name.trim() ? "Service name is required." : null;
 
+  // Unsaved edits live in the planner while the dialog is open, so coming back
+  // to this tab restores them.
+  const savedDraft = planner?.dialogState[dialogKey] as Deliverable | undefined;
+  const savedDraftRef = useRef(savedDraft);
+  savedDraftRef.current = savedDraft;
+
   useEffect(() => {
-    if (open) {
-      setDraft(deliverable);
-      setNameTouched(false);
-    }
+    if (!open) return;
+    const saved = savedDraftRef.current;
+    const start = saved && saved.id === deliverable.id ? saved : deliverable;
+    setDraft(start);
+    setTiming(timingModeOf(start));
+    setNameTouched(false);
   }, [deliverable, open]);
+
+  function handleOpenChange(next: boolean) {
+    if (!next) planner?.setDialogValue(dialogKey, undefined);
+    setOpen(next);
+  }
+
+  // Values for the hidden option are kept until save, so switching back restores them.
+  function changeTiming(next: TimingMode) {
+    setTiming(next);
+  }
 
   const total = useMemo(
     () =>
@@ -85,26 +149,30 @@ export function DeliverableEditorDialog({
   );
 
   function patch(values: Partial<Deliverable>) {
-    setDraft((current) => ({ ...current, ...values }));
+    const next = { ...draft, ...values };
+    setDraft(next);
+    planner?.setDialogValue(dialogKey, next);
   }
 
   function save() {
-    const setupTimeValue = Math.max(0, draft.setupTimeValue ?? draft.setupLeadDays);
+    const setupTimeValue =
+      timing === "due_date" ? 0 : Math.max(0, draft.setupTimeValue ?? draft.setupLeadDays);
     const setupTimeUnit = draft.setupTimeUnit ?? "business_days";
     onSave({
       ...draft,
       name: draft.name.trim() || "Untitled service",
+      collateralCutoffDate: timing === "lead_time" ? undefined : draft.collateralCutoffDate,
       setupTimeValue,
       setupTimeUnit,
       setupLeadDays: setupTimeToBusinessDays(setupTimeValue, setupTimeUnit),
     });
-    setOpen(false);
+    handleOpenChange(false);
   }
 
   const dependencyId = draft.dependsOn?.[0] ?? "none";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {compact ? (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -206,71 +274,108 @@ export function DeliverableEditorDialog({
             />
           </Field>
 
-          <section className="grid gap-3 border-t pt-5">
-            <Label>Set-up time</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                type="number"
-                min={0}
-                value={draft.setupTimeValue ?? draft.setupLeadDays}
-                onChange={(event) =>
-                  patch({ setupTimeValue: Math.max(0, Number(event.target.value)) })
-                }
-              />
-              <Select
-                value={draft.setupTimeUnit ?? "business_days"}
-                onValueChange={(value) => patch({ setupTimeUnit: value as SetupTimeUnit })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="business_days">business days</SelectItem>
-                  <SelectItem value="weeks">weeks</SelectItem>
-                </SelectContent>
-              </Select>
+          <section className="grid gap-4 border-t pt-5">
+            <div>
+              <Label>Timing</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Choose how the deadline for this deliverable is set.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Time required before this service can go live. Weeks are converted to five business
-              days for scheduling.
-            </p>
+            <RadioGroup
+              value={timing}
+              onValueChange={(value) => changeTiming(value as TimingMode)}
+              className="gap-3"
+            >
+              {TIMING_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-start gap-3">
+                  <RadioGroupItem
+                    value={option.value}
+                    id={`timing-${option.value}`}
+                    className="mt-0.5"
+                  />
+                  <Label
+                    htmlFor={`timing-${option.value}`}
+                    className="grid cursor-pointer gap-0.5 font-normal leading-snug"
+                  >
+                    <span className="font-medium">{option.label}</span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+
+            {timing !== "due_date" ? (
+              <Field label="Time needed">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={draft.setupTimeValue ?? draft.setupLeadDays}
+                    onChange={(event) =>
+                      patch({ setupTimeValue: Math.max(0, Number(event.target.value)) })
+                    }
+                  />
+                  <Select
+                    value={draft.setupTimeUnit ?? "business_days"}
+                    onValueChange={(value) => patch({ setupTimeUnit: value as SetupTimeUnit })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="business_days">business days</SelectItem>
+                      <SelectItem value="weeks">weeks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Time the contractor needs before this can go live. Weeks count as five business
+                  days for scheduling.
+                </p>
+              </Field>
+            ) : null}
+
+            {timing !== "lead_time" ? (
+              <Field label="Due date">
+                <Input
+                  type="date"
+                  value={dateInputValue(draft.collateralCutoffDate)}
+                  onChange={(event) =>
+                    patch({
+                      collateralCutoffDate: event.target.value
+                        ? new Date(`${event.target.value}T17:00:00`)
+                        : undefined,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Everything is due by 5:00pm on this date. Contractor requests use it as the
+                  collateral deadline.
+                </p>
+              </Field>
+            ) : null}
           </section>
 
-          <section className="grid gap-3 border-t pt-5">
-            <Field label="Collateral cutoff date">
-              <Input
-                type="date"
-                value={dateInputValue(draft.collateralCutoffDate)}
-                onChange={(event) =>
-                  patch({
-                    collateralCutoffDate: event.target.value
-                      ? new Date(`${event.target.value}T17:00:00`)
-                      : undefined,
-                  })
-                }
-              />
-            </Field>
-            <p className="text-xs text-muted-foreground">
-              Due by 5:00pm on this date. Leave empty to use the deliverable&apos;s scheduled start
-              date when proposals are issued.
-            </p>
-          </section>
-
-          <CostSection title="Agency cost" hint="Design, creation, delivery and management.">
+          <CostSection
+            title="Agency cost"
+            hint="What the agency charges for this service, split by how it is billed."
+          >
             <MoneyField
               label="One-off ($)"
+              hint="Charged once: creative, design or producing the output."
               cents={draft.agencyCostCents ?? 0}
               onChange={(cents) => patch({ agencyCostCents: cents })}
             />
             <MoneyField
-              label="Ongoing monthly ($/mo)"
+              label="Monthly ($ per month)"
+              hint="Charged every month: management, retainer or monitoring."
               cents={draft.agencyMonthlyCostCents ?? 0}
               onChange={(cents) => patch({ agencyMonthlyCostCents: cents })}
             />
           </CostSection>
 
           <section className="grid gap-3 border-t pt-5">
-            <Label>Third-party production cost ($/unit)</Label>
+            <Label>Production ($/unit)</Label>
             <MoneyInput
               cents={draft.productionCostCents}
               disabled={draft.productionCostTbc}
@@ -292,12 +397,14 @@ export function DeliverableEditorDialog({
           >
             <MoneyField
               label="One-off ($)"
+              hint="A single insertion or one-time media cost, such as one billboard booking or one press ad."
               cents={draft.mediaCostCents}
               disabled={draft.mediaCostLocked}
               onChange={(cents) => patch({ mediaCostCents: cents })}
             />
             <MoneyField
-              label="Ongoing monthly ($/mo)"
+              label="Monthly ($ per month)"
+              hint="Media bought month by month, such as ongoing Meta or Google spend or a monthly placement."
               cents={draft.mediaMonthlyCostCents ?? 0}
               disabled={draft.mediaCostLocked}
               onChange={(cents) => patch({ mediaMonthlyCostCents: cents })}
@@ -323,7 +430,7 @@ export function DeliverableEditorDialog({
           </CostSection>
 
           <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-            <Field label="Quantity">
+            <Field label="How many">
               <Input
                 type="number"
                 min={0}
@@ -331,10 +438,11 @@ export function DeliverableEditorDialog({
                 onChange={(event) => patch({ quantity: Math.max(0, Number(event.target.value)) })}
               />
               <p className="text-xs text-muted-foreground">
-                Multiplies the third-party production cost per unit.
+                Number of these you need, for example 6 renders or 1 EDM. Multiplies the production
+                cost per unit.
               </p>
             </Field>
-            <Field label="Months">
+            <Field label="For how many months">
               <Input
                 type="number"
                 min={0}
@@ -342,13 +450,18 @@ export function DeliverableEditorDialog({
                 onChange={(event) => patch({ months: Math.max(0, Number(event.target.value)) })}
               />
               <p className="text-xs text-muted-foreground">
-                Multiplies the ongoing agency and media monthly costs.
+                How many months it repeats, for example 12 for a monthly EDM. Leave at 0 for a
+                one-off. Multiplies the monthly agency and media costs.
               </p>
             </Field>
+            <p className="rounded-md bg-muted px-3 py-2 text-sm sm:col-span-2">
+              <span className="text-muted-foreground">Reads as: </span>
+              <span className="font-medium">{describeCadence(draft)}</span>
+            </p>
           </div>
 
           <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-            <Field label="Linked dependency">
+            <Field label="Must be finished first">
               <Select
                 value={dependencyId}
                 onValueChange={(value) => patch({ dependsOn: value === "none" ? [] : [value] })}
@@ -357,7 +470,7 @@ export function DeliverableEditorDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No linked dependency</SelectItem>
+                  <SelectItem value="none">Nothing, it can start straight away</SelectItem>
                   {allDeliverables
                     .filter((item) => item.id !== draft.id)
                     .map((item) => {
@@ -373,6 +486,10 @@ export function DeliverableEditorDialog({
                     })}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Pick the deliverable this one can&apos;t start without, for example the brand before
+                the website. The schedule and critical path follow it.
+              </p>
             </Field>
             <Field label="Recurrence pattern">
               <Select
@@ -454,19 +571,22 @@ function CostSection({
 
 function MoneyField({
   label,
+  hint,
   cents,
   disabled,
   onChange,
 }: {
   label: string;
+  hint: string;
   cents: number;
   disabled?: boolean;
   onChange: (cents: number) => void;
 }) {
   return (
     <div className="grid gap-1.5">
+      <Label className="text-xs font-medium">{label}</Label>
       <MoneyInput cents={cents} disabled={disabled} onChange={onChange} />
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
     </div>
   );
 }

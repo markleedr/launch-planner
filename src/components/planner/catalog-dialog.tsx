@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { usePlanner } from "@/components/planner/planner-provider";
+import { usePersistentDialog } from "@/components/planner/use-persistent-dialog";
 import {
   catalogItemToDeliverable,
   CATEGORY_LABELS,
@@ -44,10 +45,20 @@ const CATALOG_CATEGORIES = CATEGORY_ORDER.filter((category) =>
 /** "Add from catalog" - pick one or more common deliverables to add. */
 export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void }) {
   const p = usePlanner();
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [categories, setCategories] = useState<Set<DeliverableCategory>>(new Set());
+  const [open, setOpen] = usePersistentDialog("catalog", { onOpen: resetForOpen });
+
+  function resetForOpen() {
+    setSelected(new Set());
+    setQuery("");
+    setCategories(
+      new Set(
+        p.channels.flatMap((code) => (CHANNEL_CATEGORY[code] ? [CHANNEL_CATEGORY[code]] : [])),
+      ),
+    );
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -77,15 +88,6 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
   }
 
   function handleOpenChange(next: boolean) {
-    if (next) {
-      setSelected(new Set());
-      setQuery("");
-      setCategories(
-        new Set(
-          p.channels.flatMap((code) => (CHANNEL_CATEGORY[code] ? [CHANNEL_CATEGORY[code]] : [])),
-        ),
-      );
-    }
     setOpen(next);
   }
 

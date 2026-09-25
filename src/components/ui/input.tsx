@@ -12,6 +12,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        // A scroll over a focused number field must not change its value.
+        onWheel={type === "number" ? (event) => event.currentTarget.blur() : undefined}
         {...props}
       />
     );
