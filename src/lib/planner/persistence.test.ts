@@ -84,6 +84,19 @@ describe("planner persistence round-trip", () => {
     }
   });
 
+  test("a checklist item's optional due date is revived to a Date", () => {
+    const original = snapshot();
+    original.checklist[0] = {
+      ...original.checklist[0],
+      dueDate: new Date("2026-08-15T07:00:00.000Z"),
+    };
+    const restored = deserializePlanner(JSON.parse(JSON.stringify(serializePlanner(original))))!;
+    expect(restored.checklist[0].dueDate).toBeInstanceOf(Date);
+    expect(restored.checklist[0].dueDate?.toISOString()).toBe("2026-08-15T07:00:00.000Z");
+    // Items without a due date stay undefined, not null or a string.
+    expect(restored.checklist[1].dueDate).toBeUndefined();
+  });
+
   test("invalid / empty input returns null", () => {
     expect(deserializePlanner(null)).toBeNull();
     expect(deserializePlanner({})).toBeNull();

@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import {
   checklistProgress,
+  dateInputValue,
+  formatAuDate,
   SEVERITY_LABELS,
   SEVERITY_RANK,
   type ChecklistItem,
@@ -30,6 +32,7 @@ export function CriticalIssueChecklist({
   const [newTitle, setNewTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
   const progress = checklistProgress(items);
 
   const sorted = [...items].sort((a, b) => {
@@ -49,11 +52,22 @@ export function CriticalIssueChecklist({
   function startEdit(item: ChecklistItem) {
     setEditingId(item.id);
     setEditTitle(item.title);
+    setEditDueDate(dateInputValue(item.dueDate));
   }
   function saveEdit() {
     const title = editTitle.trim();
     if (!title || !editingId) return;
-    onChange(items.map((i) => (i.id === editingId ? { ...i, title } : i)));
+    onChange(
+      items.map((i) =>
+        i.id === editingId
+          ? {
+              ...i,
+              title,
+              dueDate: editDueDate ? new Date(`${editDueDate}T17:00:00`) : undefined,
+            }
+          : i,
+      ),
+    );
     setEditingId(null);
   }
   function add() {
@@ -93,17 +107,30 @@ export function CriticalIssueChecklist({
             />
             <div className="min-w-0 flex-1">
               {editingId === item.id ? (
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveEdit();
-                    if (e.key === "Escape") setEditingId(null);
-                  }}
-                  autoFocus
-                  className="h-8"
-                  aria-label="Issue title"
-                />
+                <div className="flex flex-col gap-1.5 py-0.5">
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    autoFocus
+                    className="h-8"
+                    aria-label="Issue title"
+                  />
+                  <Input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    className="h-8 w-44"
+                    aria-label="Due date (optional)"
+                  />
+                </div>
               ) : (
                 <>
                   <div
@@ -111,8 +138,20 @@ export function CriticalIssueChecklist({
                   >
                     {item.title}
                   </div>
-                  {item.description && !item.done && (
-                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                  {!item.done && (item.description || item.dueDate) && (
+                    <div className="text-xs text-muted-foreground">
+                      {item.description}
+                      {item.description && item.dueDate && " · "}
+                      {item.dueDate && (
+                        <span
+                          className={
+                            item.dueDate.getTime() < Date.now() ? "text-destructive" : undefined
+                          }
+                        >
+                          Due {formatAuDate(item.dueDate)}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </>
               )}
