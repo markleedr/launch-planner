@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   Check,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Accordion,
   AccordionContent,
@@ -119,6 +121,19 @@ function PricingPage() {
       </header>
 
       <main className="flex-1">
+        {reason === "resubscribe" && (
+          <div className="mx-auto max-w-5xl px-6 pt-8">
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertTitle>No active subscription</AlertTitle>
+              <AlertDescription>
+                Your account doesn&apos;t have an active subscription, so you can&apos;t access
+                Launch Planner right now. Subscribe below to get back in.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Hero pricing card */}
         <section className="mx-auto max-w-5xl px-6 py-12 lg:py-16">
           <div className="mx-auto max-w-2xl text-center">
@@ -166,11 +181,6 @@ function PricingPage() {
                   ))}
                 </ul>
 
-                {reason === "resubscribe" && (
-                  <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                    Your subscription isn&apos;t active. Resubscribe to continue.
-                  </p>
-                )}
                 {checkout === "cancel" && (
                   <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
                     Checkout cancelled - you haven&apos;t been charged.
