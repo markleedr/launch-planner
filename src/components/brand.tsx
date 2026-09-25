@@ -15,6 +15,26 @@ export function Wordmark({ className }: { className?: string }) {
   );
 }
 
+/** Sidebar brand block: "LP" in a yellow circle beside the wordmark over two lines. */
+export function BrandLockup({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      <span
+        aria-hidden="true"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand font-display text-base font-extrabold text-brand-foreground"
+      >
+        LP
+      </span>
+      <span className="font-display text-xl font-extrabold lowercase leading-[1.05] tracking-tight">
+        launch
+        <br />
+        planner
+        <span className="text-brand">.</span>
+      </span>
+    </div>
+  );
+}
+
 /** The "lp." monogram used in the letterhead footer. */
 export function Monogram({ className }: { className?: string }) {
   return (
