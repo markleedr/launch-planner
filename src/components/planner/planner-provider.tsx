@@ -12,6 +12,7 @@ import {
   deserializeDeliverable,
   deserializePlanner,
   parseDollarsToCents,
+  recommend,
   seedChecklist,
   serializeDeliverable,
   serializePlanner,
@@ -148,6 +149,9 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const consumedDefaultOpens = useRef<Set<string>>(new Set());
   // Set when a saved project is loaded, so the session draft never overwrites it.
   const externallyHydrated = useRef(false);
+  // Set by hydrate() so the persona auto-sync effect below doesn't immediately
+  // discard the personas that were just loaded with the rest of the snapshot.
+  const skipNextPersonaSync = useRef(false);
 
   const financials = useMemo(
     () =>
@@ -178,6 +182,18 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const schedule = useMemo(() => {
     return buildScheduleForLaunch(deliverables, launchDateObj);
   }, [deliverables, launchDateObj]);
+
+  // Keep personas in sync with the current project type + buyer types, so
+  // changing them later doesn't leave stale personas from an earlier
+  // selection. Skipped once right after loading a saved project, so this
+  // doesn't immediately discard the personas that came with that snapshot.
+  useEffect(() => {
+    if (skipNextPersonaSync.current) {
+      skipNextPersonaSync.current = false;
+      return;
+    }
+    setPersonas(recommend({ projectType, buyerTypes }).personas);
+  }, [projectType, buyerTypes]);
 
   const value: PlannerContextValue = {
     projectName,
@@ -304,6 +320,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     }),
     hydrate: (snap) => {
       externallyHydrated.current = true;
+      skipNextPersonaSync.current = true;
       setProjectName(snap.projectName);
       setProjectBlurb(snap.projectBlurb);
       setProjectType(snap.projectType);

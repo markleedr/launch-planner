@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -169,8 +170,6 @@ export function DeliverableEditorDialog({
     });
     handleOpenChange(false);
   }
-
-  const dependencyId = draft.dependsOn?.[0] ?? "none";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -464,33 +463,15 @@ export function DeliverableEditorDialog({
           <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
             <Field label="Must be finished first">
               <p className="text-xs text-muted-foreground">
-                Pick the deliverable this one can&apos;t start without, for example the brand before
-                the website. The schedule and critical path follow it.
+                Pick anything this one can&apos;t start without, for example the brand before the
+                website. You can pick more than one. The schedule and critical path follow it.
               </p>
-              <Select
-                value={dependencyId}
-                onValueChange={(value) => patch({ dependsOn: value === "none" ? [] : [value] })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nothing, it can start straight away</SelectItem>
-                  {allDeliverables
-                    .filter((item) => item.id !== draft.id)
-                    .map((item) => {
-                      const createsCycle = dependencyWouldCreateCycle(allDeliverables, draft.id, [
-                        item.id,
-                      ]);
-                      return (
-                        <SelectItem key={item.id} value={item.id} disabled={createsCycle}>
-                          {item.name}
-                          {createsCycle ? " - creates a circular dependency" : ""}
-                        </SelectItem>
-                      );
-                    })}
-                </SelectContent>
-              </Select>
+              <DependencyPicker
+                allDeliverables={allDeliverables}
+                currentId={draft.id}
+                selectedIds={draft.dependsOn ?? []}
+                onChange={(ids) => patch({ dependsOn: ids })}
+              />
             </Field>
             <Field label="Recurrence pattern">
               <Select
@@ -516,7 +497,11 @@ export function DeliverableEditorDialog({
             </Field>
           </div>
 
-          <Field label="Dependency guidance">
+          <Field label="Dependency notes (private)">
+            <p className="text-xs text-muted-foreground">
+              A reminder for yourself about this dependency, for example what exactly to wait for.
+              Only visible here, not shown to contractors or anywhere else in the app.
+            </p>
             <Textarea
               rows={2}
               value={draft.dependencyNotes ?? ""}
@@ -549,6 +534,79 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label>{label}</Label>
       {children}
     </div>
+  );
+}
+
+function DependencyPicker({
+  allDeliverables,
+  currentId,
+  selectedIds,
+  onChange,
+}: {
+  allDeliverables: Deliverable[];
+  currentId: string;
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const options = allDeliverables.filter((item) => item.id !== currentId);
+  const selectedNames = options
+    .filter((item) => selectedIds.includes(item.id))
+    .map((item) => item.name);
+
+  function toggle(id: string) {
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((existing) => existing !== id)
+        : [...selectedIds, id],
+    );
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-start font-normal">
+          {selectedNames.length === 0
+            ? "Nothing, it can start straight away"
+            : selectedNames.join(", ")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="start">
+        {options.length === 0 ? (
+          <p className="px-1 py-2 text-xs text-muted-foreground">
+            No other deliverables to depend on yet.
+          </p>
+        ) : (
+          <div className="grid gap-1">
+            {options.map((item) => {
+              const checked = selectedIds.includes(item.id);
+              const createsCycle =
+                !checked &&
+                dependencyWouldCreateCycle(allDeliverables, currentId, [...selectedIds, item.id]);
+              return (
+                <label
+                  key={item.id}
+                  className={`flex items-center gap-2 rounded px-1 py-1 text-sm ${
+                    createsCycle
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer hover:bg-accent"
+                  }`}
+                >
+                  <Checkbox
+                    checked={checked}
+                    disabled={createsCycle}
+                    onCheckedChange={() => toggle(item.id)}
+                  />
+                  {item.name}
+                  {createsCycle ? (
+                    <span className="text-xs text-muted-foreground">(circular)</span>
+                  ) : null}
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
