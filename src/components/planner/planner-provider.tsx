@@ -13,7 +13,6 @@ import {
   deserializePlanner,
   parseDollarsToCents,
   seedChecklist,
-  seedContacts,
   serializeDeliverable,
   serializePlanner,
   summariseBudget,
@@ -142,7 +141,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() =>
     seedChecklist("multi_residential"),
   );
-  const [contacts, setContacts] = useState<Contact[]>(seedContacts);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const [dialogState, setDialogState] = useState<Record<string, unknown>>({});
@@ -277,7 +276,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       setPersonas([]);
       setDeliverables([]);
       setChecklist(seedChecklist("multi_residential"));
-      setContacts(seedContacts);
+      setContacts([]);
       setCurrentProjectId(null);
       setOpenDialog(null);
       setDialogState({});
