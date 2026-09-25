@@ -537,6 +537,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+// Milestones outside the marketing plan (construction/development stages)
+// that a deliverable can still be blocked on. Not real deliverables: they
+// have no dates and computeCpm() safely ignores unknown ids, so they never
+// affect the schedule or critical path - just a "waiting on" flag.
+const EXTERNAL_MILESTONES: Array<{ id: string; label: string }> = [
+  { id: "external:plans", label: "Plans" },
+  { id: "external:fits_and_finishes", label: "Fits and finishes" },
+];
+
 function DependencyPicker({
   allDeliverables,
   currentId,
@@ -548,10 +557,14 @@ function DependencyPicker({
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const options = allDeliverables.filter((item) => item.id !== currentId);
-  const selectedNames = options
-    .filter((item) => selectedIds.includes(item.id))
-    .map((item) => item.name);
+  const deliverableOptions = allDeliverables.filter((item) => item.id !== currentId);
+  const nameById = new Map<string, string>([
+    ...deliverableOptions.map((item) => [item.id, item.name] as const),
+    ...EXTERNAL_MILESTONES.map((item) => [item.id, item.label] as const),
+  ]);
+  const selectedNames = selectedIds
+    .map((id) => nameById.get(id))
+    .filter((name): name is string => Boolean(name));
 
   function toggle(id: string) {
     onChange(
@@ -571,13 +584,28 @@ function DependencyPicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-2" align="start">
-        {options.length === 0 ? (
+        <div className="grid gap-1 border-b pb-1">
+          {EXTERNAL_MILESTONES.map((item) => {
+            const checked = selectedIds.includes(item.id);
+            return (
+              <label
+                key={item.id}
+                className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-accent"
+              >
+                <Checkbox checked={checked} onCheckedChange={() => toggle(item.id)} />
+                {item.label}
+                <span className="text-xs text-muted-foreground">External milestone</span>
+              </label>
+            );
+          })}
+        </div>
+        {deliverableOptions.length === 0 ? (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             No other deliverables to depend on yet.
           </p>
         ) : (
-          <div className="grid gap-1">
-            {options.map((item) => {
+          <div className="grid gap-1 pt-1">
+            {deliverableOptions.map((item) => {
               const checked = selectedIds.includes(item.id);
               const createsCycle =
                 !checked &&
