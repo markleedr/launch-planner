@@ -384,7 +384,7 @@ function DetailsStep() {
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Number of units">
+          <Field label="Number of lots/units/homes">
             <Input
               type="number"
               min={0}
