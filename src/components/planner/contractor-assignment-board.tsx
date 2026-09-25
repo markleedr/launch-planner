@@ -86,7 +86,10 @@ export function ContractorAssignmentBoard({
                 <table className="w-full min-w-[680px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b bg-card">
-                      <th scope="col" className="min-w-64 px-4 py-3 text-left font-medium">
+                      <th
+                        scope="col"
+                        className="sticky left-0 z-10 min-w-64 border-r bg-card px-4 py-3 text-left font-medium"
+                      >
                         Deliverable
                       </th>
                       {eligibleContractors.map((contractor) => (
@@ -104,7 +107,10 @@ export function ContractorAssignmentBoard({
                   <tbody>
                     {group.deliverables.map((deliverable) => (
                       <tr key={deliverable.id} className="border-b last:border-0">
-                        <th scope="row" className="px-4 py-3 text-left font-medium">
+                        <th
+                          scope="row"
+                          className="sticky left-0 z-10 border-r bg-card px-4 py-3 text-left font-medium"
+                        >
                           {deliverable.name}
                         </th>
                         {eligibleContractors.map((contractor) => {

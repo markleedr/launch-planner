@@ -128,12 +128,27 @@ export const getSharedProject = createServerFn({ method: "GET" })
       .eq("id", link.id);
 
     const [{ data: projectData }, { data: partyRows }] = await Promise.all([
-      table(client, "project").select("id,name,data").eq("id", link.project_id).single(),
+      table(client, "project").select("id,name,data,user_id").eq("id", link.project_id).single(),
       table(client, "project_party")
         .select("role,party:party_directory(*)")
         .eq("project_id", link.project_id),
     ]);
     if (!projectData) throw new Error("The shared project no longer exists.");
+    const ownerId = String((projectData as unknown as { user_id: string }).user_id);
+    const { data: ownerProfile } = await table(client, "user_profile")
+      .select("full_name,organisation_name")
+      .eq("user_id", ownerId)
+      .maybeSingle();
+    const ownerFullName = String(
+      (ownerProfile as unknown as { full_name?: string } | null)?.full_name ?? "",
+    ).trim();
+    const ownerOrganisationName = String(
+      (ownerProfile as unknown as { organisation_name?: string } | null)?.organisation_name ?? "",
+    ).trim();
+    const sharedBy =
+      ownerFullName || ownerOrganisationName
+        ? { fullName: ownerFullName || null, organisationName: ownerOrganisationName || null }
+        : null;
 
     const hidden = new Set(link.hidden_contact_fields);
     const parties = ((partyRows ?? []) as Array<Record<string, unknown>>).map((row) => {
@@ -163,5 +178,6 @@ export const getSharedProject = createServerFn({ method: "GET" })
       },
       parties,
       providerName: link.provider_name,
+      sharedBy,
     };
   });

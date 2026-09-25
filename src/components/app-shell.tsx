@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Wordmark } from "@/components/brand";
 import Footer from "@/components/home/Footer";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BILLING_ENABLED } from "@/hooks/use-subscription";
@@ -29,6 +30,7 @@ interface AppShellProps {
   active: AppSection;
   children: ReactNode;
   headerActions?: ReactNode;
+  projectId?: string | null;
   projectNavigation?: boolean;
   showFooter?: boolean;
   title: string;
@@ -40,6 +42,8 @@ interface SidebarContentProps {
   onBilling: () => void;
   onNavigate?: () => void;
   onSignOut: () => void;
+  projectId?: string | null;
+  projectName: string;
   projectNavigation: boolean;
 }
 
@@ -47,6 +51,7 @@ export function AppShell({
   active,
   children,
   headerActions,
+  projectId,
   projectNavigation = false,
   showFooter = false,
   title,
@@ -76,6 +81,8 @@ export function AppShell({
     billingBusy,
     onBilling: () => void manageBilling(),
     onSignOut: () => void signOut(),
+    projectId,
+    projectName: title,
     projectNavigation,
   };
 
@@ -110,14 +117,26 @@ export function AppShell({
                 </SheetContent>
               </Sheet>
               <Wordmark className="text-base lg:hidden" />
-              <div className="hidden min-w-0 lg:block">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Launch Planner
-                </p>
-                <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-              </div>
+              {projectNavigation ? (
+                <Link to="/projects" className="min-w-0 rounded-sm hover:underline">
+                  <p className="hidden text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground lg:block">
+                    Launch Planner
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                </Link>
+              ) : (
+                <div className="hidden min-w-0 lg:block">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Launch Planner
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+                </div>
+              )}
             </div>
-            {headerActions ? <div className="shrink-0">{headerActions}</div> : null}
+            <div className="flex shrink-0 items-center gap-2">
+              {headerActions}
+              <NotificationBell />
+            </div>
           </div>
         </header>
 
@@ -136,6 +155,8 @@ function SidebarContent({
   onBilling,
   onNavigate,
   onSignOut,
+  projectId,
+  projectName,
   projectNavigation,
 }: SidebarContentProps) {
   return (
@@ -149,12 +170,20 @@ function SidebarContent({
         {projectNavigation ? (
           <div className="mb-5">
             <SidebarLabel>Current project</SidebarLabel>
+            <Link
+              to="/projects"
+              onClick={onNavigate}
+              className="mb-1 block truncate rounded-lg px-3 py-1 text-sm font-semibold text-white hover:underline"
+            >
+              {projectName}
+            </Link>
             <SidebarLink
               active={active === "plan"}
               icon={<BarChart3 />}
               label="Plan"
               onNavigate={onNavigate}
               to="/planner"
+              projectId={projectId}
             />
             <SidebarLink
               active={active === "summary"}
@@ -162,13 +191,15 @@ function SidebarContent({
               label="Summary"
               onNavigate={onNavigate}
               to="/planner/summary"
+              projectId={projectId}
             />
             <SidebarLink
               active={active === "procurement"}
               icon={<ClipboardList />}
-              label="Procurement"
+              label="Quotes"
               onNavigate={onNavigate}
               to="/planner/procurement"
+              projectId={projectId}
             />
           </div>
         ) : null}
@@ -234,6 +265,7 @@ interface SidebarLinkProps {
   icon: ReactNode;
   label: string;
   onNavigate?: () => void;
+  projectId?: string | null;
   to:
     | "/"
     | "/account"
@@ -244,11 +276,15 @@ interface SidebarLinkProps {
     | "/projects";
 }
 
-function SidebarLink({ active, icon, label, onNavigate, to }: SidebarLinkProps) {
+const PLANNER_TABS = new Set(["/planner", "/planner/summary", "/planner/procurement"]);
+
+function SidebarLink({ active, icon, label, onNavigate, projectId, to }: SidebarLinkProps) {
+  const search =
+    to === "/account" ? {} : PLANNER_TABS.has(to) && projectId ? { projectId } : undefined;
   return (
     <Link
       to={to}
-      search={to === "/account" ? {} : undefined}
+      search={search}
       className={cn(SIDEBAR_LINK_CLASS, active && SIDEBAR_LINK_ACTIVE_CLASS)}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
@@ -260,7 +296,7 @@ function SidebarLink({ active, icon, label, onNavigate, to }: SidebarLinkProps) 
 }
 
 const SIDEBAR_LINK_CLASS =
-  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-sidebar-foreground/65 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-wait disabled:opacity-60 [&_svg]:size-[1.125rem] [&_svg]:shrink-0";
+  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-sidebar-foreground/65 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&_svg]:size-[1.125rem] [&_svg]:shrink-0";
 
 const SIDEBAR_LINK_ACTIVE_CLASS =
   "bg-brand/20 text-white shadow-[inset_3px_0_0_var(--brand)] hover:bg-brand/25 [&_svg]:text-brand";

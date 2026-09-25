@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clock3, Loader2, RefreshCw, Trophy, Users } from "lucide-react";
+import { Check, ChevronDown, Clock3, Loader2, RefreshCw, Trophy, Users } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -9,6 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DeliveryWorkspace } from "./delivery-workspace";
@@ -35,6 +37,7 @@ export function OwnerProcurement() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [awardTarget, setAwardTarget] = useState<Record<string, unknown> | null>(null);
 
   const refresh = useCallback(async () => {
     if (!p.currentProjectId) {
@@ -49,7 +52,7 @@ export function OwnerProcurement() {
       setError(null);
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : "The procurement workspace could not be loaded.",
+        reason instanceof Error ? reason.message : "Could not load the procurement workspace.",
       );
     } finally {
       setLoading(false);
@@ -70,16 +73,17 @@ export function OwnerProcurement() {
   }, [p.currentProjectId, refresh]);
 
   const groups = useMemo(() => groupByDeliverable(rows), [rows]);
+  const needsDecision = useMemo(
+    () => groups.filter((group) => !group.proposals.some((p2) => p2.status === "awarded")),
+    [groups],
+  );
+  const awardedGroups = useMemo(
+    () => groups.filter((group) => group.proposals.some((p2) => p2.status === "awarded")),
+    [groups],
+  );
 
   async function award(row: Record<string, unknown>) {
-    const contractor = asRecord(row.contractor);
-    const brief = asRecord(row.brief);
-    const name = String(contractor.organisation_name ?? "this contractor");
-    if (
-      !window.confirm(`Award ${String(brief.name)} to ${name}? Competing proposals will close.`)
-    ) {
-      return;
-    }
+    setAwardTarget(null);
     setBusyId(String(row.id));
     setError(null);
     try {
@@ -124,8 +128,8 @@ export function OwnerProcurement() {
           <CardHeader>
             <CardTitle>Save the project to manage proposals</CardTitle>
             <CardDescription>
-              Procurement activity is linked to a saved project so contractor privacy can be
-              enforced.
+              Save your project first. That keeps every contractor's proposal private to just you
+              and them.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -133,61 +137,106 @@ export function OwnerProcurement() {
     );
   }
 
+  const awardContractorName = awardTarget
+    ? String(asRecord(awardTarget.contractor).organisation_name ?? "this contractor")
+    : "";
+  const awardDeliverableName = awardTarget ? String(asRecord(awardTarget.brief).name ?? "") : "";
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">Private procurement</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Contractor proposals</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Compare independent submissions, award one provider, then manage delivery and collateral
-            in a separate workspace for each deliverable.
+    <>
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Private procurement</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">Contractor proposals</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Compare what each contractor quoted, award the one you want, then track delivery and
+              collateral together in one place for each deliverable.
+            </p>
+          </div>
+          <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
+            <RefreshCw className={`mr-1 size-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        {error && (
+          <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
           </p>
-        </div>
-        <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
-          <RefreshCw className={`mr-1 size-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+        )}
 
-      {error && (
-        <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-
-      {loading ? (
-        <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Loading proposals…
-        </div>
-      ) : groups.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="size-5" />
-              No proposal requests yet
-            </CardTitle>
-            <CardDescription>
-              Add contractors and invite them to selected deliverables from the project wizard.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {groups.map((group) => (
-            <DeliverableProposalGroup
-              key={group.deliverableId}
-              group={group}
-              busyId={busyId}
-              onAward={award}
-              onDecideVariation={decideSubmittedVariation}
-              onChanged={refresh}
-            />
-          ))}
-        </div>
-      )}
-    </main>
+        {loading ? (
+          <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Loading proposals…
+          </div>
+        ) : groups.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="size-5" />
+                No proposal requests yet
+              </CardTitle>
+              <CardDescription>
+                Add contractors and invite them to selected deliverables from the project wizard.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {needsDecision.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Needs your decision ({needsDecision.length})
+                </h2>
+                <div className="space-y-6">
+                  {needsDecision.map((group) => (
+                    <DeliverableProposalGroup
+                      key={group.deliverableId}
+                      group={group}
+                      busyId={busyId}
+                      onAward={setAwardTarget}
+                      onDecideVariation={decideSubmittedVariation}
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {awardedGroups.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Awarded / in progress ({awardedGroups.length})
+                </h2>
+                <div className="space-y-6">
+                  {awardedGroups.map((group) => (
+                    <DeliverableProposalGroup
+                      key={group.deliverableId}
+                      group={group}
+                      busyId={busyId}
+                      onAward={setAwardTarget}
+                      onDecideVariation={decideSubmittedVariation}
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+      <ConfirmDialog
+        open={awardTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setAwardTarget(null);
+        }}
+        title={`Award ${awardDeliverableName} to ${awardContractorName}?`}
+        description="Competing proposals for this deliverable will close and can no longer be awarded."
+        confirmLabel="Award"
+        onConfirm={() => awardTarget && void award(awardTarget)}
+      />
+    </>
   );
 }
 
@@ -208,9 +257,28 @@ function DeliverableProposalGroup({
   const submitted = group.proposals.filter((proposal) => proposal.status === "submitted");
   const [nextDeadline, setNextDeadline] = useState("");
   const [deadlineBusy, setDeadlineBusy] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const deadline = group.brief.proposal_deadline
     ? new Date(String(group.brief.proposal_deadline))
     : null;
+
+  const proposalCosts = group.proposals.map((proposal) => {
+    const latest = latestRevision(proposal);
+    const values = latest ? proposalValuesFromRow(latest) : null;
+    const costs = values ? calculateProposalCost(values) : null;
+    return { proposal, costs };
+  });
+  const submittedCostCount = proposalCosts.filter((row) => row.costs).length;
+  const lowestTotalCents = proposalCosts.reduce<number | null>((min, row) => {
+    if (!row.costs) return min;
+    return min === null || row.costs.totalCents < min ? row.costs.totalCents : min;
+  }, null);
+  const sortedProposalCosts = [...proposalCosts].sort((a, b) => {
+    if (a.costs && b.costs) return a.costs.totalCents - b.costs.totalCents;
+    if (a.costs) return -1;
+    if (b.costs) return 1;
+    return 0;
+  });
 
   return (
     <Card>
@@ -248,6 +316,7 @@ function DeliverableProposalGroup({
                 value={nextDeadline}
                 onChange={(event) => setNextDeadline(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </div>
             <Button
               className="self-end"
@@ -275,11 +344,25 @@ function DeliverableProposalGroup({
             </Button>
           </div>
         )}
-        <div className="overflow-x-auto rounded-md border">
+        {awarded && (
+          <AwardedSummary
+            awarded={awarded}
+            costs={
+              sortedProposalCosts.find(({ proposal }) => proposal.id === awarded.id)?.costs ?? null
+            }
+            open={historyOpen}
+            onToggle={() => setHistoryOpen((v) => !v)}
+          />
+        )}
+        <div
+          className={`overflow-x-auto rounded-md border ${awarded && !historyOpen ? "hidden" : ""}`}
+        >
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Contractor</th>
+                <th className="sticky left-0 z-10 border-r bg-muted/50 px-3 py-2 font-medium">
+                  Contractor
+                </th>
                 <th className="px-3 py-2 font-medium">Status</th>
                 <th className="px-3 py-2 text-right font-medium">Agency</th>
                 <th className="px-3 py-2 text-right font-medium">Production</th>
@@ -289,15 +372,39 @@ function DeliverableProposalGroup({
               </tr>
             </thead>
             <tbody>
-              {group.proposals.map((proposal) => {
-                const latest = latestRevision(proposal);
-                const values = latest ? proposalValuesFromRow(latest) : null;
-                const costs = values ? calculateProposalCost(values) : null;
+              {sortedProposalCosts.map(({ proposal, costs }) => {
                 const contractor = asRecord(proposal.contractor);
+                const isLowest =
+                  submittedCostCount > 1 && costs !== null && costs.totalCents === lowestTotalCents;
                 return (
                   <tr key={String(proposal.id)} className="border-b last:border-0">
-                    <td className="px-3 py-3 font-medium">
+                    <td className="sticky left-0 z-10 border-r bg-card px-3 py-3 font-medium">
                       {String(contractor.organisation_name)}
+                      {Boolean(
+                        contractor.representative_name || contractor.email || contractor.phone,
+                      ) && (
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs font-normal text-muted-foreground">
+                          {Boolean(contractor.representative_name) && (
+                            <span>{String(contractor.representative_name)}</span>
+                          )}
+                          {Boolean(contractor.email) && (
+                            <a
+                              href={`mailto:${String(contractor.email)}`}
+                              className="hover:text-foreground hover:underline"
+                            >
+                              {String(contractor.email)}
+                            </a>
+                          )}
+                          {Boolean(contractor.phone) && (
+                            <a
+                              href={`tel:${String(contractor.phone)}`}
+                              className="hover:text-foreground hover:underline"
+                            >
+                              {String(contractor.phone)}
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant={proposal.status === "awarded" ? "default" : "outline"}>
@@ -314,7 +421,20 @@ function DeliverableProposalGroup({
                       {costs ? formatAudWhole(costs.mediaCents) : "-"}
                     </td>
                     <td className="px-3 py-3 text-right font-semibold tabular-nums">
-                      {costs ? formatAudWhole(costs.totalCents) : "Awaiting"}
+                      <span className="inline-flex items-center gap-1.5">
+                        {costs
+                          ? formatAudWhole(costs.totalCents)
+                          : proposal.status === "expired"
+                            ? "Expired"
+                            : proposal.status === "withdrawn"
+                              ? "Withdrawn"
+                              : "Awaiting"}
+                        {isLowest && (
+                          <Badge variant="secondary" className="font-normal">
+                            Lowest
+                          </Badge>
+                        )}
+                      </span>
                     </td>
                     <td className="px-3 py-3 text-right">
                       {proposal.status === "submitted" && !awarded ? (
@@ -343,7 +463,7 @@ function DeliverableProposalGroup({
           </table>
         </div>
 
-        <Accordion type="single" collapsible>
+        <Accordion type="single" collapsible className={awarded && !historyOpen ? "hidden" : ""}>
           {group.proposals
             .filter((proposal) => latestRevision(proposal))
             .map((proposal) => {
@@ -381,6 +501,39 @@ function DeliverableProposalGroup({
   );
 }
 
+function AwardedSummary({
+  awarded,
+  costs,
+  open,
+  onToggle,
+}: {
+  awarded: Record<string, unknown>;
+  costs: ReturnType<typeof calculateProposalCost> | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const contractor = asRecord(awarded.contractor);
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2.5 text-left text-sm hover:bg-muted/50"
+      aria-expanded={open}
+    >
+      <span>
+        Awarded to <span className="font-medium">{String(contractor.organisation_name)}</span>
+        {costs && (
+          <span className="text-muted-foreground"> · {formatAudWhole(costs.totalCents)}</span>
+        )}
+      </span>
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        {open ? "Hide proposals" : "View proposals"}
+        <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </span>
+    </button>
+  );
+}
+
 function VariationDecisions({
   proposal,
   busyId,
@@ -400,9 +553,16 @@ function VariationDecisions({
   return (
     <div className="space-y-3 border-t pt-5">
       <div>
-        <h3 className="font-semibold">Cost and timing variations</h3>
+        <h3 className="flex items-center gap-1.5 font-semibold">
+          Cost and timing variations
+          <HelpTip label="What is a variation?">
+            A variation is a change to cost or timing that your contractor has requested after you
+            awarded the work, for example extra scope or a revised deadline.
+          </HelpTip>
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Submitted changes only update the approved plan after your approval.
+          Approve updates your budget and schedule to the revised figures. Reject keeps the original
+          scope and timing, and lets the contractor know.
         </p>
       </div>
       {variations.map((variation) => {

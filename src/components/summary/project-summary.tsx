@@ -25,11 +25,16 @@ export function ProjectSummary({
   snapshot,
   parties,
   sharedFor,
+  sharedBy,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
   sharedFor?: string;
+  sharedBy?: { fullName: string | null; organisationName: string | null } | null;
 }) {
+  const sharedByLabel = sharedBy
+    ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
+    : "";
   const { financials, budget, grouped, schedule, launchDate } = deriveProjectSummary(snapshot);
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
@@ -43,6 +48,9 @@ export function ProjectSummary({
         <div className="space-y-0.5">
           <Wordmark className="text-xl" />
           <BrandTagline className="block" />
+          {sharedByLabel ? (
+            <p className="pt-1 text-xs text-muted-foreground">Shared by {sharedByLabel}</p>
+          ) : null}
         </div>
         {sharedFor ? (
           <p className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
@@ -79,6 +87,12 @@ export function ProjectSummary({
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
+          label={overBudget ? "Over media budget" : "Under media budget"}
+          value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
+          tone={overBudget ? "bad" : "good"}
+          emphasize
+        />
+        <Metric
           label="Gross realisation value"
           value={formatAudWhole(financials.grvCents)}
           hint={snapshot.units ? `${snapshot.units} units` : undefined}
@@ -92,11 +106,6 @@ export function ProjectSummary({
           label="Approved plan"
           value={formatAudWhole(budget.grandTotalCents)}
           hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
-        />
-        <Metric
-          label={overBudget ? "Over media budget" : "Under media budget"}
-          value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
-          tone={overBudget ? "bad" : "good"}
         />
       </section>
 
@@ -343,19 +352,32 @@ function Metric({
   value,
   hint,
   tone,
+  emphasize = false,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: "good" | "bad";
+  emphasize?: boolean;
 }) {
   const toneClass =
     tone === "bad" ? "text-destructive" : tone === "good" ? "text-positive" : "text-foreground";
+  const borderClass = emphasize
+    ? tone === "bad"
+      ? "border-destructive/40"
+      : tone === "good"
+        ? "border-positive/40"
+        : "border-primary/40"
+    : "";
   return (
-    <Card>
+    <Card className={emphasize ? `sm:col-span-2 border-2 ${borderClass}` : undefined}>
       <CardContent className="pt-6">
         <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={`mt-1 text-2xl font-semibold tabular-nums ${toneClass}`}>{value}</div>
+        <div
+          className={`mt-1 font-semibold tabular-nums ${toneClass} ${emphasize ? "text-3xl" : "text-2xl"}`}
+        >
+          {value}
+        </div>
         {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
       </CardContent>
     </Card>

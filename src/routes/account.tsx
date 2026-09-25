@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Camera, Check, Loader2, Trash2 } from "lucide-react";
+import { Camera, Check, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { RequireSubscription } from "@/components/billing/require-subscription";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,6 +48,14 @@ function AccountPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ fullName: false, organisationName: false });
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState<{
+    kind: "error" | "success";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -73,14 +81,14 @@ function AccountPage() {
     };
   }, []);
 
-  async function save(completeOnboarding: boolean) {
+  async function save(completeOnboarding: boolean, navigateAfter = completeOnboarding) {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       const result = await saveMyProfile({ data: { ...form, completeOnboarding } });
       setProfile(result);
-      if (completeOnboarding) {
+      if (navigateAfter) {
         navigate({ to: "/projects" });
       } else {
         setNotice("Account details saved.");
@@ -129,6 +137,25 @@ function AccountPage() {
     }
   }
 
+  async function updatePassword() {
+    if (newPassword.length < 8) {
+      setPasswordStatus({ kind: "error", message: "Use at least 8 characters." });
+      return;
+    }
+    setPasswordBusy(true);
+    try {
+      const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+      setPasswordStatus(
+        passwordError
+          ? { kind: "error", message: passwordError.message }
+          : { kind: "success", message: "Password updated." },
+      );
+      if (!passwordError) setNewPassword("");
+    } finally {
+      setPasswordBusy(false);
+    }
+  }
+
   const initials =
     form.fullName
       .split(/\s+/)
@@ -139,6 +166,9 @@ function AccountPage() {
     profile?.email.slice(0, 2).toUpperCase() ||
     "PP";
   const canFinish = form.fullName.trim().length > 0 && form.organisationName.trim().length > 0;
+  const fullNameError = touched.fullName && !form.fullName.trim() ? "Full name is required." : null;
+  const organisationError =
+    touched.organisationName && !form.organisationName.trim() ? "Organisation is required." : null;
 
   return (
     <AppShell active="account" title="Account details" showFooter>
@@ -210,91 +240,157 @@ function AccountPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Account details</CardTitle>
-                <CardDescription>
-                  Your email is managed by your secure sign-in and cannot be changed here.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Field label="Email">
-                  <Input value={profile?.email ?? ""} readOnly />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Full name *">
-                    <Input
-                      autoComplete="name"
-                      value={form.fullName}
-                      onChange={(event) => setForm({ ...form, fullName: event.target.value })}
-                    />
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account details</CardTitle>
+                  <CardDescription>
+                    Your email is managed by your secure sign-in and cannot be changed here.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Field label="Email">
+                    <Input value={profile?.email ?? ""} readOnly />
                   </Field>
-                  <Field label="Organisation *">
-                    <Input
-                      autoComplete="organization"
-                      value={form.organisationName}
-                      onChange={(event) =>
-                        setForm({ ...form, organisationName: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field label="Job title">
-                    <Input
-                      autoComplete="organization-title"
-                      value={form.jobTitle}
-                      onChange={(event) => setForm({ ...form, jobTitle: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="Phone">
-                    <Input
-                      type="tel"
-                      autoComplete="tel"
-                      value={form.phone}
-                      onChange={(event) => setForm({ ...form, phone: event.target.value })}
-                    />
-                  </Field>
-                </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Full name *">
+                      <Input
+                        autoComplete="name"
+                        value={form.fullName}
+                        onChange={(event) => setForm({ ...form, fullName: event.target.value })}
+                        onBlur={() => setTouched((t) => ({ ...t, fullName: true }))}
+                        aria-invalid={Boolean(fullNameError)}
+                        className={fullNameError ? "border-destructive" : undefined}
+                      />
+                      {fullNameError && <p className="text-xs text-destructive">{fullNameError}</p>}
+                    </Field>
+                    <Field label="Organisation *">
+                      <Input
+                        autoComplete="organization"
+                        value={form.organisationName}
+                        onChange={(event) =>
+                          setForm({ ...form, organisationName: event.target.value })
+                        }
+                        onBlur={() => setTouched((t) => ({ ...t, organisationName: true }))}
+                        aria-invalid={Boolean(organisationError)}
+                        className={organisationError ? "border-destructive" : undefined}
+                      />
+                      {organisationError && (
+                        <p className="text-xs text-destructive">{organisationError}</p>
+                      )}
+                    </Field>
+                    <Field label="Job title">
+                      <Input
+                        autoComplete="organization-title"
+                        value={form.jobTitle}
+                        onChange={(event) => setForm({ ...form, jobTitle: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <Input
+                        type="tel"
+                        autoComplete="tel"
+                        value={form.phone}
+                        onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                      />
+                    </Field>
+                  </div>
 
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
-                {notice ? (
-                  <p className="flex items-center gap-2 text-sm text-positive">
-                    <Check className="size-4" />
-                    {notice}
-                  </p>
-                ) : null}
+                  {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                  {notice ? (
+                    <p className="flex items-center gap-2 text-sm text-positive">
+                      <Check className="size-4" />
+                      {notice}
+                    </p>
+                  ) : null}
 
-                <div className="flex flex-wrap justify-end gap-2 border-t pt-5">
-                  {onboarding ? (
+                  <div className="flex flex-wrap justify-end gap-2 border-t pt-5">
+                    {onboarding ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => void save(false, true)}
+                      >
+                        {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                        Skip for now
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant={onboarding ? "outline" : "default"}
                       disabled={busy}
-                      onClick={() => navigate({ to: "/projects" })}
+                      onClick={() => void save(false)}
                     >
-                      Skip for now
+                      {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                      Save details
                     </Button>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant={onboarding ? "outline" : "default"}
-                    disabled={busy}
-                    onClick={() => void save(false)}
-                  >
-                    {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                    Save details
-                  </Button>
-                  {onboarding ? (
-                    <Button
-                      type="button"
-                      disabled={busy || !canFinish}
-                      onClick={() => void save(true)}
-                    >
-                      Finish setup
-                    </Button>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
+                    {onboarding ? (
+                      <Button
+                        type="button"
+                        disabled={busy || !canFinish}
+                        onClick={() => void save(true)}
+                      >
+                        Finish setup
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {!onboarding && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Security</CardTitle>
+                    <CardDescription>Set or update the password for signing in.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex max-w-sm flex-wrap items-start gap-2">
+                      <div className="relative min-w-48 flex-1">
+                        <Input
+                          type={showNewPassword ? "text" : "password"}
+                          minLength={8}
+                          autoComplete="new-password"
+                          placeholder="New password"
+                          value={newPassword}
+                          onChange={(event) => setNewPassword(event.target.value)}
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={showNewPassword ? "Hide password" : "Show password"}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                      <Button
+                        type="button"
+                        disabled={passwordBusy}
+                        onClick={() => void updatePassword()}
+                      >
+                        {passwordBusy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                        Update password
+                      </Button>
+                    </div>
+                    {passwordStatus && (
+                      <p
+                        className={`text-sm ${
+                          passwordStatus.kind === "error" ? "text-destructive" : "text-positive"
+                        }`}
+                      >
+                        {passwordStatus.message}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -7,9 +7,13 @@ import type { PublicProjectParty } from "./summary-model";
 export function ExportPdfButton({
   snapshot,
   parties,
+  sharedFor,
+  sharedBy,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
+  sharedFor?: string;
+  sharedBy?: { fullName: string | null; organisationName: string | null } | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +23,7 @@ export function ExportPdfButton({
     setError(null);
     try {
       const { downloadProjectSummaryPdf } = await import("./project-summary-pdf");
-      await downloadProjectSummaryPdf(snapshot, parties);
+      await downloadProjectSummaryPdf(snapshot, parties, sharedFor, sharedBy);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not create the PDF.");
     } finally {

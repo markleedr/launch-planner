@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { differenceInCalendarDays } from "date-fns";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -13,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DollarInput } from "@/components/planner/dollar-input";
 import { Gantt, CriticalPathSummary } from "@/components/planner/gantt";
 import { ScheduleDialog } from "@/components/planner/schedule-dialog";
 import { CriticalIssueChecklist } from "@/components/planner/checklist";
@@ -29,6 +33,7 @@ import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
   UNIT_LABELS,
+  checklistProgress,
   deliverableCosts,
   formatAud,
   formatAudWhole,
@@ -40,6 +45,18 @@ import {
   type DeliverableCategory,
   type ProjectType,
 } from "@/lib/planner";
+
+const SECTIONS = [
+  { id: "details", label: "Details" },
+  { id: "budget", label: "Budget" },
+  { id: "schedule", label: "Schedule" },
+  { id: "checklist", label: "Checklist" },
+  { id: "team", label: "Team" },
+] as const;
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 export const Route = createFileRoute("/planner/")({
   validateSearch: (search: Record<string, unknown>): { mediaBudget?: number } => {
@@ -63,10 +80,71 @@ function PlannerEditor() {
     }
   }, [mediaBudget, p]);
   const overBudget = p.budget.varianceVsMediaBudgetCents > 0;
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const checklist = checklistProgress(p.checklist);
+  const daysLate = p.launchDateObj
+    ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
+    : null;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="grid gap-6 lg:grid-cols-3">
+      <nav
+        aria-label="Plan sections"
+        className="sticky top-16 z-20 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b bg-background/95 px-6 py-2 backdrop-blur"
+      >
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection(s.id);
+            }}
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {s.label}
+          </a>
+        ))}
+      </nav>
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <StatusTile
+          tone={overBudget ? "bad" : "good"}
+          label="Budget"
+          value={
+            overBudget
+              ? `${formatAudWhole(p.budget.varianceVsMediaBudgetCents)} over`
+              : `${formatAudWhole(-p.budget.varianceVsMediaBudgetCents)} under`
+          }
+          onClick={() => scrollToSection("budget")}
+        />
+        <StatusTile
+          tone={daysLate === null ? "neutral" : daysLate > 0 ? "bad" : "good"}
+          label="Schedule"
+          value={
+            daysLate === null
+              ? "No launch date set"
+              : daysLate > 0
+                ? `${daysLate} days late`
+                : daysLate === 0
+                  ? "On time"
+                  : `${Math.abs(daysLate)} days buffer`
+          }
+          onClick={() => scrollToSection("schedule")}
+        />
+        <StatusTile
+          tone={checklist.openHigh > 0 ? "bad" : "good"}
+          label="Checklist"
+          value={
+            checklist.openHigh > 0
+              ? `${checklist.openHigh} high-priority open`
+              : `${checklist.done} of ${checklist.total} reviewed`
+          }
+          onClick={() => scrollToSection("checklist")}
+        />
+      </div>
+
+      <div id="details" className="grid scroll-mt-32 gap-6 lg:grid-cols-3">
         {/* Intake */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -184,18 +262,36 @@ function PlannerEditor() {
               label="Gross Realisation Value (GRV)"
               value={formatAudWhole(p.financials.grvCents)}
               hint={`${p.units} × ${formatAudWhole(parseDollarsToCents(p.sellPrice))}`}
+              help={
+                <HelpTip label="What is GRV?">
+                  Total expected sales revenue for the project: units × sell price. This is the base
+                  figure every other budget percentage is measured against.
+                </HelpTip>
+              }
             />
             <Separator />
             <Stat
               label="Media budget"
               value={formatAudWhole(p.financials.mediaBudgetCents)}
               hint={`${formatPercent(p.financials.mediaBudgetPctOfGrv)} of GRV`}
+              help={
+                <HelpTip label="What is media budget?">
+                  The target you set (or calculated with the media calculator) for total campaign
+                  spend. Compare it against &ldquo;Planned spend&rdquo; below.
+                </HelpTip>
+              }
             />
             <Separator />
             <Stat
               label="Planned spend (deliverables)"
               value={formatAudWhole(p.budget.grandTotalCents)}
               hint={`${formatPercent(p.budget.totalPctOfGrv)} of GRV`}
+              help={
+                <HelpTip label="What is planned spend?">
+                  What your itemised deliverables below currently add up to. Compared against your
+                  media budget above in the banner underneath.
+                </HelpTip>
+              }
             />
             <div
               className={
@@ -213,7 +309,7 @@ function PlannerEditor() {
       </div>
 
       {/* Deliverables & budget */}
-      <Card className="mt-6">
+      <Card id="budget" className="mt-6 scroll-mt-32">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Deliverables & budget</CardTitle>
@@ -223,7 +319,7 @@ function PlannerEditor() {
           </div>
           <div className="flex gap-2">
             <CatalogDialog onAdd={(items) => p.setDeliverables((prev) => [...prev, ...items])} />
-            <Button onClick={p.addDeliverable} size="sm" variant="outline">
+            <Button onClick={() => setJustAddedId(p.addDeliverable())} size="sm" variant="outline">
               <Plus className="mr-1 size-4" />
               Add custom
             </Button>
@@ -235,8 +331,22 @@ function PlannerEditor() {
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-2 font-medium">Deliverable</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">Production</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">Media</th>
+                  <th className="w-40 py-2 px-2 text-right font-medium">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      Production
+                      <HelpTip label="What is production cost?">
+                        Printing, delivery, press or fulfilment cost per unit.
+                      </HelpTip>
+                    </span>
+                  </th>
+                  <th className="w-40 py-2 px-2 text-right font-medium">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      Media
+                      <HelpTip label="What is media cost?">
+                        Placement on Meta, Google, radio, TV, magazines or another platform.
+                      </HelpTip>
+                    </span>
+                  </th>
                   <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
                   <th className="w-10 py-2" />
                 </tr>
@@ -253,28 +363,23 @@ function PlannerEditor() {
                       allDeliverables={p.deliverables}
                       onUpdate={p.updateDeliverable}
                       onRemove={p.removeDeliverable}
+                      justAddedId={justAddedId}
+                      onJustAddedFocused={() => setJustAddedId(null)}
                     />
                   );
                 })}
               </tbody>
-              <tfoot>
-                <tr className="border-t-2 font-semibold">
-                  <td className="py-3 pr-2">Grand total</td>
-                  <td className="py-3 px-2 text-right">
-                    {formatAud(p.budget.productionTotalCents)}
-                  </td>
-                  <td className="py-3 px-2 text-right">{formatAud(p.budget.mediaTotalCents)}</td>
-                  <td className="py-3 px-2 text-right">{formatAud(p.budget.grandTotalCents)}</td>
-                  <td />
-                </tr>
-              </tfoot>
             </table>
           </div>
+          <p className="mt-3 text-right text-xs text-muted-foreground">
+            Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
+            above.
+          </p>
         </CardContent>
       </Card>
 
       {/* Schedule & critical path */}
-      <Card className="mt-6">
+      <Card id="schedule" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Marketing schedule & critical path</CardTitle>
           <CardDescription>
@@ -289,7 +394,7 @@ function PlannerEditor() {
       </Card>
 
       {/* Critical-issue checklist */}
-      <Card className="mt-6">
+      <Card id="checklist" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Critical issues checklist</CardTitle>
           <CardDescription>
@@ -302,7 +407,7 @@ function PlannerEditor() {
       </Card>
 
       {/* Team & suppliers */}
-      <Card className="mt-6">
+      <Card id="team" className="mt-6 scroll-mt-32">
         <CardHeader>
           <CardTitle>Team & suppliers</CardTitle>
           <CardDescription>
@@ -330,6 +435,8 @@ function CategoryGroup({
   allDeliverables,
   onUpdate,
   onRemove,
+  justAddedId,
+  onJustAddedFocused,
 }: {
   category: DeliverableCategory;
   items: Deliverable[];
@@ -337,87 +444,115 @@ function CategoryGroup({
   allDeliverables: Deliverable[];
   onUpdate: (id: string, patch: Partial<Deliverable>) => void;
   onRemove: (id: string) => void;
+  justAddedId?: string | null;
+  onJustAddedFocused?: () => void;
 }) {
+  const [open, setOpen] = useState(true);
   return (
     <>
       <tr className="bg-muted/50">
-        <td
-          colSpan={5}
-          className="py-2 pr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          {CATEGORY_LABELS[category]}
+        <td colSpan={5} className="p-0">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center gap-1.5 px-0 py-2 pr-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            aria-expanded={open}
+          >
+            <ChevronDown
+              className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+            />
+            {CATEGORY_LABELS[category]}
+            <span className="font-normal normal-case text-muted-foreground/70">
+              ({items.length})
+            </span>
+          </button>
         </td>
       </tr>
-      <tr className="border-b text-left text-xs text-muted-foreground">
-        <th className="py-1 pr-2 font-medium">Deliverable</th>
-        <th className="w-40 py-1 px-2 text-right font-medium">Production</th>
-        <th className="w-40 py-1 px-2 text-right font-medium">Media</th>
-        <th className="w-32 py-1 px-2 text-right font-medium">Total</th>
-        <th className="w-10 py-1" />
-      </tr>
-      {items.map((d) => {
-        const costs = deliverableCosts(d);
-        return (
-          <tr key={d.id} className="border-b">
-            <td className="py-2 pr-2">
-              <Input
-                value={d.name}
-                onChange={(e) => onUpdate(d.id, { name: e.target.value })}
-                className="h-8"
-              />
-            </td>
-            <td className="py-2 px-2 align-top">
-              <CentsInput
-                cents={d.productionCostCents}
-                onChange={(cents) => onUpdate(d.id, { productionCostCents: cents })}
-              />
-              {costs.productionCents !== d.productionCostCents && (
-                <p className="mt-1 text-right text-xs text-muted-foreground">
-                  = {formatAud(costs.productionCents)}
-                </p>
-              )}
-            </td>
-            <td className="py-2 px-2 align-top">
-              <CentsInput
-                cents={d.mediaCostCents}
-                onChange={(cents) => onUpdate(d.id, { mediaCostCents: cents })}
-              />
-              {costs.mediaCents !== d.mediaCostCents && (
-                <p className="mt-1 text-right text-xs text-muted-foreground">
-                  = {formatAud(costs.mediaCents)}
-                </p>
-              )}
-            </td>
-            <td className="py-2 px-2 text-right align-top tabular-nums">
-              {formatAud(costs.totalCents)}
-            </td>
-            <td className="py-2 text-right">
-              <div className="flex justify-end">
-                <DeliverableEditorDialog
-                  deliverable={d}
-                  allDeliverables={allDeliverables}
-                  onSave={(patch) => onUpdate(d.id, patch)}
-                  compact
+      {open && (
+        <tr className="border-b text-left text-xs text-muted-foreground">
+          <th className="py-1 pr-2 font-medium">Deliverable</th>
+          <th className="w-40 py-1 px-2 text-right font-medium">Production</th>
+          <th className="w-40 py-1 px-2 text-right font-medium">Media</th>
+          <th className="w-32 py-1 px-2 text-right font-medium">Total</th>
+          <th className="w-10 py-1" />
+        </tr>
+      )}
+      {open &&
+        items.map((d) => {
+          const costs = deliverableCosts(d);
+          return (
+            <tr key={d.id} className="border-b">
+              <td className="py-2 pr-2">
+                <Input
+                  value={d.name}
+                  onChange={(e) => onUpdate(d.id, { name: e.target.value })}
+                  className="h-8"
+                  autoFocus={d.id === justAddedId}
+                  onFocus={(e) => {
+                    if (d.id === justAddedId) {
+                      e.target.select();
+                      onJustAddedFocused?.();
+                    }
+                  }}
                 />
-                <ScheduleDialog
-                  deliverable={d}
-                  allDeliverables={allDeliverables}
-                  onSave={(patch) => onUpdate(d.id, patch)}
+              </td>
+              <td className="py-2 px-2 align-top">
+                <CentsInput
+                  cents={d.productionCostCents}
+                  onChange={(cents) => onUpdate(d.id, { productionCostCents: cents })}
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => onRemove(d.id)}
-                  aria-label="Remove deliverable"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            </td>
-          </tr>
-        );
-      })}
+                {costs.productionCents !== d.productionCostCents && (
+                  <p className="mt-1 text-right text-xs text-muted-foreground">
+                    = {formatAud(costs.productionCents)}
+                  </p>
+                )}
+              </td>
+              <td className="py-2 px-2 align-top">
+                <CentsInput
+                  cents={d.mediaCostCents}
+                  onChange={(cents) => onUpdate(d.id, { mediaCostCents: cents })}
+                />
+                {costs.mediaCents !== d.mediaCostCents && (
+                  <p className="mt-1 text-right text-xs text-muted-foreground">
+                    = {formatAud(costs.mediaCents)}
+                  </p>
+                )}
+              </td>
+              <td className="py-2 px-2 text-right align-top tabular-nums">
+                {formatAud(costs.totalCents)}
+              </td>
+              <td className="py-2 text-right">
+                <div className="flex justify-end">
+                  <DeliverableEditorDialog
+                    deliverable={d}
+                    allDeliverables={allDeliverables}
+                    onSave={(patch) => onUpdate(d.id, patch)}
+                    compact
+                  />
+                  <ScheduleDialog
+                    deliverable={d}
+                    allDeliverables={allDeliverables}
+                    onSave={(patch) => onUpdate(d.id, patch)}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => onRemove(d.id)}
+                        aria-label="Remove deliverable"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
       <tr className="border-b text-muted-foreground">
         <td className="py-2 pr-2 text-right text-xs" colSpan={3}>
           {CATEGORY_LABELS[category]} subtotal
@@ -448,22 +583,6 @@ function CentsInput({ cents, onChange }: { cents: number; onChange: (cents: numb
   );
 }
 
-function DollarInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-        $
-      </span>
-      <Input
-        inputMode="numeric"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="pl-6"
-      />
-    </div>
-  );
-}
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
@@ -473,10 +592,52 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function StatusTile({
+  tone,
+  label,
+  value,
+  onClick,
+}: {
+  tone: "good" | "bad" | "neutral";
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  const toneClass =
+    tone === "bad"
+      ? "border-destructive/30 bg-destructive/5 text-destructive"
+      : tone === "good"
+        ? "border-positive/30 bg-positive/5 text-positive"
+        : "border-border bg-muted/30 text-muted-foreground";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg border px-4 py-3 text-left transition-shadow hover:shadow-sm ${toneClass}`}
+    >
+      <div className="text-xs font-medium uppercase tracking-wide opacity-80">{label}</div>
+      <div className="mt-0.5 text-lg font-semibold">{value}</div>
+    </button>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  hint,
+  help,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  help?: React.ReactNode;
+}) {
   return (
     <div>
-      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        {label}
+        {help}
+      </div>
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
     </div>

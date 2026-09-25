@@ -36,9 +36,32 @@ function WelcomePage() {
                 </li>
               ))}
             </ol>
-            <Button asChild className="w-full">
-              <Link to="/login">Already set your password? Sign in</Link>
-            </Button>
+            <div className="space-y-2">
+              <p className="text-center text-sm text-muted-foreground">
+                Already set your password?
+              </p>
+              <Button asChild className="w-full">
+                <Link to="/login">Sign in</Link>
+              </Button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              Didn&apos;t get the email?{" "}
+              <Link
+                to="/login"
+                search={{ mode: "forgot" }}
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                Send it again
+              </Link>{" "}
+              or email{" "}
+              <a
+                href="mailto:admin@launchplanner.com.au"
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                admin@launchplanner.com.au
+              </a>
+              .
+            </p>
           </CardContent>
         </Card>
       </main>

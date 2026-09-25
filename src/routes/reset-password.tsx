@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wordmark } from "@/components/brand";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyProfile } from "@/lib/profile/profile.server";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Reset password - Project Planner" }] }),
@@ -21,10 +22,15 @@ function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [destination, setDestination] = useState<"/projects" | "/account">("/projects");
+  const [expired, setExpired] = useState(false);
 
   // The recovery link puts a token in the URL; the Supabase client parses it and
   // establishes a temporary session (PASSWORD_RECOVERY). Wait for that before
-  // allowing a password change.
+  // allowing a password change. The email says this can take a few minutes, so a
+  // stale or already-used link is a real possibility - if no session shows up
+  // within a few seconds, treat the link as expired instead of leaving the form
+  // disabled with no explanation.
   useEffect(() => {
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -33,11 +39,18 @@ function ResetPasswordPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || session) setReady(true);
     });
+    const timeout = setTimeout(() => {
+      if (active) setExpired(true);
+    }, 4000);
     return () => {
       active = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  const confirmMismatch = confirm.length > 0 && password !== confirm;
+  const confirmMatches = confirm.length > 0 && password === confirm;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,8 +63,28 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+
+      // New pay-first customers land here with onboarding never completed; send
+      // them to set up their profile instead of straight to an empty project list.
+      // A returning user doing a routine password reset already has a profile and
+      // goes straight to their projects, as before.
+      let target: "/projects" | "/account" = "/projects";
+      try {
+        const profile = await getMyProfile();
+        if (!profile.onboardingCompletedAt) target = "/account";
+      } catch {
+        // If the profile can't be checked, fall back to the existing behaviour.
+      }
+
+      setDestination(target);
       setDone(true);
-      setTimeout(() => navigate({ to: "/projects" }), 1200);
+      setTimeout(() => {
+        if (target === "/account") {
+          navigate({ to: "/account", search: { onboarding: true } });
+        } else {
+          navigate({ to: "/projects" });
+        }
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update password.");
     } finally {
@@ -80,14 +113,31 @@ function ResetPasswordPage() {
             <CardDescription>
               {ready
                 ? "Choose a new password for your account."
-                : "Open this page from the reset link in your email."}
+                : expired
+                  ? "This link may have expired or already been used."
+                  : "Open this page from the reset link in your email."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {done ? (
               <p className="text-sm text-positive">
-                Password updated. Taking you to your projects…
+                Password updated.{" "}
+                {destination === "/account"
+                  ? "Taking you to set up your profile…"
+                  : "Taking you to your projects…"}
               </p>
+            ) : !ready && expired ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Reset links are single-use and can take a few minutes to arrive, so this one may
+                  have already expired. Send yourself a new one.
+                </p>
+                <Button asChild className="w-full">
+                  <Link to="/login" search={{ mode: "forgot" }}>
+                    Send a new reset link
+                  </Link>
+                </Button>
+              </div>
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-1.5">
@@ -112,14 +162,32 @@ function ResetPasswordPage() {
                     minLength={8}
                     autoComplete="new-password"
                     disabled={!ready}
+                    aria-invalid={confirmMismatch}
+                    className={confirmMismatch ? "border-destructive" : undefined}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                   />
+                  {confirmMismatch && (
+                    <p className="flex items-center gap-1 text-xs text-destructive">
+                      <X className="size-3.5" />
+                      Passwords don&apos;t match.
+                    </p>
+                  )}
+                  {confirmMatches && (
+                    <p className="flex items-center gap-1 text-xs text-positive">
+                      <Check className="size-3.5" />
+                      Passwords match.
+                    </p>
+                  )}
                 </div>
 
                 {error && <p className="text-sm text-destructive">{error}</p>}
 
-                <Button type="submit" className="w-full" disabled={busy || !ready}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={busy || !ready || confirmMismatch}
+                >
                   {busy ? "Saving…" : "Update password"}
                 </Button>
               </form>

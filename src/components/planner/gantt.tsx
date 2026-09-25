@@ -1,5 +1,7 @@
 import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { AlertTriangle, CalendarClock, Flag } from "lucide-react";
+import { HelpTip } from "@/components/ui/help-tip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   CATEGORY_LABELS,
   formatAudWhole,
@@ -58,7 +60,7 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
     <div className="overflow-x-auto">
       <div className="flex min-w-[640px]">
         {/* Left: labels */}
-        <div className="w-56 shrink-0">
+        <div className="sticky left-0 z-10 w-56 shrink-0 border-r bg-card">
           <div style={{ height: HEADER_H }} />
           {rows.map((r) => (
             <div
@@ -117,11 +119,13 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
               <div
                 className={`absolute top-0 z-10 w-0.5 ${launchLate ? "bg-destructive" : "bg-primary"}`}
                 style={{ left: `${launchPct}%`, height: bodyH }}
-                title={`Launch: ${formatAuDate(launchDate!)}`}
+                title={`Launch: ${formatAuDate(launchDate!)}${launchLate ? " (after the earliest completion date)" : ""}`}
               >
-                <Flag
-                  className={`absolute -top-0 -ml-1 size-3 ${launchLate ? "text-destructive" : "text-primary"}`}
-                />
+                {launchLate ? (
+                  <AlertTriangle className="absolute -top-0 -ml-1.5 size-3.5 text-destructive" />
+                ) : (
+                  <Flag className="absolute -top-0 -ml-1 size-3 text-primary" />
+                )}
               </div>
             )}
 
@@ -139,36 +143,65 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
                     )
                   : 0;
               return (
-                <div
-                  key={r.key}
-                  className="absolute"
-                  style={{ top: i * ROW_H + 10, left: `${left}%`, width: `${width}%` }}
-                >
+                <div key={r.key}>
                   <div
-                    className={`relative h-6 overflow-hidden rounded ${
-                      item.critical ? "bg-primary/85 ring-1 ring-primary" : "bg-muted-foreground/35"
-                    }`}
-                    title={`${item.name}: ${formatAuDate(item.start)} → ${formatAuDate(item.end)} (${item.durationDays}d, slack ${item.slack}d)`}
+                    className="absolute"
+                    style={{ top: i * ROW_H + 10, left: `${left}%`, width: `${width}%` }}
                   >
-                    {/* Lead-in / setup portion */}
-                    <div
-                      className="absolute inset-y-0 left-0 bg-foreground/15"
-                      style={{ width: `${leadFrac * 100}%` }}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className={`relative block h-6 w-full overflow-hidden rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            item.critical
+                              ? "bg-primary/85 ring-1 ring-primary"
+                              : "bg-muted-foreground/35"
+                          }`}
+                          aria-label={`${item.name}: ${formatAuDate(item.start)} to ${formatAuDate(item.end)}`}
+                        >
+                          {/* Lead-in / setup portion */}
+                          <div
+                            className="absolute inset-y-0 left-0 bg-foreground/15"
+                            style={{ width: `${leadFrac * 100}%` }}
+                          />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" className="w-64 text-xs">
+                        <p className="font-medium text-foreground">{item.name}</p>
+                        <p className="mt-1 text-muted-foreground">
+                          {formatAuDate(item.start)} → {formatAuDate(item.end)} ·{" "}
+                          {item.durationDays} {item.durationDays === 1 ? "day" : "days"}
+                        </p>
+                        <p className="mt-1 text-muted-foreground">
+                          {item.critical
+                            ? "On the critical path: zero slack."
+                            : `${item.slack} ${item.slack === 1 ? "day" : "days"} of slack.`}
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                    {/* Recurrence occurrence markers */}
+                    {item.occurrences.map((o, idx) => {
+                      const op = pct(o);
+                      const within = ((op - left) / width) * 100;
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute top-1 size-1.5 -translate-x-1/2 rounded-full bg-background ring-1 ring-foreground/60"
+                          style={{ left: `${clamp(within, 0, 100)}%` }}
+                          title={`Occurrence: ${formatAuDate(o)}`}
+                        />
+                      );
+                    })}
                   </div>
-                  {/* Recurrence occurrence markers */}
-                  {item.occurrences.map((o, idx) => {
-                    const op = pct(o);
-                    const within = ((op - left) / width) * 100;
-                    return (
-                      <div
-                        key={idx}
-                        className="absolute top-1 size-1.5 -translate-x-1/2 rounded-full bg-background ring-1 ring-foreground/60"
-                        style={{ left: `${clamp(within, 0, 100)}%` }}
-                        title={`Occurrence: ${formatAuDate(o)}`}
-                      />
-                    );
-                  })}
+                  {/* Slack, shown inline so it's visible without hovering */}
+                  {!item.critical && item.slack > 0 && (
+                    <span
+                      className="absolute flex items-center whitespace-nowrap pl-1.5 text-[10px] text-muted-foreground"
+                      style={{ top: i * ROW_H, left: `${pct(item.end)}%`, height: ROW_H }}
+                    >
+                      +{item.slack}d slack
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -242,8 +275,13 @@ export function CriticalPathSummary({
       </div>
 
       <div>
-        <div className="mb-2 text-sm font-medium">
+        <div className="mb-2 flex items-center gap-1.5 text-sm font-medium">
           Critical path ({schedule.criticalPath.length} items)
+          <HelpTip label="What is the critical path?">
+            The critical path is the chain of deliverables with zero slack. If any of them run late,
+            your completion date moves out. Everything else has some slack: room to slip a little
+            without affecting the finish date.
+          </HelpTip>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {schedule.criticalPath.map((id, i) => (
@@ -293,8 +331,18 @@ function Metric({
 function GanttLegend() {
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-      <LegendItem className="bg-primary/85 ring-1 ring-primary">Critical path</LegendItem>
-      <LegendItem className="bg-muted-foreground/35">Has slack</LegendItem>
+      <LegendItem
+        className="bg-primary/85 ring-1 ring-primary"
+        help="Zero slack - any delay here pushes out the completion date."
+      >
+        Critical path
+      </LegendItem>
+      <LegendItem
+        className="bg-muted-foreground/35"
+        help="Can slip by the number of days shown without affecting the completion date."
+      >
+        Has slack
+      </LegendItem>
       <LegendItem className="bg-foreground/15">Setup / lead-in</LegendItem>
       <span className="flex items-center gap-1.5">
         <span className="size-1.5 rounded-full bg-background ring-1 ring-foreground/60" />
@@ -308,11 +356,20 @@ function GanttLegend() {
   );
 }
 
-function LegendItem({ className, children }: { className: string; children: React.ReactNode }) {
+function LegendItem({
+  className,
+  help,
+  children,
+}: {
+  className: string;
+  help?: string;
+  children: React.ReactNode;
+}) {
   return (
     <span className="flex items-center gap-1.5">
       <span className={`h-3 w-5 rounded ${className}`} />
       {children}
+      {help && <HelpTip label={`What does "${children}" mean?`}>{help}</HelpTip>}
     </span>
   );
 }

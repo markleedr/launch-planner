@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
   Building2,
   Check,
+  ChevronDown,
   ImagePlus,
   Info,
   Loader2,
@@ -19,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -32,6 +35,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CatalogDialog } from "./catalog-dialog";
 import { DeliverableEditorDialog } from "./deliverable-editor-dialog";
+import { DollarInput } from "./dollar-input";
 import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import {
   ContractorAssignmentBoard,
@@ -46,12 +50,15 @@ import {
   CATEGORY_LABELS,
   formatAud,
   formatAudWhole,
+  formatAuDate,
+  formatProjectAddress,
   HERO_IMAGE_LIBRARY,
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
   generateProjectBlurb,
   googleMapsUrl,
   mediaPlanToDeliverables,
+  serializePlanner,
   summariseBudget,
   type Deliverable,
   type ProjectType,
@@ -96,7 +103,37 @@ export function ProjectWizard() {
   const [step, setStep] = useState<StepId>("details");
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const currentIndex = STEPS.findIndex((item) => item.id === step);
+
+  // PlannerProvider wraps the whole /planner/* layout, so currentProjectId
+  // survives navigating here from an already-open project. Without this, the
+  // wizard would silently edit that project instead of starting a new one.
+  const resetOnMount = useRef(false);
+  useLayoutEffect(() => {
+    if (resetOnMount.current) return;
+    resetOnMount.current = true;
+    p.resetDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Warn before closing the tab or navigating away with changes this step
+  // hasn't saved yet (the wizard only persists on "Save & continue"/"Skip").
+  const currentSnapshot = JSON.stringify(serializePlanner(p.toSnapshot()));
+  const lastSavedSnapshot = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastSavedSnapshot.current === null) lastSavedSnapshot.current = currentSnapshot;
+  }, [currentSnapshot]);
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (lastSavedSnapshot.current !== null && currentSnapshot !== lastSavedSnapshot.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [currentSnapshot]);
 
   async function persist(): Promise<string | null> {
     if (!user) return null;
@@ -107,13 +144,16 @@ export function ProjectWizard() {
       if (p.currentProjectId) {
         await updateProject(p.currentProjectId, name, p.toSnapshot());
         setSaveState("saved");
+        lastSavedSnapshot.current = JSON.stringify(serializePlanner(p.toSnapshot()));
         return p.currentProjectId;
       }
       const id = await createProject(name, p.toSnapshot());
       p.setCurrentProjectId(id);
       setSaveState("saved");
+      lastSavedSnapshot.current = JSON.stringify(serializePlanner(p.toSnapshot()));
       return id;
-    } catch {
+    } catch (reason) {
+      setSaveError(reason instanceof Error ? reason.message : "Unknown error.");
       setSaveState("error");
       return null;
     } finally {
@@ -143,7 +183,8 @@ export function ProjectWizard() {
             <p className="text-xs font-medium text-muted-foreground">New project</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">{STEPS[currentIndex].label}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Everything is optional. Skip a step now and return whenever you are ready.
+              Everything is optional. Skip a step now and return whenever you are ready. Your
+              progress saves automatically as you move between steps.
             </p>
           </div>
           <div className="text-right text-xs text-muted-foreground">
@@ -155,7 +196,17 @@ export function ProjectWizard() {
               </span>
             )}
             {saveState === "error" && (
-              <span className="ml-3 text-destructive">Save will retry on the next step.</span>
+              <span className="ml-3 inline-flex items-center gap-1 text-destructive">
+                Save will retry on the next step.
+                {saveError && (
+                  <HelpTip
+                    label="Why did saving fail?"
+                    triggerClassName="text-destructive/70 hover:text-destructive"
+                  >
+                    {saveError}
+                  </HelpTip>
+                )}
+              </span>
             )}
           </div>
         </div>
@@ -176,13 +227,30 @@ export function ProjectWizard() {
             </button>
           ))}
         </div>
+        <div className="mt-3 md:hidden">
+          <Select
+            value={step}
+            onValueChange={(value) => void go(STEPS.findIndex((s) => s.id === value))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STEPS.map((item, index) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {index + 1}. {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {step === "details" && <DetailsStep />}
       {step === "deliverables" && <DeliverablesStep />}
       {step === "media" && <MediaStep />}
       {step === "parties" && <PartiesStep ensureProject={persist} />}
-      {step === "review" && <ReviewStep />}
+      {step === "review" && <ReviewStep onEdit={(index) => void go(index)} />}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
         <Button
@@ -229,9 +297,17 @@ function DetailsStep() {
   const p = usePlanner();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  const [postcodeTouched, setPostcodeTouched] = useState(false);
   const mapUrl = googleMapsUrl(p.address);
+  const postcodeError =
+    postcodeTouched && p.address.postcode && !/^\d{4}$/.test(p.address.postcode)
+      ? "Enter a 4-digit postcode."
+      : null;
+  const canUploadHero = Boolean(p.currentProjectId);
 
   function regenerateBlurb() {
+    setConfirmRegenerate(false);
     p.setProjectBlurb(
       generateProjectBlurb({
         name: p.projectName,
@@ -240,6 +316,14 @@ function DetailsStep() {
         address: p.address,
       }),
     );
+  }
+
+  function requestRegenerateBlurb() {
+    if (p.projectBlurb.trim()) {
+      setConfirmRegenerate(true);
+    } else {
+      regenerateBlurb();
+    }
   }
 
   async function uploadHero(file: File) {
@@ -308,14 +392,11 @@ function DetailsStep() {
               onChange={(event) => p.setUnits(Math.max(0, Number(event.target.value)))}
             />
           </Field>
-          <Field label="Sell price per unit ($)">
-            <Input value={p.sellPrice} onChange={(event) => p.setSellPrice(event.target.value)} />
+          <Field label="Sell price per unit">
+            <DollarInput value={p.sellPrice} onChange={p.setSellPrice} />
           </Field>
-          <Field label="Media budget ($)">
-            <Input
-              value={p.mediaBudget}
-              onChange={(event) => p.setMediaBudget(event.target.value)}
-            />
+          <Field label="Media budget">
+            <DollarInput value={p.mediaBudget} onChange={p.setMediaBudget} />
           </Field>
           <Field label="Launch date">
             <Input
@@ -347,12 +428,14 @@ function DetailsStep() {
           </Field>
           <Field label="Street address" className="sm:col-span-2">
             <Input
+              autoComplete="street-address"
               value={p.address.street}
               onChange={(event) => p.setAddress({ ...p.address, street: event.target.value })}
             />
           </Field>
           <Field label="Suburb">
             <Input
+              autoComplete="address-level2"
               value={p.address.suburb}
               onChange={(event) => {
                 p.setAddress({ ...p.address, suburb: event.target.value });
@@ -362,6 +445,7 @@ function DetailsStep() {
           </Field>
           <Field label="State">
             <Input
+              autoComplete="address-level1"
               value={p.address.state}
               onChange={(event) => p.setAddress({ ...p.address, state: event.target.value })}
             />
@@ -369,9 +453,20 @@ function DetailsStep() {
           <Field label="Postcode">
             <Input
               inputMode="numeric"
+              autoComplete="postal-code"
+              maxLength={4}
               value={p.address.postcode}
-              onChange={(event) => p.setAddress({ ...p.address, postcode: event.target.value })}
+              onChange={(event) =>
+                p.setAddress({
+                  ...p.address,
+                  postcode: event.target.value.replace(/\D/g, "").slice(0, 4),
+                })
+              }
+              onBlur={() => setPostcodeTouched(true)}
+              aria-invalid={Boolean(postcodeError)}
+              className={postcodeError ? "border-destructive" : undefined}
             />
+            {postcodeError && <p className="text-xs text-destructive">{postcodeError}</p>}
           </Field>
           <div className="flex items-end">
             {mapUrl ? (
@@ -393,10 +488,19 @@ function DetailsStep() {
               type="button"
               variant="link"
               className="mt-1 h-auto px-0"
-              onClick={regenerateBlurb}
+              onClick={requestRegenerateBlurb}
             >
               Regenerate placeholder copy
             </Button>
+            <ConfirmDialog
+              open={confirmRegenerate}
+              onOpenChange={setConfirmRegenerate}
+              title="Replace your project blurb?"
+              description="This overwrites what you've written with fresh placeholder copy. You can't undo this."
+              confirmLabel="Replace it"
+              destructive
+              onConfirm={regenerateBlurb}
+            />
           </Field>
         </CardContent>
       </Card>
@@ -429,7 +533,11 @@ function DetailsStep() {
               </button>
             ))}
           </div>
-          <Label className="flex cursor-pointer items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm">
+          <Label
+            className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
+              canUploadHero ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+            }`}
+          >
             {uploading ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
@@ -440,13 +548,18 @@ function DetailsStep() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
-              disabled={uploading}
+              disabled={uploading || !canUploadHero}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void uploadHero(file);
               }}
             />
           </Label>
+          {!canUploadHero && (
+            <p className="text-xs text-muted-foreground">
+              Save this step first to upload your own image. Pick a built-in image above for now.
+            </p>
+          )}
           {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
         </CardContent>
       </Card>
@@ -456,6 +569,7 @@ function DetailsStep() {
 
 function DeliverablesStep() {
   const p = usePlanner();
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   return (
     <Card>
@@ -471,7 +585,12 @@ function DeliverablesStep() {
             <CatalogDialog
               onAdd={(items) => p.setDeliverables((current) => [...current, ...items])}
             />
-            <Button type="button" variant="outline" size="sm" onClick={p.addDeliverable}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setJustAddedId(p.addDeliverable())}
+            >
               <Plus className="mr-1 size-4" />
               Add from scratch
             </Button>
@@ -486,16 +605,38 @@ function DeliverablesStep() {
             body="Skip this step or add the first item from the catalog."
           />
         ) : (
-          <div className="space-y-4">
-            {p.deliverables.map((deliverable) => (
-              <DeliverableBriefEditor
-                key={deliverable.id}
-                deliverable={deliverable}
-                allDeliverables={p.deliverables}
-                onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
-                onRemove={() => p.removeDeliverable(deliverable.id)}
-              />
-            ))}
+          <div className="space-y-6">
+            {p.grouped.map(({ category, items }) => {
+              const cat = p.budget.categories.find((c) => c.category === category);
+              return (
+                <div key={category}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {CATEGORY_LABELS[category]}
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {formatAud(cat?.totalCents ?? 0)}
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    {items.map((deliverable) => (
+                      <DeliverableBriefEditor
+                        key={deliverable.id}
+                        deliverable={deliverable}
+                        allDeliverables={p.deliverables}
+                        onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
+                        onRemove={() => p.removeDeliverable(deliverable.id)}
+                        justAdded={deliverable.id === justAddedId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-between border-t pt-3 text-sm font-semibold">
+              <span>Total</span>
+              <span className="tabular-nums">{formatAud(p.budget.grandTotalCents)}</span>
+            </div>
           </div>
         )}
       </CardContent>
@@ -508,11 +649,13 @@ function DeliverableBriefEditor({
   allDeliverables,
   onChange,
   onRemove,
+  justAdded = false,
 }: {
   deliverable: Deliverable;
   allDeliverables: Deliverable[];
   onChange: (patch: Partial<Deliverable>) => void;
   onRemove: () => void;
+  justAdded?: boolean;
 }) {
   const total = calculateProposalCost({
     notes: deliverable.notes ?? "",
@@ -556,6 +699,7 @@ function DeliverableBriefEditor({
           deliverable={deliverable}
           allDeliverables={allDeliverables}
           onSave={onChange}
+          defaultOpen={justAdded}
         />
         <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
           <Trash2 className="size-4" />
@@ -618,15 +762,12 @@ function MediaStep() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="media-budget">Media budget ($)</Label>
-            <Input
+            <Label htmlFor="media-budget">Media budget</Label>
+            <DollarInput
               id="media-budget"
-              type="number"
-              min="0"
-              inputMode="numeric"
               placeholder="e.g. 300000"
               value={p.mediaBudget}
-              onChange={(e) => p.setMediaBudget(e.target.value)}
+              onChange={p.setMediaBudget}
             />
             <p className="pt-1 text-3xl font-bold">
               {p.financials.mediaBudgetCents
@@ -635,25 +776,23 @@ function MediaStep() {
             </p>
           </div>
 
-          <div className="rounded-md border p-3">
-            <p className="text-sm text-muted-foreground">Media spend on deliverables</p>
-            <p className="text-lg font-semibold">{formatAudWhole(mediaTotalCents)}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              disabled={mediaTotalCents === 0}
-              onClick={() => p.setMediaBudget(String(Math.round(mediaTotalCents / 100)))}
-            >
-              Use deliverable media spend
-            </Button>
-            {mediaTotalCents === 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Add media cost to deliverables in step 2 to use this.
+          {mediaTotalCents > 0 && mediaTotalCents !== parseInt(p.mediaBudget || "0", 10) * 100 && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p className="text-sm font-medium">Your deliverables now cost differently</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Media spend costed on deliverables: {formatAudWhole(mediaTotalCents)}
               </p>
-            )}
-          </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2 bg-background"
+                onClick={() => p.setMediaBudget(String(Math.round(mediaTotalCents / 100)))}
+              >
+                Match media budget to this
+              </Button>
+            </div>
+          )}
 
           <div>
             <p className="text-sm text-muted-foreground">Generated media deliverables</p>
@@ -686,6 +825,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
   const [deadline, setDeadline] = useState("");
   const [inviting, setInviting] = useState(false);
   const [attachingPartyId, setAttachingPartyId] = useState<string | null>(null);
+  const [directoryOpen, setDirectoryOpen] = useState(true);
+  const directoryInitialized = useRef(false);
 
   async function refresh(projectId?: string | null) {
     try {
@@ -720,7 +861,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
       setError(
         reason instanceof Error
           ? reason.message
-          : "The Lovable workflow database is not available yet.",
+          : "We couldn't load your contractor directory right now. Try again in a moment.",
       );
     } finally {
       setLoading(false);
@@ -732,6 +873,16 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
     // The project id is intentionally the only refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentProjectId]);
+
+  // Collapse the directory to a one-line summary once contractors already
+  // exist on this project, so returning here isn't a full directory-building
+  // screen again. Only decide this once, right after the first load.
+  useEffect(() => {
+    if (loading || directoryInitialized.current) return;
+    directoryInitialized.current = true;
+    setDirectoryOpen(p.projectParties.length === 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   async function addParty() {
     setError(null);
@@ -889,15 +1040,40 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
 
   return (
     <div className="space-y-6">
+      <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
+        <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
+        <div>
+          <p className="font-semibold">A price request does not assign the work.</p>
+          <p className="mt-1 text-muted-foreground">
+            Below, add or reuse contractors, then check a box against a deliverable to send that
+            contractor a private price request. You can request competing prices from multiple
+            contractors, then award one in Procurement.
+          </p>
+        </div>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Contractor directory</CardTitle>
-          <CardDescription>
-            Reuse project parties and contractors across future projects. Only portal contractors
-            receive account access.
-          </CardDescription>
+        <CardHeader
+          className={p.projectParties.length > 0 ? "cursor-pointer select-none" : undefined}
+          onClick={p.projectParties.length > 0 ? () => setDirectoryOpen((v) => !v) : undefined}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Contractor directory</CardTitle>
+              <CardDescription>
+                {directoryOpen
+                  ? "Reuse project parties and contractors across future projects. Only portal contractors receive account access."
+                  : `${p.projectParties.length} ${p.projectParties.length === 1 ? "contractor" : "contractors"} in this project. Manage`}
+              </CardDescription>
+            </div>
+            {p.projectParties.length > 0 && (
+              <ChevronDown
+                className={`size-4 shrink-0 text-muted-foreground transition-transform ${directoryOpen ? "" : "-rotate-90"}`}
+              />
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className={`space-y-4 ${directoryOpen ? "" : "hidden"}`}>
           {loading ? <Loader2 className="size-5 animate-spin" /> : null}
           {directory.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -948,7 +1124,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           )}
 
           <div className="grid gap-3 rounded-lg bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Organisation">
+            <Field label="Organisation" required>
               <Input
                 value={form.organisationName}
                 onChange={(event) => setForm({ ...form, organisationName: event.target.value })}
@@ -996,7 +1172,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 onChange={(event) => setForm({ ...form, website: event.target.value })}
               />
             </Field>
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
               <Button
                 type="button"
                 onClick={() => void addParty()}
@@ -1005,6 +1181,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 <Plus className="mr-1 size-4" />
                 Add to project and directory
               </Button>
+              <span className="text-xs text-muted-foreground">* Required</span>
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -1020,18 +1197,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-3 rounded-lg border border-brand/35 bg-brand/10 p-4 text-sm">
-            <Info className="mt-0.5 size-5 shrink-0 text-foreground" />
-            <div>
-              <p className="font-semibold">A price request does not assign the work.</p>
-              <p className="mt-1 text-muted-foreground">
-                Each checked box sends that contractor a private request for that deliverable. You
-                can request competing prices from multiple contractors, then award one in
-                Procurement.
-              </p>
-            </div>
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_280px] sm:items-end">
             <div className="rounded-md bg-muted/40 px-4 py-3 text-sm">
               <span className="font-semibold">{selectedDeliverableCount}</span>{" "}
@@ -1045,6 +1210,7 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                 value={deadline}
                 onChange={(event) => setDeadline(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </Field>
           </div>
 
@@ -1076,52 +1242,108 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
-function ReviewStep() {
+function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
   const p = usePlanner();
   const mapUrl = googleMapsUrl(p.address);
-  const sections = useMemo(
-    () => [
-      { label: "Project details", value: p.projectName || "Not supplied" },
-      { label: "Deliverables", value: `${p.deliverables.length}` },
-      {
-        label: "Media budget",
-        value: p.mediaBudget ? `$${Number(p.mediaBudget).toLocaleString("en-AU")}` : "Not supplied",
-      },
-      { label: "Project parties", value: `${p.projectParties.length}` },
-    ],
-    [p.deliverables.length, p.mediaBudget, p.projectName, p.projectParties.length],
-  );
+  const address = formatProjectAddress(p.address) || p.location;
+  const launchDate = p.launchDate ? new Date(`${p.launchDate}T00:00:00`) : null;
+  const mediaTotalCents = summariseBudget(p.deliverables, {
+    mediaBudgetCents: p.financials.mediaBudgetCents,
+    grvCents: p.financials.grvCents,
+  }).mediaTotalCents;
+  const partiesByRole = useMemo(() => {
+    const counts = new Map<ProjectPartyRole, number>();
+    for (const party of p.projectParties) {
+      counts.set(party.role, (counts.get(party.role) ?? 0) + 1);
+    }
+    return [...counts.entries()];
+  }, [p.projectParties]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Ready to plan</CardTitle>
-          <CardDescription>
-            Your project remains editable after the wizard. Missing information is omitted from
-            client-facing output.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          {sections.map((item) => (
-            <div key={item.label} className="rounded-md border p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">{item.label}</p>
-              <p className="mt-1 font-semibold">{item.value}</p>
-            </div>
-          ))}
+      <div className="space-y-4">
+        <ReviewSection title="Project details" onEdit={() => onEdit(0)}>
+          <ReviewRow label="Name" value={p.projectName || "Not supplied"} />
+          <ReviewRow label="Type" value={PROJECT_TYPE_LABELS[p.projectType]} />
+          <ReviewRow label="Units" value={p.units > 0 ? String(p.units) : "Not supplied"} />
+          <ReviewRow
+            label="Sell price per unit"
+            value={p.sellPrice ? formatAud(Number(p.sellPrice) * 100) : "Not supplied"}
+          />
+          <ReviewRow
+            label="Launch date"
+            value={launchDate ? formatAuDate(launchDate) : "Not set"}
+          />
+          <ReviewRow label="Address" value={address || "Not supplied"} />
+          {p.projectBlurb ? (
+            <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{p.projectBlurb}</p>
+          ) : null}
           {mapUrl && (
             <a
               href={mapUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 rounded-md border p-4 text-sm hover:bg-muted sm:col-span-2"
+              className="mt-2 flex items-center gap-2 text-sm text-foreground hover:underline"
             >
               <MapPin className="size-4" />
-              Location is ready for the summary map
+              View on Google Maps
             </a>
           )}
-        </CardContent>
-      </Card>
+        </ReviewSection>
+
+        <ReviewSection title="Deliverables" onEdit={() => onEdit(1)}>
+          {p.deliverables.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No deliverables added yet.</p>
+          ) : (
+            <>
+              <ReviewRow
+                label="Total deliverables"
+                value={`${p.deliverables.length} across ${p.grouped.length} ${p.grouped.length === 1 ? "category" : "categories"}`}
+              />
+              <ReviewRow
+                label="Approved plan total"
+                value={formatAudWhole(p.budget.grandTotalCents)}
+              />
+              <div className="mt-2 space-y-1">
+                {p.grouped.map(({ category, items }) => (
+                  <div key={category} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{CATEGORY_LABELS[category]}</span>
+                    <span>
+                      {items.length} {items.length === 1 ? "item" : "items"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </ReviewSection>
+
+        <ReviewSection title="Media plan" onEdit={() => onEdit(2)}>
+          <ReviewRow
+            label="Media budget"
+            value={p.mediaBudget ? formatAud(Number(p.mediaBudget) * 100) : "Not supplied"}
+          />
+          <ReviewRow label="Media costed on deliverables" value={formatAudWhole(mediaTotalCents)} />
+        </ReviewSection>
+
+        <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
+          {p.projectParties.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No contractors added yet. You can add them later from Quotes.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {partiesByRole.map(([role, count]) => (
+                <div key={role} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{PROJECT_PARTY_ROLE_LABELS[role]}</span>
+                  <span>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ReviewSection>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>What happens next</CardTitle>
@@ -1148,18 +1370,54 @@ function ReviewStep() {
   );
 }
 
+function ReviewSection({
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
 function Field({
   label,
   children,
   className = "",
+  required = false,
 }: {
   label: string;
   children: React.ReactNode;
   className?: string;
+  required?: boolean;
 }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
       {children}
     </div>
   );

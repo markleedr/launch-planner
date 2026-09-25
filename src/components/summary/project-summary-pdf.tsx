@@ -35,7 +35,15 @@ const styles = StyleSheet.create({
     color: "#111111",
     backgroundColor: "#ffffff",
   },
-  brand: { fontFamily: "Helvetica-Bold", fontSize: 13, marginBottom: 14 },
+  headerBlock: { marginBottom: 14 },
+  brandRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  brand: { fontFamily: "Helvetica-Bold", fontSize: 13 },
+  mutedSmall: { fontSize: 7.5, color: "#555555", marginTop: 2 },
   hero: { width: "100%", height: 176, objectFit: "cover", marginBottom: 15 },
   eyebrow: {
     fontFamily: "Helvetica-Bold",
@@ -107,13 +115,21 @@ const styles = StyleSheet.create({
 export async function downloadProjectSummaryPdf(
   snapshot: PlannerSnapshot,
   parties: PublicProjectParty[],
+  sharedFor?: string,
+  sharedBy?: { fullName: string | null; organisationName: string | null } | null,
 ) {
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const sourceHeroUrl =
     typeof window !== "undefined" ? new URL(hero.src, window.location.origin).href : hero.src;
   const heroUrl = typeof window !== "undefined" ? await grayscaleImage(sourceHeroUrl) : undefined;
   const blob = await pdf(
-    <ProjectSummaryPdf snapshot={snapshot} parties={parties} heroUrl={heroUrl} />,
+    <ProjectSummaryPdf
+      snapshot={snapshot}
+      parties={parties}
+      heroUrl={heroUrl}
+      sharedFor={sharedFor}
+      sharedBy={sharedBy}
+    />,
   ).toBlob();
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -127,16 +143,23 @@ export function ProjectSummaryPdf({
   snapshot,
   parties,
   heroUrl,
+  sharedFor,
+  sharedBy,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
   heroUrl?: string;
+  sharedFor?: string;
+  sharedBy?: { fullName: string | null; organisationName: string | null } | null;
 }) {
   const { financials, budget, grouped, schedule } = deriveProjectSummary(snapshot);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
   const mapsUrl = googleMapsUrl(snapshot.address);
   const year = new Date().getFullYear();
   const footerText = `powered by project profile | ${developerName(parties)} | ${snapshot.projectName} | ${year}`;
+  const sharedByLabel = sharedBy
+    ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
+    : "";
 
   return (
     <Document
@@ -145,7 +168,13 @@ export function ProjectSummaryPdf({
       subject="Client-facing project plan"
     >
       <Page size="A4" style={styles.page} wrap>
-        <Text style={styles.brand}>launch planner.</Text>
+        <View style={styles.headerBlock}>
+          <View style={styles.brandRow}>
+            <Text style={styles.brand}>launch planner.</Text>
+            {sharedFor ? <Text style={styles.mutedSmall}>Prepared for {sharedFor}</Text> : null}
+          </View>
+          {sharedByLabel ? <Text style={styles.mutedSmall}>Shared by {sharedByLabel}</Text> : null}
+        </View>
         {heroUrl ? <Image src={heroUrl} style={styles.hero} /> : null}
         <Text style={styles.eyebrow}>{PROJECT_TYPE_LABELS[snapshot.projectType]}</Text>
         <Text style={styles.title}>{snapshot.projectName}</Text>

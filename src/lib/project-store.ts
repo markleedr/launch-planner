@@ -80,6 +80,26 @@ export async function updateProject(
   if (!data) throw new Error("Project not found or access denied.");
 }
 
+/** Rename a project without touching its saved plan data. */
+export async function renameProject(id: string, name: string): Promise<void> {
+  const userId = await currentUserId();
+  const { data, error } = await projectTable()
+    .update({ name })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Project not found or access denied.");
+}
+
+/** Clone a project's saved plan into a new project row. Returns the new id. */
+export async function duplicateProject(id: string): Promise<string> {
+  const project = await loadProject(id);
+  if (!project) throw new Error("Project not found or access denied.");
+  return createProject(`Copy of ${project.name}`, project.snapshot);
+}
+
 /** Delete a project. */
 export async function deleteProject(id: string): Promise<void> {
   const userId = await currentUserId();

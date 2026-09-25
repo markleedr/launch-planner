@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -22,9 +23,11 @@ import {
 } from "@/components/ui/select";
 import {
   addDays,
+  CATEGORY_LABELS,
   daysBetween,
   dependencyWouldCreateCycle,
   type Deliverable,
+  type DeliverableCategory,
   type RecurrenceFreq,
   type RecurrenceRule,
 } from "@/lib/planner";
@@ -54,6 +57,7 @@ export function ScheduleDialog({
   const [count, setCount] = useState(6);
   const [until, setUntil] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [depsQuery, setDepsQuery] = useState("");
 
   function initFromDeliverable() {
     setLeadDays(deliverable.setupLeadDays);
@@ -108,14 +112,29 @@ export function ScheduleDialog({
   }
 
   const others = allDeliverables.filter((d) => d.id !== deliverable.id);
+  const normalizedQuery = depsQuery.trim().toLowerCase();
+  const filteredOthers = normalizedQuery
+    ? others.filter((d) => d.name.toLowerCase().includes(normalizedQuery))
+    : others;
+  const othersByCategory = new Map<DeliverableCategory, Deliverable[]>();
+  for (const d of filteredOthers) {
+    const list = othersByCategory.get(d.category) ?? [];
+    list.push(d);
+    othersByCategory.set(d.category, list);
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" aria-label="Edit schedule">
-          <CalendarClock className="size-4" />
-        </Button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-8" aria-label="Edit schedule">
+              <CalendarClock className="size-4" />
+            </Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Schedule</TooltipContent>
+      </Tooltip>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Schedule: {deliverable.name}</DialogTitle>
@@ -152,17 +171,42 @@ export function ScheduleDialog({
             {others.length === 0 ? (
               <p className="text-sm text-muted-foreground">No other deliverables.</p>
             ) : (
-              <div className="grid gap-1.5">
-                {others.map((d) => (
-                  <label key={d.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={deps.includes(d.id)}
-                      onCheckedChange={() => toggleDep(d.id)}
-                    />
-                    {d.name}
-                  </label>
-                ))}
-              </div>
+              <>
+                {others.length > 6 && (
+                  <Input
+                    placeholder="Search deliverables…"
+                    value={depsQuery}
+                    onChange={(e) => setDepsQuery(e.target.value)}
+                    className="h-8"
+                  />
+                )}
+                <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+                  {othersByCategory.size === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No deliverables match &ldquo;{depsQuery}&rdquo;.
+                    </p>
+                  ) : (
+                    [...othersByCategory.entries()].map(([category, items]) => (
+                      <div key={category}>
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {CATEGORY_LABELS[category]}
+                        </p>
+                        <div className="grid gap-1.5">
+                          {items.map((d) => (
+                            <label key={d.id} className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={deps.includes(d.id)}
+                                onCheckedChange={() => toggleDep(d.id)}
+                              />
+                              {d.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
           </div>
 

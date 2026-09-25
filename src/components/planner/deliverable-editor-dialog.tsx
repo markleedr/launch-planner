@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -46,17 +47,24 @@ export function DeliverableEditorDialog({
   allDeliverables,
   onSave,
   compact = false,
+  defaultOpen = false,
 }: {
   deliverable: Deliverable;
   allDeliverables: Deliverable[];
   onSave: (patch: Partial<Deliverable>) => void;
   compact?: boolean;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<Deliverable>(deliverable);
+  const [nameTouched, setNameTouched] = useState(false);
+  const nameError = nameTouched && !draft.name.trim() ? "Service name is required." : null;
 
   useEffect(() => {
-    if (open) setDraft(deliverable);
+    if (open) {
+      setDraft(deliverable);
+      setNameTouched(false);
+    }
   }, [deliverable, open]);
 
   const total = useMemo(
@@ -97,18 +105,31 @@ export function DeliverableEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant={compact ? "ghost" : "outline"}
-          size={compact ? "icon" : "sm"}
-          className={compact ? "size-8" : undefined}
-          aria-label={`Edit ${deliverable.name}`}
-        >
-          <Pencil className={compact ? "size-4" : "mr-1 size-4"} />
-          {!compact ? "Edit service" : null}
-        </Button>
-      </DialogTrigger>
+      {compact ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                aria-label={`Edit ${deliverable.name}`}
+              >
+                <Pencil className="size-4" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger asChild>
+          <Button type="button" variant="outline" size="sm" aria-label={`Edit ${deliverable.name}`}>
+            <Pencil className="mr-1 size-4" />
+            Edit service
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit service</DialogTitle>
@@ -117,7 +138,14 @@ export function DeliverableEditorDialog({
 
         <div className="grid gap-5 py-2">
           <Field label="Service name *">
-            <Input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
+            <Input
+              value={draft.name}
+              onChange={(event) => patch({ name: event.target.value })}
+              onBlur={() => setNameTouched(true)}
+              aria-invalid={Boolean(nameError)}
+              className={nameError ? "border-destructive" : undefined}
+            />
+            {nameError && <p className="text-xs text-destructive">{nameError}</p>}
           </Field>
 
           <Field label="Description">
@@ -223,8 +251,8 @@ export function DeliverableEditorDialog({
               />
             </Field>
             <p className="text-xs text-muted-foreground">
-              Leave empty to use the deliverable&apos;s scheduled start date when proposals are
-              issued.
+              Due by 5:00pm on this date. Leave empty to use the deliverable&apos;s scheduled start
+              date when proposals are issued.
             </p>
           </section>
 
@@ -302,6 +330,9 @@ export function DeliverableEditorDialog({
                 value={draft.quantity ?? 1}
                 onChange={(event) => patch({ quantity: Math.max(0, Number(event.target.value)) })}
               />
+              <p className="text-xs text-muted-foreground">
+                Multiplies the third-party production cost per unit.
+              </p>
             </Field>
             <Field label="Months">
               <Input
@@ -310,6 +341,9 @@ export function DeliverableEditorDialog({
                 value={draft.months ?? 0}
                 onChange={(event) => patch({ months: Math.max(0, Number(event.target.value)) })}
               />
+              <p className="text-xs text-muted-foreground">
+                Multiplies the ongoing agency and media monthly costs.
+              </p>
             </Field>
           </div>
 

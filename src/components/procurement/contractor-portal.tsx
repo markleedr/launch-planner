@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Building2, Check, Clock3, Loader2, LogOut, RefreshCw, Send } from "lucide-react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Bell, Building2, Check, Clock3, Loader2, LogOut, RefreshCw, Send, X } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -18,7 +18,12 @@ import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import { DeliveryWorkspace } from "./delivery-workspace";
 import { ProposalPricing } from "./proposal-pricing";
-import { emptyProposalValues, proposalValuesFromRow, type ProposalValues } from "@/lib/procurement";
+import {
+  calculateProposalCost,
+  emptyProposalValues,
+  proposalValuesFromRow,
+  type ProposalValues,
+} from "@/lib/procurement";
 import {
   listContractorProposals,
   listNotifications,
@@ -28,13 +33,18 @@ import { submitProposal, submitVariation } from "@/lib/procurement/procurement.s
 
 export function ContractorPortal() {
   const navigate = useNavigate();
+  const { invited } = useSearch({ from: "/contractor" });
+  const [showWelcome, setShowWelcome] = useState(Boolean(invited));
   const { user, loading: authLoading } = useSession();
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [notifications, setNotifications] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
+  const [passwordStatus, setPasswordStatus] = useState<{
+    kind: "error" | "success";
+    message: string;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -75,11 +85,15 @@ export function ContractorPortal() {
 
   async function updatePassword() {
     if (newPassword.length < 8) {
-      setPasswordStatus("Use at least 8 characters.");
+      setPasswordStatus({ kind: "error", message: "Use at least 8 characters." });
       return;
     }
     const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
-    setPasswordStatus(passwordError ? passwordError.message : "Password updated.");
+    setPasswordStatus(
+      passwordError
+        ? { kind: "error", message: passwordError.message }
+        : { kind: "success", message: "Password updated." },
+    );
     if (!passwordError) setNewPassword("");
   }
 
@@ -126,6 +140,29 @@ export function ContractorPortal() {
           </Button>
         </div>
 
+        {showWelcome && (
+          <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 p-4">
+            <Building2 className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="flex-1 text-sm">
+              <p className="font-medium">Welcome to your contractor portal</p>
+              <p className="mt-1 text-muted-foreground">
+                Proposal requests you&apos;ve been invited to appear below. Open one to see the
+                brief and submit your quote, no other setup needed.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0"
+              aria-label="Dismiss welcome message"
+              onClick={() => setShowWelcome(false)}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
+
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
@@ -169,7 +206,7 @@ export function ContractorPortal() {
                 <button
                   key={String(notification.id)}
                   type="button"
-                  className="block w-full py-3 text-left"
+                  className="block w-full rounded-sm py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => {
                     if (!notification.read_at) {
                       void markNotificationRead(String(notification.id)).then(refresh);
@@ -178,7 +215,12 @@ export function ContractorPortal() {
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{String(notification.title)}</span>
-                    {!notification.read_at && <span className="size-2 rounded-full bg-primary" />}
+                    {!notification.read_at && (
+                      <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                        <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
+                        Unread
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{String(notification.body)}</p>
                 </button>
@@ -233,7 +275,13 @@ export function ContractorPortal() {
             <Button onClick={() => void updatePassword()}>Set password</Button>
           </CardContent>
           {passwordStatus && (
-            <p className="px-6 pb-5 text-sm text-muted-foreground">{passwordStatus}</p>
+            <p
+              className={`px-6 pb-5 text-sm ${
+                passwordStatus.kind === "error" ? "text-destructive" : "text-positive"
+              }`}
+            >
+              {passwordStatus.message}
+            </p>
           )}
         </Card>
       </main>
@@ -270,8 +318,13 @@ function ContractorProposalCard({
         (a, b) => Number(b.revision) - Number(a.revision),
       )
     : [];
+  const proposalTotalCents = calculateProposalCost(values).totalCents;
 
   async function submit() {
+    if (proposalTotalCents <= 0) {
+      setError("Add at least one cost before submitting your proposal.");
+      return;
+    }
     setBusy(true);
     try {
       await submitProposal({ data: { proposalId: String(proposal.id), values } });
@@ -358,9 +411,11 @@ function ContractorProposalCard({
             <ProposalPricing values={values} onChange={setValues} />
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Submitting again before the deadline creates a new retained revision.
+                {proposalTotalCents <= 0
+                  ? "Add at least one cost before you can submit."
+                  : "Submitting again before the deadline creates a new retained revision."}
               </p>
-              <Button disabled={busy} onClick={() => void submit()}>
+              <Button disabled={busy || proposalTotalCents <= 0} onClick={() => void submit()}>
                 {busy ? (
                   <Loader2 className="mr-1 size-4 animate-spin" />
                 ) : (

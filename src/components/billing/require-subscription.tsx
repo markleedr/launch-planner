@@ -39,6 +39,6 @@ export function RequireSubscription({ children }: { children: ReactNode }) {
   if (!billingEnabled) return <>{children}</>;
   if (loading || syncing) return null;
   if (!active && !syncAttempted.current) return null;
-  if (!active) return <Navigate to="/pricing" search={{}} />;
+  if (!active) return <Navigate to="/pricing" search={{ reason: "resubscribe" }} />;
   return <>{children}</>;
 }

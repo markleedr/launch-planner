@@ -3,6 +3,8 @@ import { Check, Download, FileUp, Loader2, MessageSquare, Send } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,40 @@ const DELIVERY_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
+/** What's currently expected, per delivery status and who's viewing. */
+const STATUS_GUIDANCE: Record<string, { owner: string; contractor: string }> = {
+  awarded: {
+    owner: "Waiting for the contractor to start work.",
+    contractor: "You've been awarded this deliverable. Start work when you're ready.",
+  },
+  in_progress: {
+    owner:
+      "The contractor is working on this deliverable and will submit collateral here for your review.",
+    contractor: "Upload your collateral below when it's ready for review.",
+  },
+  collateral_requested: {
+    owner: "An automatic request for the final collateral has been sent to the contractor.",
+    contractor: "The owner has requested your final collateral. Upload it below.",
+  },
+  collateral_submitted: {
+    owner: "A new version is ready for your review below.",
+    contractor: "Your version is with the owner for review.",
+  },
+  changes_requested: {
+    owner: "You asked for changes. The contractor will submit a new version here.",
+    contractor: "The owner asked for changes. Upload a new version below.",
+  },
+  approved: {
+    owner:
+      "You've approved the latest version. Mark the deliverable complete when you're ready to close it out.",
+    contractor: "Your latest version has been approved.",
+  },
+  completed: {
+    owner: "This deliverable is complete.",
+    contractor: "This deliverable is complete.",
+  },
+};
+
 export function DeliveryWorkspace({
   thread,
   mode,
@@ -54,6 +90,8 @@ export function DeliveryWorkspace({
   const [uploadNotes, setUploadNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [changesTarget, setChangesTarget] = useState<string | null>(null);
+  const [changesFeedback, setChangesFeedback] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -167,16 +205,16 @@ export function DeliveryWorkspace({
     }
   }
 
-  async function review(versionId: string, decision: "changes_requested" | "approved") {
-    const feedback =
-      decision === "changes_requested"
-        ? (window.prompt("Describe the changes required:")?.trim() ?? "")
-        : "";
-    if (decision === "changes_requested" && !feedback) return;
+  async function review(
+    versionId: string,
+    decision: "changes_requested" | "approved",
+    feedback = "",
+  ) {
+    if (decision === "changes_requested" && !feedback.trim()) return;
     setBusy(true);
     try {
       await reviewCollateral({
-        data: { versionId, decision, feedback, origin: window.location.origin },
+        data: { versionId, decision, feedback: feedback.trim(), origin: window.location.origin },
       });
       await refresh();
       onChanged?.();
@@ -185,6 +223,16 @@ export function DeliveryWorkspace({
     } finally {
       setBusy(false);
     }
+  }
+
+  function requestChanges(versionId: string) {
+    setChangesTarget(versionId);
+    setChangesFeedback("");
+  }
+
+  function confirmChanges() {
+    if (changesTarget) void review(changesTarget, "changes_requested", changesFeedback);
+    setChangesTarget(null);
   }
 
   async function download(fileId: string) {
@@ -211,11 +259,16 @@ export function DeliveryWorkspace({
   }
 
   const status = String(thread.delivery_status ?? "awarded");
+  const guidance = STATUS_GUIDANCE[status]?.[mode];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <Badge>{DELIVERY_LABELS[status] ?? status}</Badge>
+        <HelpTip label="What is collateral?">
+          Collateral is the final files a contractor delivers for this piece of work, such as
+          artwork, copy or renders, ready for you to review and approve.
+        </HelpTip>
         <span className="text-xs text-muted-foreground">
           All delivery activity and files stay with this deliverable.
         </span>
@@ -231,6 +284,7 @@ export function DeliveryWorkspace({
           </Button>
         ) : null}
       </div>
+      {guidance && <p className="text-sm text-muted-foreground">{guidance}</p>}
 
       {mode === "owner" && (
         <Card>
@@ -247,6 +301,7 @@ export function DeliveryWorkspace({
                 value={cutoff}
                 onChange={(event) => setCutoff(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Due by 5:00pm on this date.</p>
             </Field>
             <Field label="Request before cut-off (business days)">
               <Input
@@ -302,7 +357,11 @@ export function DeliveryWorkspace({
         </CardHeader>
         <CardContent>
           {collateral.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No collateral has been submitted.</p>
+            <p className="text-sm text-muted-foreground">
+              {mode === "contractor"
+                ? "No collateral submitted yet. Upload your files above when they're ready."
+                : "No collateral submitted yet. It will appear here as soon as the contractor uploads it."}
+            </p>
           ) : (
             <div className="space-y-3">
               {collateral.map((version) => {
@@ -322,7 +381,7 @@ export function DeliveryWorkspace({
                             size="sm"
                             variant="outline"
                             disabled={busy}
-                            onClick={() => void review(String(version.id), "changes_requested")}
+                            onClick={() => requestChanges(String(version.id))}
                           >
                             Request changes
                           </Button>
@@ -378,7 +437,9 @@ export function DeliveryWorkspace({
         <CardContent className="space-y-4">
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {messages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No messages yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No messages yet. Start the conversation below.
+              </p>
             ) : (
               messages.map((message) => (
                 <div key={String(message.id)} className="rounded-md bg-muted px-3 py-2">
@@ -417,6 +478,26 @@ export function DeliveryWorkspace({
       {error && (
         <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
       )}
+
+      <ConfirmDialog
+        open={changesTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setChangesTarget(null);
+        }}
+        title="Request changes"
+        description="Tell the contractor what needs to change before you can approve this version."
+        confirmLabel="Send request"
+        confirmDisabled={!changesFeedback.trim()}
+        onConfirm={confirmChanges}
+      >
+        <Textarea
+          rows={3}
+          value={changesFeedback}
+          onChange={(event) => setChangesFeedback(event.target.value)}
+          placeholder="Describe the changes required"
+          autoFocus
+        />
+      </ConfirmDialog>
     </div>
   );
 }
