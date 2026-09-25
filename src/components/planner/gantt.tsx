@@ -117,15 +117,23 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
             {/* Launch-date marker */}
             {launchPct !== null && (
               <div
-                className={`absolute top-0 z-10 w-0.5 ${launchLate ? "bg-destructive" : "bg-primary"}`}
+                className="absolute top-0 z-10 flex flex-col items-center"
                 style={{ left: `${launchPct}%`, height: bodyH }}
-                title={`Launch: ${formatAuDate(launchDate!)}${launchLate ? " (after the earliest completion date)" : ""}`}
+                title={`Launch date: ${formatAuDate(launchDate!)}${launchLate ? " (after the earliest completion date)" : ""}`}
               >
-                {launchLate ? (
-                  <AlertTriangle className="absolute -top-0 -ml-1.5 size-3.5 text-destructive" />
-                ) : (
-                  <Flag className="absolute -top-0 -ml-1 size-3 text-primary" />
-                )}
+                <span
+                  className={`flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white ${
+                    launchLate ? "bg-destructive" : "bg-primary text-primary-foreground"
+                  }`}
+                >
+                  {launchLate ? (
+                    <AlertTriangle className="size-3 shrink-0" />
+                  ) : (
+                    <Flag className="size-3 shrink-0" />
+                  )}
+                  Launch {formatAuDate(launchDate!)}
+                </span>
+                <div className={`w-0.5 flex-1 ${launchLate ? "bg-destructive" : "bg-primary"}`} />
               </div>
             )}
 
@@ -154,14 +162,14 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
                           type="button"
                           className={`relative block h-6 w-full overflow-hidden rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                             item.critical
-                              ? "bg-primary/85 ring-1 ring-primary"
-                              : "bg-muted-foreground/35"
+                              ? "bg-primary ring-1 ring-primary"
+                              : "bg-muted-foreground/60"
                           }`}
                           aria-label={`${item.name}: ${formatAuDate(item.start)} to ${formatAuDate(item.end)}`}
                         >
                           {/* Lead-in / setup portion */}
                           <div
-                            className="absolute inset-y-0 left-0 bg-foreground/15"
+                            className="absolute inset-y-0 left-0 border-r border-background/70 bg-background/45"
                             style={{ width: `${leadFrac * 100}%` }}
                           />
                         </button>
@@ -332,25 +340,34 @@ function GanttLegend() {
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
       <LegendItem
-        className="bg-primary/85 ring-1 ring-primary"
+        className="bg-primary ring-1 ring-primary"
         help="Zero slack - any delay here pushes out the completion date."
       >
         Critical path
       </LegendItem>
       <LegendItem
-        className="bg-muted-foreground/35"
+        className="bg-muted-foreground/60"
         help="Can slip by the number of days shown without affecting the completion date."
       >
         Has slack
       </LegendItem>
-      <LegendItem className="bg-foreground/15">Setup / lead-in</LegendItem>
+      <LegendItem className="border border-foreground/40 bg-background">Setup / lead-in</LegendItem>
       <span className="flex items-center gap-1.5">
         <span className="size-1.5 rounded-full bg-background ring-1 ring-foreground/60" />
         Recurrence
+        <HelpTip label='What does "Recurrence" mean?'>
+          A dot marks each repeat occurrence of a recurring deliverable, such as a weekly press ad
+          or a monthly EDM.
+        </HelpTip>
       </span>
       <span className="flex items-center gap-1.5">
         <span className="h-3 w-0.5 bg-primary" />
         Launch date
+        <HelpTip label='What does "Launch date" mean?'>
+          The date you set as the project&apos;s launch, from Project details. The line turns red if
+          it falls before the earliest completion date, meaning the schedule won&apos;t be ready in
+          time.
+        </HelpTip>
       </span>
     </div>
   );
