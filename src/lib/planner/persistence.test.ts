@@ -10,7 +10,7 @@ function snapshot(): PlannerSnapshot {
     projectBlurb: "A test project.",
     projectType: "multi_residential",
     units: 20,
-    sellPrice: "750000",
+    grv: "15000000",
     mediaBudget: "300000",
     launchDate: "2026-09-01",
     location: "Brisbane, QLD",
@@ -88,6 +88,20 @@ describe("planner persistence round-trip", () => {
     expect(deserializePlanner(null)).toBeNull();
     expect(deserializePlanner({})).toBeNull();
     expect(deserializePlanner("nope")).toBeNull();
+  });
+
+  test("round-trips the GRV as typed", () => {
+    const restored = deserializePlanner(serializePlanner(snapshot()));
+    expect(restored?.grv).toBe("15000000");
+  });
+
+  test("converts a pre-v3 per-unit sell price into a GRV", () => {
+    const stored = serializePlanner(snapshot()) as Record<string, unknown>;
+    delete stored.grv;
+    stored.sellPrice = "$750,000";
+    expect(deserializePlanner(stored)?.grv).toBe("15000000");
+    stored.sellPrice = "";
+    expect(deserializePlanner(stored)?.grv).toBe("");
   });
 
   test("preserves a zero-day collateral collection lead time", () => {

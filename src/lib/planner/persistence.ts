@@ -23,7 +23,8 @@ export interface PlannerSnapshot {
   projectBlurb: string;
   projectType: ProjectType;
   units: number;
-  sellPrice: string;
+  /** Gross realisation value in whole dollars, as typed. */
+  grv: string;
   mediaBudget: string;
   launchDate: string;
   location: string;
@@ -40,7 +41,7 @@ export interface PlannerSnapshot {
   contacts: Contact[];
 }
 
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 /** Convert a snapshot to a JSON-safe object for storage. */
 export function serializePlanner(s: PlannerSnapshot): Record<string, unknown> {
@@ -50,7 +51,7 @@ export function serializePlanner(s: PlannerSnapshot): Record<string, unknown> {
     projectBlurb: s.projectBlurb,
     projectType: s.projectType,
     units: s.units,
-    sellPrice: s.sellPrice,
+    grv: s.grv,
     mediaBudget: s.mediaBudget,
     launchDate: s.launchDate,
     location: s.location,
@@ -79,7 +80,7 @@ export function deserializePlanner(data: unknown): PlannerSnapshot | null {
       projectBlurb: String(o.projectBlurb ?? ""),
       projectType: o.projectType as ProjectType,
       units: Number(o.units) || 0,
-      sellPrice: String(o.sellPrice ?? ""),
+      grv: String(o.grv ?? legacyGrvDollars(o)),
       mediaBudget: String(o.mediaBudget ?? ""),
       launchDate: String(o.launchDate ?? ""),
       location: String(o.location ?? ""),
@@ -140,6 +141,14 @@ function deserializeRecurrence(r: Record<string, unknown>): RecurrenceRule {
     };
   }
   return r as unknown as RecurrenceRule;
+}
+
+/** Snapshots before v3 stored a per-unit sell price; GRV is units × that price. */
+function legacyGrvDollars(o: Record<string, unknown>): string {
+  const units = Number(o.units) || 0;
+  const sellPrice = Number(String(o.sellPrice ?? "").replace(/[^0-9.]/g, ""));
+  if (units <= 0 || !Number.isFinite(sellPrice) || sellPrice <= 0) return "";
+  return String(Math.round(units * sellPrice));
 }
 
 function asArray<T>(value: unknown): T[] {

@@ -8,7 +8,7 @@ import { deliverableDurationDays } from "./cpm";
 
 describe("DELIVERABLE_CATALOG", () => {
   test("contains every approved and supplemental service with unique catalog ids", () => {
-    expect(DELIVERABLE_CATALOG).toHaveLength(59);
+    expect(DELIVERABLE_CATALOG).toHaveLength(62);
     const ids = new Set(DELIVERABLE_CATALOG.map((c) => c.catalogId));
     expect(ids.size).toBe(DELIVERABLE_CATALOG.length);
   });
@@ -25,9 +25,26 @@ describe("DELIVERABLE_CATALOG", () => {
       "Launch event",
       "Press advertising",
       "Brochure / collateral",
+      "Editorial",
+      "Radio ad",
+      "TV ad",
     ]) {
       expect(names.has(name)).toBe(true);
     }
+  });
+
+  test("files services under the categories the planner shows", () => {
+    const byName = (name: string) => DELIVERABLE_CATALOG.find((item) => item.name === name)!;
+    expect(byName("Site Signage").category).toBe("site_signage");
+    expect(byName("Hoarding").category).toBe("site_signage");
+    expect(byName("OOH Signage").category).toBe("outdoor");
+    expect(byName("Boosting Posts").category).toBe("paid_social");
+    expect(byName("Brochure / collateral").category).toBe("collateral");
+    expect(byName("Editorial").category).toBe("print_press");
+    const signage = DELIVERABLE_CATALOG.filter((item) => item.category === "site_signage")
+      .map((item) => item.name)
+      .sort();
+    expect(signage).toEqual(["Hoarding", "Site Signage"]);
   });
 
   test("preserves costs, recurrence, media controls and notes", () => {
@@ -68,7 +85,7 @@ describe("catalogItemToDeliverable", () => {
     const item = DELIVERABLE_CATALOG.find((c) => c.catalogId === "billboard")!;
     const d = catalogItemToDeliverable(item);
     expect(d.name).toBe("OOH Signage");
-    expect(d.category).toBe("collateral");
+    expect(d.category).toBe("outdoor");
     expect(d.agencyCostCents).toBe(150_000);
     expect(d.mediaCostEditable).toBe(true);
     expect(d.setupTimeValue).toBe(2);
