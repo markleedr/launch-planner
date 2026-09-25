@@ -19,12 +19,14 @@ export interface Contact {
   /** Free-text role/discipline, e.g. "Print", "Media buying", "Web". */
   roleCategory?: string;
   email?: string;
+  /** Required for suppliers; optional for other contact types. */
+  website?: string;
 }
 
 export const CONTACT_TYPE_LABELS: Record<ContactType, string> = {
-  agency_head: "Agency",
-  department_head: "Department head",
-  supplier: "Supplier",
+  agency_head: "Agency / contractor",
+  department_head: "Internal",
+  supplier: "Supplier / production",
 };
 
 export const CONTACT_TYPES = Object.keys(CONTACT_TYPE_LABELS) as ContactType[];

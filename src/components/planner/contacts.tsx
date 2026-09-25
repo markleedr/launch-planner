@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { Check, Globe, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,13 @@ import {
 } from "@/lib/planner";
 
 const UNASSIGNED = "__unassigned__";
+
+/** Adds a scheme if missing so a bare domain like "acme.com" still links out correctly. */
+function normaliseWebsite(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
 /** Contacts directory + per-deliverable owner/supplier allocation. */
 export function ContactsAndSuppliers({
@@ -146,35 +153,60 @@ function ContactsDirectory({
 }) {
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
+  const [website, setWebsite] = useState("");
   const [type, setType] = useState<ContactType>("supplier");
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editOrg, setEditOrg] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
   const [editType, setEditType] = useState<ContactType>("supplier");
 
   function startEdit(c: Contact) {
     setEditingId(c.id);
     setEditName(c.name);
     setEditOrg(c.organisation ?? "");
+    setEditWebsite(c.website ?? "");
     setEditType(c.type);
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setError(null);
   }
 
   function saveEdit() {
     const trimmed = editName.trim();
     if (!trimmed || !editingId) return;
+    if (editType === "supplier" && !editWebsite.trim()) {
+      setError("Suppliers need a website.");
+      return;
+    }
     onContactsChange(
       contacts.map((c) =>
         c.id === editingId
-          ? { ...c, name: trimmed, organisation: editOrg.trim() || undefined, type: editType }
+          ? {
+              ...c,
+              name: trimmed,
+              organisation: editOrg.trim() || undefined,
+              type: editType,
+              website: normaliseWebsite(editWebsite) || undefined,
+            }
           : c,
       ),
     );
     setEditingId(null);
+    setError(null);
   }
 
   function add() {
     const trimmed = name.trim();
     if (!trimmed) return;
+    if (type === "supplier" && !website.trim()) {
+      setError("Suppliers need a website.");
+      return;
+    }
     onContactsChange([
       ...contacts,
       {
@@ -182,10 +214,13 @@ function ContactsDirectory({
         name: trimmed,
         organisation: org.trim() || undefined,
         type,
+        website: normaliseWebsite(website) || undefined,
       },
     ]);
     setName("");
     setOrg("");
+    setWebsite("");
+    setError(null);
   }
 
   function remove(id: string) {
@@ -213,7 +248,7 @@ function ContactsDirectory({
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveEdit();
-                  if (e.key === "Escape") setEditingId(null);
+                  if (e.key === "Escape") cancelEdit();
                 }}
                 autoFocus
                 className="h-8 w-32 flex-1"
@@ -224,14 +259,25 @@ function ContactsDirectory({
                 onChange={(e) => setEditOrg(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveEdit();
-                  if (e.key === "Escape") setEditingId(null);
+                  if (e.key === "Escape") cancelEdit();
                 }}
                 placeholder="Organisation"
                 className="h-8 w-36 flex-1"
                 aria-label="Contact organisation"
               />
+              <Input
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit();
+                  if (e.key === "Escape") cancelEdit();
+                }}
+                placeholder={editType === "supplier" ? "Website (required)" : "Website"}
+                className="h-8 w-36 flex-1"
+                aria-label="Contact website"
+              />
               <Select value={editType} onValueChange={(v) => setEditType(v as ContactType)}>
-                <SelectTrigger className="h-8 w-36" aria-label="Contact type">
+                <SelectTrigger className="h-8 w-48" aria-label="Contact type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,7 +301,7 @@ function ContactsDirectory({
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                onClick={() => setEditingId(null)}
+                onClick={cancelEdit}
                 aria-label="Cancel editing"
               >
                 <X className="size-4" />
@@ -275,6 +321,18 @@ function ContactsDirectory({
                 </span>
               )}
               <Badge variant="secondary">{CONTACT_TYPE_LABELS[c.type]}</Badge>
+              {c.website && (
+                <Button variant="ghost" size="icon" className="size-8" asChild>
+                  <a
+                    href={c.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Open ${c.name} website`}
+                  >
+                    <Globe className="size-4" />
+                  </a>
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -298,6 +356,8 @@ function ContactsDirectory({
         )}
       </ul>
 
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
       <div className="flex flex-wrap gap-2">
         <Input
           placeholder="Name"
@@ -313,8 +373,15 @@ function ContactsDirectory({
           onKeyDown={(e) => e.key === "Enter" && add()}
           className="w-48"
         />
+        <Input
+          placeholder={type === "supplier" ? "Website (required)" : "Website (optional)"}
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          className="w-48"
+        />
         <Select value={type} onValueChange={(v) => setType(v as ContactType)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
