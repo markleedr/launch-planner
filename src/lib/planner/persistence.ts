@@ -112,7 +112,7 @@ function deserializeChecklistItem(item: Record<string, unknown>): ChecklistItem 
   };
 }
 
-function serializeDeliverable(d: Deliverable): Record<string, unknown> {
+export function serializeDeliverable(d: Deliverable): Record<string, unknown> {
   return {
     ...d,
     startDate: d.startDate.toISOString(),
@@ -129,7 +129,7 @@ function serializeRecurrence(r: RecurrenceRule): Record<string, unknown> {
   return { ...r };
 }
 
-function deserializeDeliverable(d: Record<string, unknown>): Deliverable {
+export function deserializeDeliverable(d: Record<string, unknown>): Deliverable {
   return {
     ...(d as unknown as Deliverable),
     startDate: new Date(String(d.startDate)),

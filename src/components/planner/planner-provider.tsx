@@ -9,10 +9,12 @@ import {
 } from "react";
 import {
   buildScheduleForLaunch,
+  deserializeDeliverable,
   deserializePlanner,
   parseDollarsToCents,
   seedChecklist,
   seedContacts,
+  serializeDeliverable,
   serializePlanner,
   summariseBudget,
   summariseFinancials,
@@ -277,6 +279,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       setChecklist(seedChecklist("multi_residential"));
       setContacts(seedContacts);
       setCurrentProjectId(null);
+      setOpenDialog(null);
+      setDialogState({});
     },
     toSnapshot: () => ({
       projectName,
@@ -320,6 +324,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       setDeliverables(snap.deliverables);
       setChecklist(snap.checklist);
       setContacts(snap.contacts);
+      setOpenDialog(null);
+      setDialogState({});
     },
     openDialog,
     setOpenDialog,
@@ -343,8 +349,9 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   };
 
   // ---- Session draft persistence -------------------------------------------
-  // Keeps every field alive across tab navigation and reloads within the same
-  // browser session, before/independently of saving to the database.
+  // Keeps every field - plus which dialog is open and any unsaved draft in it
+  // - alive across tab navigation and reloads within the same browser
+  // session, before/independently of saving to the database.
   const restoredRef = useRef(false);
 
   useEffect(() => {
@@ -354,11 +361,19 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { projectId?: string | null; snapshot?: unknown };
+      const parsed = JSON.parse(raw) as {
+        projectId?: string | null;
+        snapshot?: unknown;
+        openDialog?: string | null;
+        dialogState?: Record<string, unknown>;
+      };
       const snap = deserializePlanner(parsed.snapshot);
       if (!snap) return;
       value.hydrate(snap);
       if (parsed.projectId) setCurrentProjectId(parsed.projectId);
+      const restoredDialogState = deserializeDialogState(parsed.dialogState, snap.deliverables);
+      setDialogState(restoredDialogState);
+      setOpenDialog(restoreOpenDialog(parsed.openDialog, restoredDialogState));
     } catch {
       // Ignore malformed drafts.
     }
@@ -366,18 +381,24 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const serializedDraft = JSON.stringify(serializePlanner(value.toSnapshot()));
+  const serializedDialogState = JSON.stringify(serializeDialogState(dialogState));
 
   useEffect(() => {
     if (!restoredRef.current) return;
     try {
       sessionStorage.setItem(
         DRAFT_KEY,
-        JSON.stringify({ projectId: currentProjectId, snapshot: JSON.parse(serializedDraft) }),
+        JSON.stringify({
+          projectId: currentProjectId,
+          snapshot: JSON.parse(serializedDraft),
+          openDialog,
+          dialogState: JSON.parse(serializedDialogState),
+        }),
       );
     } catch {
       // Storage full or unavailable - drafts are best-effort.
     }
-  }, [serializedDraft, currentProjectId]);
+  }, [serializedDraft, currentProjectId, openDialog, serializedDialogState]);
 
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>;
 }
@@ -391,6 +412,53 @@ export function usePlanner(): PlannerContextValue {
 /** The planner context when inside a PlannerProvider, otherwise null. */
 export function usePlannerOptional(): PlannerContextValue | null {
   return useContext(PlannerContext);
+}
+
+const DIALOG_STATE_DELIVERABLE_PREFIX = "edit:";
+
+/** Only the deliverable editor stores a draft in dialogState today, and it
+ *  carries real Date fields that need the same ISO round-trip as a saved
+ *  deliverable. */
+function serializeDialogState(state: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    out[key] = key.startsWith(DIALOG_STATE_DELIVERABLE_PREFIX)
+      ? serializeDeliverable(value as Deliverable)
+      : value;
+  }
+  return out;
+}
+
+/** Revives dialogState from storage, dropping any deliverable-editor draft
+ *  whose deliverable no longer exists (e.g. it was deleted elsewhere). */
+function deserializeDialogState(
+  raw: Record<string, unknown> | undefined,
+  deliverables: Deliverable[],
+): Record<string, unknown> {
+  if (!raw) return {};
+  const validIds = new Set(deliverables.map((d) => d.id));
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (key.startsWith(DIALOG_STATE_DELIVERABLE_PREFIX)) {
+      const id = key.slice(DIALOG_STATE_DELIVERABLE_PREFIX.length);
+      if (!validIds.has(id)) continue;
+      out[key] = deserializeDeliverable(value as Record<string, unknown>);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/** A restored open-dialog key is only honoured if its draft survived
+ *  deserializeDialogState (e.g. not a deliverable that's since been deleted). */
+function restoreOpenDialog(
+  key: string | null | undefined,
+  dialogState: Record<string, unknown>,
+): string | null {
+  if (!key) return null;
+  if (key.startsWith(DIALOG_STATE_DELIVERABLE_PREFIX) && !(key in dialogState)) return null;
+  return key;
 }
 
 function groupByCategory(deliverables: Deliverable[]): GroupedCategory[] {
