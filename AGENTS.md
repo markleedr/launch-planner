@@ -56,3 +56,17 @@ format only the files you change.
   squash of commits that are already on GitHub. Other sessions work on
   `claude/epic-cori-ldhw3i` at the same time.
 - There is no `main` branch, and the repo doesn't use pull requests.
+
+## Cursor Cloud specific instructions
+
+- Bun is the package manager. If `bun` is missing, install it with
+  `curl -fsSL https://bun.com/install | bash` and put `$HOME/.bun/bin` on
+  `PATH`. Refresh dependencies with `bun install --frozen-lockfile`.
+- The dev server is `bun run dev`. It listens on port 8080
+  (`http://localhost:8080`).
+- If `.env` is missing, copy `.env.example` to `.env`. The marketing site and
+  `/calculator` run with those empty values. Login, saved projects, Stripe, and
+  email need the variables listed in `.env.example`.
+- Supabase project `ufskbrgrqlkuhxzvyram` holds production customers. Do not
+  point local experiments at it, and do not write test data there. A local
+  Supabase stack needs Docker, which this environment does not start.
