@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getMyProfile } from "@/lib/profile/profile.server";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Reset password - Project Planner" }] }),
+  head: () => ({ meta: [{ title: "Reset password - Launch Planner" }] }),
   component: ResetPasswordPage,
 });
 

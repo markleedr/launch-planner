@@ -139,8 +139,10 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         <DialogHeader>
           <DialogTitle>Share with a provider</DialogTitle>
           <DialogDescription>
-            Create a unique private link for each provider you want to share this summary with.
-            Links can be revoked independently and do not show the project navigation.
+            Create a unique private link for each provider. Anyone with the link can read the
+            summary, including the budget, schedule and team, and can download a PDF. They cannot
+            edit the project. Hide contact details below if they should not see emails or phone
+            numbers. Links can be revoked independently.
           </DialogDescription>
         </DialogHeader>
 

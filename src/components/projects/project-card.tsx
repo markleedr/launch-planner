@@ -142,8 +142,8 @@ export function ProjectCard({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete &ldquo;{project.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes the project and everything in it, deliverables, proposals and
-                  messages, and can&apos;t be undone.
+                  This permanently deletes the project, including its deliverables, schedule and
+                  saved details. This can&apos;t be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

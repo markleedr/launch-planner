@@ -207,7 +207,7 @@ export function ProjectSummaryPdf({
             hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
           />
           <Metric
-            label="Approved plan"
+            label="Plan total"
             value={formatAudWhole(budget.grandTotalCents)}
             hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
           />
@@ -283,7 +283,7 @@ export function ProjectSummaryPdf({
           </PdfSection>
         ) : null}
 
-        <PdfSection title="Approved budget">
+        <PdfSection title="Planned budget">
           <TableHeader
             columns={["Category", "Production & agency", "Media", "Total"]}
             widths={["38%", "22%", "18%", "22%"]}
@@ -318,7 +318,7 @@ export function ProjectSummaryPdf({
           </View>
           <Text style={{ marginTop: 5, lineHeight: 1.4 }}>
             This plan uses {formatPercent(mediaBudgetUsedPct)} of the{" "}
-            {formatAudWhole(financials.mediaBudgetCents)} approved media budget, leaving{" "}
+            {formatAudWhole(financials.mediaBudgetCents)} media budget, leaving{" "}
             {formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}{" "}
             {budget.varianceVsMediaBudgetCents > 0 ? "over budget" : "unallocated"}.
           </Text>
@@ -331,7 +331,7 @@ export function ProjectSummaryPdf({
                 <Text style={[styles.bold, { marginBottom: 3 }]}>
                   {CATEGORY_LABELS[group.category]}
                 </Text>
-                <TableHeader columns={["Deliverable", "Timing", "Qty / months", "Approved cost"]} />
+                <TableHeader columns={["Deliverable", "Timing", "Qty / months", "Planned cost"]} />
               </View>
               {group.items.map((deliverable) => {
                 const total = calculateProposalCost({

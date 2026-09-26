@@ -400,7 +400,7 @@ function DetailsStep() {
               onChange={(event) => p.setLaunchDate(event.target.value)}
             />
           </Field>
-          <Field label="Request collateral before deadline">
+          <Field label="Materials lead time">
             <div className="relative">
               <Input
                 type="number"
@@ -418,7 +418,8 @@ function DetailsStep() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              We’ll request files and materials this many business days before they are due.
+              How many business days before a due date you want files in hand. This is saved on the
+              project as your own note.
             </p>
           </Field>
           <Field label="Street address" className="sm:col-span-2">
@@ -565,6 +566,7 @@ function DetailsStep() {
 function DeliverablesStep() {
   const p = usePlanner();
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Deliverable | null>(null);
 
   return (
     <Card>
@@ -621,7 +623,7 @@ function DeliverablesStep() {
                         deliverable={deliverable}
                         allDeliverables={p.deliverables}
                         onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
-                        onRemove={() => p.removeDeliverable(deliverable.id)}
+                        onRemove={() => setRemoveTarget(deliverable)}
                         justAdded={deliverable.id === justAddedId}
                       />
                     ))}
@@ -636,6 +638,20 @@ function DeliverablesStep() {
           </div>
         )}
       </CardContent>
+      <ConfirmDialog
+        open={removeTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setRemoveTarget(null);
+        }}
+        title={`Remove "${removeTarget?.name}"?`}
+        description="This takes the deliverable off this project. You can add it again from the catalog."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (removeTarget) p.removeDeliverable(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </Card>
   );
 }
@@ -965,8 +981,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         <div>
           <h3 className="text-sm font-semibold">Team & suppliers by category</h3>
           <p className="text-sm text-muted-foreground">
-            Fill in a supplier for each category that applies to this project. Add more than one
-            where you want competing quotes.
+            Add a supplier for each category that applies. These names are saved on the project and
+            shown on the summary. Adding someone here does not email them or give them a login.
           </p>
         </div>
         {loading ? <Loader2 className="size-5 animate-spin" /> : null}
@@ -1011,11 +1027,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                             </p>
                           ) : null}
                         </div>
-                        {item.party?.portal_enabled ? (
-                          <Badge variant="secondary" className="shrink-0">
-                            Portal contractor
-                          </Badge>
-                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -1205,10 +1216,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
                 label="Total deliverables"
                 value={`${p.deliverables.length} across ${p.grouped.length} ${p.grouped.length === 1 ? "category" : "categories"}`}
               />
-              <ReviewRow
-                label="Approved plan total"
-                value={formatAudWhole(p.budget.grandTotalCents)}
-              />
+              <ReviewRow label="Plan total" value={formatAudWhole(p.budget.grandTotalCents)} />
               <div className="mt-2 space-y-1">
                 {p.grouped.map(({ category, items }) => (
                   <div key={category} className="flex justify-between text-sm">
@@ -1234,7 +1242,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
           {p.projectParties.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No contractors added yet. You can add them later from the Team & suppliers step.
+              No organisations added yet. Add them on this step. They show on the project summary.
             </p>
           ) : (
             <div className="space-y-1">
@@ -1256,10 +1264,9 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <CardContent>
           <ol className="space-y-4">
             {[
-              "Refine costs, dates and dependencies in the project planner.",
-              "Review private contractor proposals and award each deliverable.",
-              "Track messages, collateral requests and approvals.",
-              "Share or export the approved client-facing summary.",
+              "Open the planner to adjust costs, dates and dependencies.",
+              "Add who owns each deliverable under Team.",
+              "Share a private summary link or export a PDF.",
             ].map((item, index) => (
               <li key={item} className="flex gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-background">

@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login")({
         : {}),
     };
   },
-  head: () => ({ meta: [{ title: "Sign in - Project Planner" }] }),
+  head: () => ({ meta: [{ title: "Sign in - Launch Planner" }] }),
   component: LoginPage,
 });
 

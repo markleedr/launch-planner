@@ -258,8 +258,8 @@ function PricingPage() {
               <div className="rounded-xl border bg-card p-6">
                 <h2 className="font-display text-xl font-semibold tracking-tight">What you get</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A complete toolkit for property marketing teams, from first brief to final
-                  invoice.
+                  A complete toolkit for property marketing teams, from the first brief to a
+                  shareable launch plan.
                 </p>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <ValueItem
@@ -275,7 +275,7 @@ function PricingPage() {
                   <ValueItem
                     icon={Layers}
                     title="Costed deliverables"
-                    description="Build schedules, assign contractors, and track production and agency costs in one place."
+                    description="Build a schedule and track production and agency costs in one place."
                   />
                   <ValueItem
                     icon={Users}
@@ -290,7 +290,7 @@ function PricingPage() {
                   <ValueItem
                     icon={FileText}
                     title="Export-ready plans"
-                    description="Print or save summaries as PDFs for client sign-off and internal approvals."
+                    description="Print or save summaries as PDFs to share the plan."
                   />
                 </div>
               </div>
@@ -302,8 +302,8 @@ function PricingPage() {
                     Cancel anytime
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    No lock-in contracts. Manage or cancel your subscription from your account
-                    settings.
+                    No lock-in contracts. Open Billing in the sidebar to update your card or cancel
+                    in Stripe. Access continues until the end of the period you&apos;ve paid for.
                   </p>
                 </div>
                 <div className="rounded-xl border bg-card p-5">
@@ -357,8 +357,8 @@ function PricingPage() {
               },
               {
                 step: "5",
-                title: "Share and approve",
-                description: "Send a branded summary link or export a PDF for sign-off.",
+                title: "Share the plan",
+                description: "Send a private summary link or export a PDF.",
               },
             ].map((item) => (
               <div
@@ -389,16 +389,17 @@ function PricingPage() {
             <AccordionItem value="what-is">
               <AccordionTrigger>What is Launch Planner?</AccordionTrigger>
               <AccordionContent>
-                Launch Planner is the full version of the product. It gives you unlimited projects,
-                the media budget calculator, costed deliverables, contractor coordination, and
-                branded project summaries for one flat monthly price.
+                Launch Planner gives you unlimited projects, the media budget calculator, costed
+                deliverables, a supplier list, and branded project summaries for one flat monthly
+                price.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="change-plan">
               <AccordionTrigger>Can I change or cancel my plan?</AccordionTrigger>
               <AccordionContent>
-                Yes. You can cancel anytime from your account page. Your access continues until the
-                end of your current billing period. There are no cancellation fees.
+                Yes. Open Billing in the sidebar. That takes you to Stripe, where you can update
+                your card or cancel. After you cancel, you can keep using Launch Planner until the
+                end of the period you&apos;ve paid for. There are no cancellation fees.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="free-trial">
@@ -412,8 +413,8 @@ function PricingPage() {
             <AccordionItem value="team">
               <AccordionTrigger>Can my team use one account?</AccordionTrigger>
               <AccordionContent>
-                Yes. One subscription covers one user account, but you can share project summaries
-                with stakeholders via public links or PDF exports without extra seats.
+                Yes. One subscription covers one user account. You can share a project summary with
+                a private link or a PDF, without extra seats.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="payment">
@@ -428,10 +429,10 @@ function PricingPage() {
               <AccordionContent>
                 Email{" "}
                 <a
-                  href="mailto:admin@projectprofile.agency"
+                  href="mailto:admin@launchplanner.com.au"
                   className="font-medium text-foreground underline underline-offset-2"
                 >
-                  admin@projectprofile.agency
+                  admin@launchplanner.com.au
                 </a>{" "}
                 and we&apos;ll get back to you within one business day.
               </AccordionContent>
@@ -463,9 +464,7 @@ function PricingPage() {
                 >
                   {hasSubscription
                     ? "Open my projects"
-                    : user
-                      ? `Subscribe for ${BILLING_PLAN.priceLabel}/month`
-                      : "Sign in to subscribe"}
+                    : `Subscribe for ${BILLING_PLAN.priceLabel}/month`}
                   <ChevronRight className="ml-1 size-4" />
                 </Button>
                 <Button
@@ -477,9 +476,15 @@ function PricingPage() {
                   <Link to="/calculator">Try the calculator</Link>
                 </Button>
               </div>
+              {!hasSubscription && !user ? (
+                <p className="mt-4 text-xs text-white/70">
+                  You&apos;ll pay on Stripe&apos;s secure checkout, then we&apos;ll email you a link
+                  to set your password.
+                </p>
+              ) : null}
               <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/60">
                 <CreditCard className="size-3.5" />
-                Secure Stripe checkout. Cancel anytime.
+                Secure Stripe checkout. Cancel anytime from Billing in the sidebar.
               </p>
             </div>
           </div>

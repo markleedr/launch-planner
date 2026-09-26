@@ -348,6 +348,10 @@ function CalculatorPage() {
                   Apply to my project
                 </Link>
               </Button>
+              <p className="text-xs leading-5 text-background/70">
+                Opens your project and fills Media budget with this total. You&apos;ll need to sign
+                in.
+              </p>
 
               <div className="grid grid-cols-2 gap-4">
                 <Stat

@@ -19,7 +19,7 @@ import { syncSubscription } from "@/lib/billing/billing.server";
 export const Route = createFileRoute("/projects")({
   validateSearch: (s: Record<string, unknown>): { checkout?: "success" } =>
     s.checkout === "success" ? { checkout: "success" } : {},
-  head: () => ({ meta: [{ title: "My projects - Project Planner" }] }),
+  head: () => ({ meta: [{ title: "My projects - Launch Planner" }] }),
   component: ProjectsRoute,
 });
 

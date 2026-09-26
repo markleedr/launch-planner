@@ -105,7 +105,7 @@ export function ProjectSummary({
           hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
         />
         <Metric
-          label="Approved plan"
+          label="Plan total"
           value={formatAudWhole(budget.grandTotalCents)}
           hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
         />
@@ -198,7 +198,7 @@ export function ProjectSummary({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Approved budget</CardTitle>
+          <CardTitle className="text-base">Planned budget</CardTitle>
         </CardHeader>
         <CardContent>
           <BudgetSpreadsheet grouped={grouped} budget={budget} />
@@ -220,7 +220,7 @@ export function ProjectSummary({
                       <th className="px-3 py-2 font-medium">Deliverable</th>
                       <th className="px-3 py-2 font-medium">Timing</th>
                       <th className="px-3 py-2 font-medium">Quantity</th>
-                      <th className="px-3 py-2 text-right font-medium">Approved cost</th>
+                      <th className="px-3 py-2 text-right font-medium">Planned cost</th>
                     </tr>
                   </thead>
                   <tbody>

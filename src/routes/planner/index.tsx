@@ -65,7 +65,7 @@ export const Route = createFileRoute("/planner/")({
     return Number.isFinite(mb) && mb > 0 ? { mediaBudget: mb } : {};
   },
   head: () => ({
-    meta: [{ title: "New project plan - Project Planner" }],
+    meta: [{ title: "Project plan - Launch Planner" }],
   }),
   component: PlannerEditor,
 });
@@ -269,7 +269,7 @@ function PlannerEditor() {
               />
             </Field>
 
-            <Field label="Collateral request lead time">
+            <Field label="Materials lead time">
               <div className="relative">
                 <Input
                   type="number"
@@ -286,6 +286,10 @@ function PlannerEditor() {
                   business days
                 </span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                How many business days before a due date you want files in hand. This is saved on
+                the project as your own note.
+              </p>
             </Field>
 
             <Field label="Location">
@@ -416,55 +420,67 @@ function PlannerEditor() {
           )}
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2 pr-2 font-medium">Deliverable</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      Production
-                      <HelpTip label="What is production cost?">
-                        Printing, delivery, press or fulfilment cost per unit.
-                      </HelpTip>
-                    </span>
-                  </th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      Media
-                      <HelpTip label="What is media cost?">
-                        Placement on Meta, Google, radio, TV, magazines or another platform.
-                      </HelpTip>
-                    </span>
-                  </th>
-                  <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
-                  <th className="w-10 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {p.grouped.map(({ category, items }) => {
-                  const cat = p.budget.categories.find((c) => c.category === category);
-                  return (
-                    <CategoryGroup
-                      key={category}
-                      category={category}
-                      items={items}
-                      subtotalCents={cat?.totalCents ?? 0}
-                      allDeliverables={p.deliverables}
-                      onUpdate={p.updateDeliverable}
-                      onRemove={requestDeleteDeliverable}
-                      justAddedId={justAddedId}
-                      onJustAddedFocused={() => setJustAddedId(null)}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-right text-xs text-muted-foreground">
-            Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
-            above.
-          </p>
+          {p.deliverables.length === 0 ? (
+            <div className="rounded-md border border-dashed px-4 py-10 text-center">
+              <p className="font-medium">No deliverables yet</p>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+                Add a service from the catalog, or use Recommend to start from this project type.
+                Totals update as you add costs.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="py-2 pr-2 font-medium">Deliverable</th>
+                    <th className="w-40 py-2 px-2 text-right font-medium">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Production
+                        <HelpTip label="What is production cost?">
+                          Printing, delivery, press or fulfilment cost per unit.
+                        </HelpTip>
+                      </span>
+                    </th>
+                    <th className="w-40 py-2 px-2 text-right font-medium">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Media
+                        <HelpTip label="What is media cost?">
+                          Placement on Meta, Google, radio, TV, magazines or another platform.
+                        </HelpTip>
+                      </span>
+                    </th>
+                    <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
+                    <th className="w-10 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.grouped.map(({ category, items }) => {
+                    const cat = p.budget.categories.find((c) => c.category === category);
+                    return (
+                      <CategoryGroup
+                        key={category}
+                        category={category}
+                        items={items}
+                        subtotalCents={cat?.totalCents ?? 0}
+                        allDeliverables={p.deliverables}
+                        onUpdate={p.updateDeliverable}
+                        onRemove={requestDeleteDeliverable}
+                        justAddedId={justAddedId}
+                        onJustAddedFocused={() => setJustAddedId(null)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {p.deliverables.length > 0 ? (
+            <p className="mt-3 text-right text-xs text-muted-foreground">
+              Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
+              above.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -501,8 +517,8 @@ function PlannerEditor() {
         <CardHeader>
           <CardTitle>Team & suppliers</CardTitle>
           <CardDescription>
-            Build your directory, then allocate an owner and suppliers to each deliverable to plan
-            delegation.
+            Organisations from the new-project step appear on the Summary. This list is separate:
+            use it to name an owner and suppliers on each deliverable.
           </CardDescription>
         </CardHeader>
         <CardContent>
