@@ -16,9 +16,14 @@ import { usePlanner } from "@/components/planner/planner-provider";
 import { usePersistentDialog } from "@/components/planner/use-persistent-dialog";
 import {
   catalogItemToDeliverable,
+  CAMPAIGN_STAGE_HINTS,
+  CAMPAIGN_STAGE_LABELS,
+  CAMPAIGN_STAGE_ORDER,
   CATEGORY_LABELS,
   CATEGORY_ORDER,
+  CATEGORY_STAGE,
   DELIVERABLE_CATALOG,
+  type CampaignStage,
   type CatalogItem,
   type ChannelCode,
   type Deliverable,
@@ -78,6 +83,21 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
     });
   }
 
+  function toggleStage(stage: CampaignStage) {
+    const stageCategories = CATALOG_CATEGORIES.filter(
+      (category) => CATEGORY_STAGE[category] === stage,
+    );
+    setCategories((prev) => {
+      const next = new Set(prev);
+      const allSelected = stageCategories.every((category) => next.has(category));
+      for (const category of stageCategories) {
+        if (allSelected) next.delete(category);
+        else next.add(category);
+      }
+      return next;
+    });
+  }
+
   function handleAdd() {
     const items = DELIVERABLE_CATALOG.filter((c) => selected.has(c.catalogId)).map(
       catalogItemToDeliverable,
@@ -115,8 +135,8 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
         <DialogHeader>
           <DialogTitle>Add deliverables from the catalog</DialogTitle>
           <DialogDescription>
-            Select from all {DELIVERABLE_CATALOG.length} approved services. Every field remains
-            editable after it is added.
+            Select from all {DELIVERABLE_CATALOG.length} approved services, grouped into attract,
+            convert and nurture. Every field remains editable after it is added.
           </DialogDescription>
         </DialogHeader>
 
@@ -130,20 +150,47 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {CATALOG_CATEGORIES.map((category) => {
-            const active = categories.has(category);
+        <div className="space-y-3">
+          {CAMPAIGN_STAGE_ORDER.map((stage) => {
+            const stageCategories = CATALOG_CATEGORIES.filter(
+              (category) => CATEGORY_STAGE[category] === stage,
+            );
+            if (stageCategories.length === 0) return null;
+            const stageSelected = stageCategories.every((category) => categories.has(category));
             return (
-              <Button
-                key={category}
-                type="button"
-                size="sm"
-                variant={active ? "default" : "outline"}
-                aria-pressed={active}
-                onClick={() => toggleCategory(category)}
-              >
-                {CATEGORY_LABELS[category]}
-              </Button>
+              <div key={stage} className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={stageSelected ? "default" : "secondary"}
+                    aria-pressed={stageSelected}
+                    onClick={() => toggleStage(stage)}
+                  >
+                    {CAMPAIGN_STAGE_LABELS[stage]}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {CAMPAIGN_STAGE_HINTS[stage]}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {stageCategories.map((category) => {
+                    const active = categories.has(category);
+                    return (
+                      <Button
+                        key={category}
+                        type="button"
+                        size="sm"
+                        variant={active ? "default" : "outline"}
+                        aria-pressed={active}
+                        onClick={() => toggleCategory(category)}
+                      >
+                        {CATEGORY_LABELS[category]}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
           {categories.size > 0 ? (
@@ -164,8 +211,11 @@ export function CatalogDialog({ onAdd }: { onAdd: (items: Deliverable[]) => void
               No services match “{query}”.
             </p>
           ) : null}
-          {grouped.map(({ category, items }) => (
+          {grouped.map(({ stage, category, items }, index) => (
             <div key={category} className="space-y-1.5">
+              {index === 0 || grouped[index - 1].stage !== stage ? (
+                <div className="pt-1 text-sm font-semibold">{CAMPAIGN_STAGE_LABELS[stage]}</div>
+              ) : null}
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {CATEGORY_LABELS[category]}
               </div>
@@ -210,6 +260,16 @@ function groupByCategory(items: CatalogItem[]) {
     map.set(item.category, list);
   }
   return [...map.entries()]
-    .sort((a, b) => CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0]))
-    .map(([category, list]) => ({ category, items: list }));
+    .sort((a, b) => {
+      const stageDelta =
+        CAMPAIGN_STAGE_ORDER.indexOf(CATEGORY_STAGE[a[0]]) -
+        CAMPAIGN_STAGE_ORDER.indexOf(CATEGORY_STAGE[b[0]]);
+      if (stageDelta !== 0) return stageDelta;
+      return CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0]);
+    })
+    .map(([category, list]) => ({
+      stage: CATEGORY_STAGE[category],
+      category,
+      items: list,
+    }));
 }
