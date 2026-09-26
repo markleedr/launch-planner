@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { differenceInCalendarDays } from "date-fns";
 import { ChevronDown, Plus, Trash2, Undo2, X } from "lucide-react";
+import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -28,6 +29,8 @@ import { DeliverableEditorDialog } from "@/components/planner/deliverable-editor
 import { MediaCalculatorDialog } from "@/components/planner/media-calculator-dialog";
 import { RecommendDialog } from "@/components/planner/recommend-dialog";
 import { usePlanner } from "@/components/planner/planner-provider";
+import { useSession } from "@/hooks/use-session";
+import { createProject, updateProject } from "@/lib/project-store";
 import {
   BUYER_TYPE_LABELS,
   BUYER_TYPES,
@@ -41,6 +44,7 @@ import {
   formatAud,
   formatAudWhole,
   formatPercent,
+  resolveHeroImage,
   parseDollarsToCents,
   toCents,
   toDollars,
@@ -48,6 +52,7 @@ import {
   type DeliverableCategory,
   type ProjectType,
 } from "@/lib/planner";
+import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 
 const SECTIONS = [
   { id: "details", label: "Details" },
@@ -79,6 +84,10 @@ function PlannerRoute() {
 
 function PlannerEditor({ mediaBudget }: { mediaBudget?: number }) {
   const p = usePlanner();
+  const { user } = useSession();
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const hero = resolveHeroImage(p.heroImageId, p.heroImageUrl);
   const applied = useRef(false);
   useEffect(() => {
     if (!applied.current && mediaBudget) {
@@ -105,6 +114,35 @@ function PlannerEditor({ mediaBudget }: { mediaBudget?: number }) {
     setLastDeleted({ deliverable: deleteTarget, index });
     p.removeDeliverable(deleteTarget.id);
     setDeleteTarget(null);
+  }
+
+  async function uploadCover(file: File) {
+    const problem = heroImageFileError(file);
+    if (problem) {
+      setCoverError(problem);
+      return;
+    }
+    if (!user) {
+      setCoverError("Sign in to upload your own image.");
+      return;
+    }
+    setCoverBusy(true);
+    setCoverError(null);
+    try {
+      const name = p.projectName.trim() || "Untitled project";
+      let projectId = p.currentProjectId;
+      if (!projectId) {
+        projectId = await createProject(name, p.toSnapshot());
+        p.setCurrentProjectId(projectId);
+      }
+      const publicUrl = await uploadProjectHero(projectId, file);
+      p.setHeroImageUrl(publicUrl);
+      await updateProject(projectId, name, { ...p.toSnapshot(), heroImageUrl: publicUrl });
+    } catch (reason) {
+      setCoverError(reason instanceof Error ? reason.message : "Could not upload this image.");
+    } finally {
+      setCoverBusy(false);
+    }
   }
 
   function undoDeleteDeliverable() {
@@ -227,6 +265,20 @@ function PlannerEditor({ mediaBudget }: { mediaBudget?: number }) {
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3 sm:col-span-2">
+              <div className="overflow-hidden rounded-lg border">
+                <img src={hero.src} alt={hero.alt} className="aspect-[3/1] w-full object-cover" />
+              </div>
+              <HeroUploadButton
+                label={p.heroImageUrl ? "Replace image" : "Upload image"}
+                busy={coverBusy}
+                onFile={(file) => void uploadCover(file)}
+              />
+              <p className="text-xs text-muted-foreground">
+                JPG, PNG or WebP, up to 10 MB. This image is the project cover.
+              </p>
+              {coverError ? <p className="text-xs text-destructive">{coverError}</p> : null}
+            </div>
             <Field label="Project name">
               <Input value={p.projectName} onChange={(e) => p.setProjectName(e.target.value)} />
             </Field>

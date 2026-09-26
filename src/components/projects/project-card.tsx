@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Copy, ImagePlus, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, ImagePlus, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +29,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import type { ProjectRow } from "@/lib/project-store";
-import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
+import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 import {
   formatAuDate,
   formatAudWhole,
@@ -41,10 +41,6 @@ import {
   resolveHeroImage,
   UNIT_LABELS,
 } from "@/lib/planner";
-
-const COVER_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-type CoverType = (typeof COVER_TYPES)[number];
-const MAX_COVER_BYTES = 10 * 1024 * 1024;
 
 export type ProjectCover = { heroImageId: string; heroImageUrl: string };
 
@@ -300,14 +296,9 @@ function CoverDialog({
 
   async function upload(file: File) {
     if (savingRef.current) return;
-    const contentType = coverContentType(file);
-    if (!contentType) {
-      setError("Use a JPG, PNG or WebP image.");
-      setNotice(null);
-      return;
-    }
-    if (file.size > MAX_COVER_BYTES) {
-      setError("Use an image up to 10 MB.");
+    const problem = heroImageFileError(file);
+    if (problem) {
+      setError(problem);
       setNotice(null);
       return;
     }
@@ -316,15 +307,9 @@ function CoverDialog({
     setError(null);
     setNotice(null);
     try {
-      const prepared = await prepareProjectHeroUpload({
-        data: { projectId: project.id, fileName: file.name },
-      });
-      const { error: uploadError } = await supabase.storage
-        .from("project-heroes")
-        .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType });
-      if (uploadError) throw uploadError;
-      await onChangeCover({ heroImageId: project.heroImageId, heroImageUrl: prepared.publicUrl });
-      setNotice("Cover updated. It also shows on the project summary.");
+      const publicUrl = await uploadProjectHero(project.id, file);
+      await onChangeCover({ heroImageId: project.heroImageId, heroImageUrl: publicUrl });
+      setNotice("Cover updated. It also shows on the project and the summary.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not upload this image.");
     } finally {
@@ -386,42 +371,11 @@ function CoverDialog({
             );
           })}
         </div>
-        <label
-          className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
-            saving ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-          }`}
-        >
-          {saving ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : (
-            <ImagePlus className="mr-2 size-4" />
-          )}
-          Upload image
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            disabled={saving}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void upload(file);
-              event.currentTarget.value = "";
-            }}
-          />
-        </label>
+        <HeroUploadButton label="Upload image" busy={saving} onFile={(file) => void upload(file)} />
         <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 10 MB.</p>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {notice ? <p className="text-sm text-positive">{notice}</p> : null}
       </DialogContent>
     </Dialog>
   );
-}
-
-function coverContentType(file: File): CoverType | null {
-  if ((COVER_TYPES as readonly string[]).includes(file.type)) return file.type as CoverType;
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
-  if (extension === "png") return "image/png";
-  if (extension === "webp") return "image/webp";
-  return null;
 }

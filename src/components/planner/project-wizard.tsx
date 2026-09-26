@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  ImagePlus,
   Loader2,
   MapPin,
   Plus,
@@ -37,8 +36,9 @@ import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import { RecommendDialog } from "./recommend-dialog";
 import { usePlanner } from "./planner-provider";
 import { useSession } from "@/hooks/use-session";
-import { supabase } from "@/integrations/supabase/client";
+import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import { createProject, updateProject } from "@/lib/project-store";
+import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 import {
   buildTeneriffeRiversideSnapshot,
   CATEGORY_LABELS,
@@ -60,7 +60,6 @@ import {
 import { PROJECT_PARTY_ROLE_LABELS, PROJECT_PARTY_ROLES } from "@/lib/procurement/labels";
 import type { ProjectPartyRole } from "@/lib/procurement";
 import { calculateProposalCost } from "@/lib/procurement";
-import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
 import { attachProjectParty, saveDirectoryParty } from "@/lib/procurement/procurement.server";
 import { listDirectoryParties, listProjectParties } from "@/lib/procurement/procurement-store";
 
@@ -236,7 +235,14 @@ export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
         </p>
       )}
 
-      {step === "details" && <DetailsStep />}
+      {step === "details" && (
+        <DetailsStep
+          onSaved={(saved) => {
+            lastSavedSnapshot.current = saved;
+            setSaveState("saved");
+          }}
+        />
+      )}
       {step === "deliverables" && <DeliverablesStep />}
       {step === "media" && <MediaStep />}
       {step === "parties" && <PartiesStep ensureProject={persist} />}
@@ -283,8 +289,9 @@ export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
   );
 }
 
-function DetailsStep() {
+function DetailsStep({ onSaved }: { onSaved: (savedSnapshot: string) => void }) {
   const p = usePlanner();
+  const { user } = useSession();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -294,8 +301,6 @@ function DetailsStep() {
     postcodeTouched && p.address.postcode && !/^\d{4}$/.test(p.address.postcode)
       ? "Enter a 4-digit postcode."
       : null;
-  const canUploadHero = Boolean(p.currentProjectId);
-
   function regenerateBlurb() {
     setConfirmRegenerate(false);
     p.setProjectBlurb(
@@ -317,23 +322,29 @@ function DetailsStep() {
   }
 
   async function uploadHero(file: File) {
-    if (!p.currentProjectId) {
-      setUploadError("Save this step first, then upload your own hero image.");
+    const problem = heroImageFileError(file);
+    if (problem) {
+      setUploadError(problem);
+      return;
+    }
+    if (!user) {
+      setUploadError("Sign in to upload your own image.");
       return;
     }
     setUploading(true);
     setUploadError(null);
     try {
-      const prepared = await prepareProjectHeroUpload({
-        data: { projectId: p.currentProjectId, fileName: file.name },
-      });
-      const { error } = await supabase.storage
-        .from("project-heroes")
-        .uploadToSignedUrl(prepared.path, prepared.token, file, {
-          contentType: file.type || "image/jpeg",
-        });
-      if (error) throw error;
-      p.setHeroImageUrl(prepared.publicUrl);
+      const name = p.projectName.trim() || "Untitled project";
+      let projectId = p.currentProjectId;
+      if (!projectId) {
+        projectId = await createProject(name, p.toSnapshot());
+        p.setCurrentProjectId(projectId);
+      }
+      const publicUrl = await uploadProjectHero(projectId, file);
+      const snapshot = { ...p.toSnapshot(), heroImageUrl: publicUrl };
+      p.setHeroImageUrl(publicUrl);
+      await updateProject(projectId, name, snapshot);
+      onSaved(JSON.stringify(serializePlanner(snapshot)));
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Could not upload this image.");
     } finally {
@@ -510,6 +521,16 @@ function DetailsStep() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3">
+            {p.heroImageUrl ? (
+              <div className="overflow-hidden rounded-lg border-2 border-foreground">
+                <img
+                  src={p.heroImageUrl}
+                  alt="Your project image"
+                  className="aspect-[3/1] w-full object-cover"
+                />
+                <span className="block px-2 py-1.5 text-xs font-medium">Your image</span>
+              </div>
+            ) : null}
             {HERO_IMAGE_LIBRARY.map((image) => (
               <button
                 key={image.id}
@@ -529,33 +550,12 @@ function DetailsStep() {
               </button>
             ))}
           </div>
-          <Label
-            className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
-              canUploadHero ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-            }`}
-          >
-            {uploading ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <ImagePlus className="mr-2 size-4" />
-            )}
-            Upload replacement
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              disabled={uploading || !canUploadHero}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void uploadHero(file);
-              }}
-            />
-          </Label>
-          {!canUploadHero && (
-            <p className="text-xs text-muted-foreground">
-              Save this step first to upload your own image. Pick a built-in image above for now.
-            </p>
-          )}
+          <HeroUploadButton
+            label={p.heroImageUrl ? "Replace image" : "Upload image"}
+            busy={uploading}
+            onFile={(file) => void uploadHero(file)}
+          />
+          <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 10 MB.</p>
           {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
         </CardContent>
       </Card>

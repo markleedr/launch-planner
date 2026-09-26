@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FolderOpen, Plus, Building2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -69,16 +69,26 @@ function ProjectsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const listGeneration = useRef(0);
+  const hasRows = useRef(false);
 
   const refresh = useCallback(() => {
-    setLoading(true);
+    const generation = ++listGeneration.current;
+    if (!hasRows.current) setLoading(true);
     listProjects()
       .then((r) => {
+        if (generation !== listGeneration.current) return;
+        hasRows.current = r.length > 0;
         setRows(r);
         setError(null);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Could not load projects."))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (generation !== listGeneration.current) return;
+        setError(e instanceof Error ? e.message : "Could not load projects.");
+      })
+      .finally(() => {
+        if (generation === listGeneration.current) setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -120,14 +130,16 @@ function ProjectsPage() {
   }
 
   async function changeCover(id: string, cover: { heroImageId: string; heroImageUrl: string }) {
+    const generation = ++listGeneration.current;
     const previous = rows;
+    hasRows.current = true;
     setRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...cover, updated_at: new Date().toISOString() } : r)),
     );
     try {
       await updateProjectCover(id, cover);
     } catch (e) {
-      setRows(previous);
+      if (generation === listGeneration.current) setRows(previous);
       throw e instanceof Error ? e : new Error("Could not change this cover.");
     }
   }
