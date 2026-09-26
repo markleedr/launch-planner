@@ -27,11 +27,14 @@ export function ProjectSummary({
   parties,
   sharedFor,
   sharedBy,
+  hideBudgets = false,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
   sharedFor?: string;
   sharedBy?: { fullName: string | null; organisationName: string | null } | null;
+  /** Provider links can leave campaign costs off the summary. */
+  hideBudgets?: boolean;
 }) {
   const sharedByLabel = sharedBy
     ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
@@ -88,27 +91,33 @@ export function ProjectSummary({
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric
-          label={overBudget ? "Over media budget" : "Under media budget"}
-          value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
-          tone={overBudget ? "bad" : "good"}
-          emphasize
-        />
+        {hideBudgets ? null : (
+          <Metric
+            label={overBudget ? "Over media budget" : "Under media budget"}
+            value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
+            tone={overBudget ? "bad" : "good"}
+            emphasize
+          />
+        )}
         <Metric
           label="Gross realisation value"
           value={formatAudWhole(financials.grvCents)}
           hint={snapshot.units ? `${snapshot.units} units` : undefined}
         />
-        <Metric
-          label="Media budget"
-          value={formatAudWhole(financials.mediaBudgetCents)}
-          hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
-        />
-        <Metric
-          label="Plan total"
-          value={formatAudWhole(budget.grandTotalCents)}
-          hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
-        />
+        {hideBudgets ? null : (
+          <>
+            <Metric
+              label="Media budget"
+              value={formatAudWhole(financials.mediaBudgetCents)}
+              hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
+            />
+            <Metric
+              label="Plan total"
+              value={formatAudWhole(budget.grandTotalCents)}
+              hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
+            />
+          </>
+        )}
       </section>
 
       <Card>
@@ -196,14 +205,16 @@ export function ProjectSummary({
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Planned budget</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BudgetSpreadsheet grouped={grouped} budget={budget} />
-        </CardContent>
-      </Card>
+      {hideBudgets ? null : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Planned budget</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BudgetSpreadsheet grouped={grouped} budget={budget} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -220,7 +231,9 @@ export function ProjectSummary({
                       <th className="px-3 py-2 font-medium">Deliverable</th>
                       <th className="px-3 py-2 font-medium">Timing</th>
                       <th className="px-3 py-2 font-medium">Quantity</th>
-                      <th className="px-3 py-2 text-right font-medium">Planned cost</th>
+                      {hideBudgets ? null : (
+                        <th className="px-3 py-2 text-right font-medium">Planned cost</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -252,14 +265,16 @@ export function ProjectSummary({
                             {(deliverable.months ?? 0) > 0 ? ` · ${deliverable.months} months` : ""}
                           </td>
                           <td className="px-3 py-3">{deliverable.quantity ?? 1}</td>
-                          <td className="px-3 py-3 text-right font-medium tabular-nums">
-                            {formatAudWhole(total)}
-                            {deliverable.productionCostTbc ? (
-                              <div className="text-xs font-normal text-muted-foreground">
-                                production TBC
-                              </div>
-                            ) : null}
-                          </td>
+                          {hideBudgets ? null : (
+                            <td className="px-3 py-3 text-right font-medium tabular-nums">
+                              {formatAudWhole(total)}
+                              {deliverable.productionCostTbc ? (
+                                <div className="text-xs font-normal text-muted-foreground">
+                                  production TBC
+                                </div>
+                              ) : null}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -282,7 +297,7 @@ export function ProjectSummary({
         </CardHeader>
         <CardContent className="space-y-6">
           <CriticalPathSummary schedule={schedule} launchDate={launchDate} />
-          <Gantt schedule={schedule} launchDate={launchDate} />
+          <Gantt schedule={schedule} launchDate={launchDate} showCost={!hideBudgets} />
         </CardContent>
       </Card>
 
