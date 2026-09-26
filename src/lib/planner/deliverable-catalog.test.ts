@@ -71,7 +71,9 @@ describe("DELIVERABLE_CATALOG", () => {
     expect(DELIVERABLE_CATALOG.some((item) => item.name === "Landing Page - Complex")).toBe(false);
     const landingPage = DELIVERABLE_CATALOG.find((item) => item.name === "Landing Page")!;
     expect(landingPage.catalogId).toBe("landing_page");
-    expect(landingPage.agencyOneOffCents).toBe(102_500);
+    // Master Sheet: $1,000 production + $49/mo management.
+    expect(landingPage.agencyOneOffCents).toBe(100_000);
+    expect(landingPage.agencyMonthlyCents).toBe(4_900);
   });
 
   test("converts weeks into business days for scheduling", () => {

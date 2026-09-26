@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { FolderOpen, Plus } from "lucide-react";
+import { FolderOpen, Plus, Building2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,12 +145,20 @@ function ProjectsPage() {
               Open an existing launch plan or start a new project.
             </p>
           </div>
-          <Button asChild>
-            <Link to="/planner/new">
-              <Plus className="mr-1 size-4" />
-              New project
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline">
+              <Link to="/planner/new" search={{ sample: "teneriffe" }}>
+                <Building2 className="mr-1 size-4" />
+                Teneriffe sample
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to="/planner/new">
+                <Plus className="mr-1 size-4" />
+                New project
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {error && (
@@ -171,7 +179,13 @@ function ProjectsPage() {
               <CardTitle className="text-base">No saved projects yet</CardTitle>
               <CardDescription>Start a plan, then use Save to keep it here.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to="/planner/new" search={{ sample: "teneriffe" }}>
+                  <Building2 className="mr-1 size-4" />
+                  Start Teneriffe sample
+                </Link>
+              </Button>
               <Button asChild>
                 <Link to="/planner/new">
                   <Plus className="mr-1 size-4" />
