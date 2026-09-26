@@ -131,6 +131,20 @@ export async function updateProject(
   if (!data) throw new Error("Project not found or access denied.");
 }
 
+/** Replace the cover shown on the project card and summary, leaving the rest of the plan intact. */
+export async function updateProjectCover(
+  id: string,
+  cover: { heroImageId: string; heroImageUrl: string },
+): Promise<void> {
+  const project = await loadProject(id);
+  if (!project) throw new Error("Project not found or access denied.");
+  await updateProject(id, project.name, {
+    ...project.snapshot,
+    heroImageId: cover.heroImageId,
+    heroImageUrl: cover.heroImageUrl,
+  });
+}
+
 /** Rename a project without touching its saved plan data. */
 export async function renameProject(id: string, name: string): Promise<void> {
   const userId = await currentUserId();

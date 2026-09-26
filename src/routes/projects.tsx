@@ -12,6 +12,7 @@ import {
   duplicateProject,
   listProjects,
   renameProject,
+  updateProjectCover,
   type ProjectRow,
 } from "@/lib/project-store";
 import { syncSubscription } from "@/lib/billing/billing.server";
@@ -118,6 +119,19 @@ function ProjectsPage() {
     setRenameValue(row.name);
   }
 
+  async function changeCover(id: string, cover: { heroImageId: string; heroImageUrl: string }) {
+    const previous = rows;
+    setRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...cover, updated_at: new Date().toISOString() } : r)),
+    );
+    try {
+      await updateProjectCover(id, cover);
+    } catch (e) {
+      setRows(previous);
+      throw e instanceof Error ? e : new Error("Could not change this cover.");
+    }
+  }
+
   async function commitRename(id: string) {
     const name = renameValue.trim();
     setRenamingId(null);
@@ -216,6 +230,7 @@ function ProjectsPage() {
                     onStartRename={() => startRename(r)}
                     onDuplicate={() => void duplicate(r.id)}
                     onDelete={() => void remove(r.id)}
+                    onChangeCover={(cover) => changeCover(r.id, cover)}
                   />
                 </li>
               ))}

@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, ImagePlus, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,21 +16,37 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import type { ProjectRow } from "@/lib/project-store";
+import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
 import {
   formatAuDate,
   formatAudWhole,
+  HERO_IMAGE_LIBRARY,
   parseDollarsToCents,
   PROJECT_TYPE_LABELS,
   resolveHeroImage,
   UNIT_LABELS,
 } from "@/lib/planner";
+
+const COVER_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+type CoverType = (typeof COVER_TYPES)[number];
+const MAX_COVER_BYTES = 10 * 1024 * 1024;
+
+export type ProjectCover = { heroImageId: string; heroImageUrl: string };
 
 export function ProjectCard({
   project,
@@ -43,6 +59,7 @@ export function ProjectCard({
   onStartRename,
   onDuplicate,
   onDelete,
+  onChangeCover,
 }: {
   project: ProjectRow;
   busy: boolean;
@@ -54,7 +71,9 @@ export function ProjectCard({
   onStartRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onChangeCover: (cover: ProjectCover) => Promise<void>;
 }) {
+  const [coverOpen, setCoverOpen] = useState(false);
   const hero = resolveHeroImage(project.heroImageId, project.heroImageUrl);
   const location = [project.suburb, project.state].filter(Boolean).join(", ");
   const grvCents = parseDollarsToCents(project.grv);
@@ -123,6 +142,14 @@ export function ProjectCard({
                   <Pencil className="mr-2 size-4" />
                   Rename
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    window.setTimeout(() => setCoverOpen(true), 0);
+                  }}
+                >
+                  <ImagePlus className="mr-2 size-4" />
+                  Change cover
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={onDuplicate}>
                   <Copy className="mr-2 size-4" />
                   Duplicate
@@ -157,6 +184,12 @@ export function ProjectCard({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          <CoverDialog
+            open={coverOpen}
+            project={project}
+            onOpenChange={setCoverOpen}
+            onChangeCover={onChangeCover}
+          />
         </div>
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -229,4 +262,166 @@ function RenameField({
       aria-label="Project name"
     />
   );
+}
+
+function CoverDialog({
+  open,
+  project,
+  onOpenChange,
+  onChangeCover,
+}: {
+  open: boolean;
+  project: ProjectRow;
+  onOpenChange: (open: boolean) => void;
+  onChangeCover: (cover: ProjectCover) => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const usingUpload = Boolean(project.heroImageUrl);
+
+  async function apply(cover: ProjectCover) {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await onChangeCover(cover);
+      setNotice("Cover updated. It also shows on the project summary.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not change this cover.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function upload(file: File) {
+    if (savingRef.current) return;
+    const contentType = coverContentType(file);
+    if (!contentType) {
+      setError("Use a JPG, PNG or WebP image.");
+      setNotice(null);
+      return;
+    }
+    if (file.size > MAX_COVER_BYTES) {
+      setError("Use an image up to 10 MB.");
+      setNotice(null);
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const prepared = await prepareProjectHeroUpload({
+        data: { projectId: project.id, fileName: file.name },
+      });
+      const { error: uploadError } = await supabase.storage
+        .from("project-heroes")
+        .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType });
+      if (uploadError) throw uploadError;
+      await onChangeCover({ heroImageId: project.heroImageId, heroImageUrl: prepared.publicUrl });
+      setNotice("Cover updated. It also shows on the project summary.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not upload this image.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (saving) return;
+        if (!next) {
+          setError(null);
+          setNotice(null);
+        }
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Change cover</DialogTitle>
+          <DialogDescription>
+            This image shows on the project card and in the summary. Pick a built-in image, or
+            upload your own.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {usingUpload ? (
+            <div className="overflow-hidden rounded-lg border-2 border-foreground sm:col-span-2">
+              <img
+                src={project.heroImageUrl}
+                alt="Current cover"
+                className="aspect-[3/1] w-full object-cover"
+              />
+              <span className="block px-2 py-1.5 text-xs font-medium">Your image</span>
+            </div>
+          ) : null}
+          {HERO_IMAGE_LIBRARY.map((image) => {
+            const selected = !usingUpload && project.heroImageId === image.id;
+            return (
+              <button
+                key={image.id}
+                type="button"
+                disabled={saving}
+                aria-pressed={selected}
+                onClick={() => {
+                  if (selected) return;
+                  void apply({ heroImageId: image.id, heroImageUrl: "" });
+                }}
+                className={`overflow-hidden rounded-lg border-2 text-left disabled:opacity-60 ${
+                  selected ? "border-foreground" : "border-transparent"
+                }`}
+              >
+                <img src={image.src} alt={image.alt} className="aspect-[3/1] w-full object-cover" />
+                <span className="block px-2 py-1.5 text-xs font-medium">{image.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <label
+          className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
+            saving ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+          }`}
+        >
+          {saving ? (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          ) : (
+            <ImagePlus className="mr-2 size-4" />
+          )}
+          Upload image
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={saving}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void upload(file);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
+        <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 10 MB.</p>
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {notice ? <p className="text-sm text-positive">{notice}</p> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function coverContentType(file: File): CoverType | null {
+  if ((COVER_TYPES as readonly string[]).includes(file.type)) return file.type as CoverType;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  return null;
 }
