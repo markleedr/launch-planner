@@ -375,10 +375,9 @@ function GanttLegend() {
       </LegendItem>
       <span className="flex items-center gap-1.5">
         <span className="size-1.5 rounded-full bg-background ring-1 ring-foreground/60" />
-        Recurrence
-        <HelpTip label='What does "Recurrence" mean?'>
-          A dot marks each repeat occurrence of a recurring deliverable, such as a weekly press ad
-          or a monthly EDM.
+        Repeats
+        <HelpTip label='What does "Repeats" mean?'>
+          A dot on the bar marks each time a repeating item happens, such as a monthly email or SMS.
         </HelpTip>
       </span>
       <span className="flex items-center gap-1.5">

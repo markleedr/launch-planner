@@ -556,8 +556,8 @@ function PlannerEditor({ mediaBudget }: { mediaBudget?: number }) {
             <div className="space-y-1.5">
               <CardTitle>Marketing schedule & critical path</CardTitle>
               <CardDescription>
-                Deliverables scheduled from their dependencies, lead times and recurrence. The
-                critical path drives the earliest completion date.
+                Deliverables scheduled from their dependencies, lead times and how often they
+                repeat. The critical path drives the earliest completion date.
               </CardDescription>
             </div>
             <SectionExportMenu section={sections.schedule} />
