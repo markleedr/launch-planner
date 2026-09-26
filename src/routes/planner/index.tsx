@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DollarInput } from "@/components/planner/dollar-input";
+import { SectionExportMenu } from "@/components/planner/section-export-menu";
 import { Gantt, CriticalPathSummary } from "@/components/planner/gantt";
 import { CriticalIssueChecklist } from "@/components/planner/checklist";
 import { ContactsAndSuppliers } from "@/components/planner/contacts";
@@ -34,6 +35,7 @@ import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
   UNIT_LABELS,
+  buildPlanSections,
   checklistProgress,
   deliverableCosts,
   formatAud,
@@ -67,12 +69,16 @@ export const Route = createFileRoute("/planner/")({
   head: () => ({
     meta: [{ title: "Project plan - Launch Planner" }],
   }),
-  component: PlannerEditor,
+  component: PlannerRoute,
 });
 
-function PlannerEditor() {
-  const p = usePlanner();
+function PlannerRoute() {
   const { mediaBudget } = Route.useSearch();
+  return <PlannerEditor mediaBudget={mediaBudget} />;
+}
+
+function PlannerEditor({ mediaBudget }: { mediaBudget?: number }) {
+  const p = usePlanner();
   const applied = useRef(false);
   useEffect(() => {
     if (!applied.current && mediaBudget) {
@@ -112,6 +118,7 @@ function PlannerEditor() {
     setLastDeleted(null);
   }
 
+  const sections = buildPlanSections(p.toSnapshot());
   const checklist = checklistProgress(p.checklist);
   const daysLate = p.launchDateObj
     ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
@@ -209,10 +216,15 @@ function PlannerEditor() {
         {/* Intake */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Project details</CardTitle>
-            <CardDescription>
-              These inputs drive the GRV, budget benchmark and recommendations.
-            </CardDescription>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle>Project details</CardTitle>
+                <CardDescription>
+                  These inputs drive the GRV, budget benchmark and recommendations.
+                </CardDescription>
+              </div>
+              <SectionExportMenu section={sections.details} />
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Project name">
@@ -376,7 +388,7 @@ function PlannerEditor() {
       {/* Deliverables & budget */}
       <Card id="budget" className="mt-6 scroll-mt-32">
         <CardHeader className="space-y-3">
-          <div className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle>Deliverables & budget</CardTitle>
               <CardDescription>
@@ -394,6 +406,7 @@ function PlannerEditor() {
                 <Plus className="mr-1 size-4" />
                 Add custom
               </Button>
+              <SectionExportMenu section={sections.budget} />
             </div>
           </div>
           {lastDeleted && (
@@ -487,11 +500,16 @@ function PlannerEditor() {
       {/* Schedule & critical path */}
       <Card id="schedule" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Marketing schedule & critical path</CardTitle>
-          <CardDescription>
-            Deliverables scheduled from their dependencies, lead times and recurrence. The critical
-            path drives the earliest completion date.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Marketing schedule & critical path</CardTitle>
+              <CardDescription>
+                Deliverables scheduled from their dependencies, lead times and recurrence. The
+                critical path drives the earliest completion date.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.schedule} />
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <CriticalPathSummary schedule={p.schedule} launchDate={p.launchDateObj} />
@@ -502,10 +520,15 @@ function PlannerEditor() {
       {/* Critical-issue checklist */}
       <Card id="checklist" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Critical issues checklist</CardTitle>
-          <CardDescription>
-            Key risks and considerations to review and sign off before launch.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Critical issues checklist</CardTitle>
+              <CardDescription>
+                Key risks and considerations to review and sign off before launch.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.checklist} />
+          </div>
         </CardHeader>
         <CardContent>
           <CriticalIssueChecklist items={p.checklist} onChange={p.setChecklist} />
@@ -515,11 +538,16 @@ function PlannerEditor() {
       {/* Team & suppliers */}
       <Card id="team" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Team & suppliers</CardTitle>
-          <CardDescription>
-            Organisations from the new-project step appear on the Summary. This list is separate:
-            use it to name an owner and suppliers on each deliverable.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Team & suppliers</CardTitle>
+              <CardDescription>
+                Organisations from the new-project step appear on the Summary. This list is
+                separate: use it to name an owner and suppliers on each deliverable.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.team} />
+          </div>
         </CardHeader>
         <CardContent>
           <ContactsAndSuppliers

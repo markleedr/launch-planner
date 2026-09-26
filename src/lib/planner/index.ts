@@ -21,6 +21,7 @@ export * from "./contacts";
 export * from "./media-calc";
 export * from "./project-copy";
 export * from "./hero-images";
+export * from "./section-export";
 export {
   buildTeneriffeRiversideSnapshot,
   TENERIFFE_CAMPAIGN_MONTHS,
