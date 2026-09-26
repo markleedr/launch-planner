@@ -21,3 +21,10 @@ export * from "./contacts";
 export * from "./media-calc";
 export * from "./project-copy";
 export * from "./hero-images";
+export {
+  buildTeneriffeRiversideSnapshot,
+  TENERIFFE_CAMPAIGN_MONTHS,
+  TENERIFFE_CATALOG_IDS,
+  TENERIFFE_GRV_DOLLARS,
+  TENERIFFE_MEDIA_BUDGET_DOLLARS,
+} from "./demos/teneriffe-riverside";
