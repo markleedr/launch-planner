@@ -109,7 +109,13 @@ const IMPORTED_SERVICE_CATALOG: CatalogItem[] = RAW_SERVICE_TEMPLATES.filter(
 ).map((rawTemplate) => {
   const template =
     rawTemplate.service === "Landing Page - Complex"
-      ? { ...rawTemplate, service: "Landing Page", oneOffCostCents: 102_500 }
+      ? {
+          ...rawTemplate,
+          service: "Landing Page",
+          // Master Sheet: $1,000 production + $49/mo management.
+          oneOffCostCents: 100_000,
+          monthlyCostCents: 4_900,
+        }
       : rawTemplate;
   const category = CATEGORY_OVERRIDES[template.service] ?? CATEGORY_MAP[template.category];
   if (!category) throw new Error(`Unknown service category: ${template.category}`);

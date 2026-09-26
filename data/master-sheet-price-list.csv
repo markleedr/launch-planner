@@ -1,0 +1,78 @@
+,,,,,,,,,
+,,,,,,,,,
+,Yes/No,Description,Managment,Production,Media,,Delivery Timings,,DEPENDENCIES
+,,BRAND,,,,,TIME QTY,LENGTH,
+,FALSE,Brand Strategy & Naming: 2 brand concepts. One tagline. Brand pillars.,,"$22,000",,,4,weeks,"either brand strategy or visual identity , not both"
+,FALSE,"Visual Identity: Two logo concepts. Colour palette, fonts, mockups. Brand guidelines",,"$9,000",,,2,weeks,"either brand strategy or visual identity , not both"
+,,COLLATERAL,,,,,TIME QTY,LENGTH,
+,FALSE,"Sales Book: Up to 16 pages, stock selection, icons, supplied as print-ready and source files",,"$4,000",,,2,weeks,brand must either be supplied or created first
+,FALSE,"Floorplans: A3 layouts for up to 12 types, branded and data-ready",,"$4,500",,,2,weeks,depends on brand or visual identity
+,FALSE,"Floorplates: Up to 12 floor variations, includes tabled data and layout design",,"$4,500",,,2,weeks,depends on brand or visual identity
+,FALSE,Hoarding: 20m branded hoarding concept with print-ready delivery,,"$2,000",,,2,weeks,depends on brand or visual identity
+,FALSE,Neighbourhood Map: Illustrated locality map showing up to 50 streets and 30 POIs,,"$3,500",,,2,weeks,depends on brand or visual identity
+,FALSE,"Site Signage: Billboard concept, messaging updates, with visualised proof",,"$2,000",,,2,weeks,depends on brand or visual identity
+,FALSE,OOH Signage: Billboard/bus stop concept design with high-detail mockups,,"$1,500",,,2,weeks,depends on brand or visual identity
+,FALSE,"Digital Twin tablet and phone app (cistom domain, 5 users)",$449,"$1,285",,,,,"depends on brand or visual identity, but can commence set up without. can't go live until brand or visual is compelted. "
+,,RENDER AND PHOTOGRAPHY,,,,,TIME QTY,LENGTH,
+,FALSE,Hero Render: Front entrance signage,,"$1,800",,,2,weeks,none
+,FALSE,External Render: Building external,,"$2,000",,,2,weeks,none
+,FALSE,Amenities Render: Community facility (front façade only,,"$2,000",,,2,weeks,none
+,FALSE,"Full apartment render: bedroom, master and ensuite, veranda/outlook, kitchen, dining)",,"$12,000",,,3,weeks,none
+,FALSE,Internal Render: Bedroom,,"$2,000",,,2,weeks,none
+,FALSE,Internal Render: Main bedroom & ensuite,,"$2,000",,,2,weeks,none
+,FALSE,Internal Render: Veranda to outlook,,"$2,000",,,2,weeks,none
+,FALSE,Internal Render: Lounge to kitchen,,"$2,000",,,2,weeks,none
+,FALSE,Internal Render: Kitchen,,"$2,000",,,2,weeks,none
+,FALSE,Internal Render: Dining area (depending on what's shown in the render),,"$2,000",,,2,weeks,none
+,FALSE,Drone photography (12 level section outlooks),,"$2,000",,,1,weeks,none
+,FALSE,Video Production: 2-min filmed project intro with 2-3 interviews,,"$9,350",,,3,weeks,depends on brand or visual identity
+,FALSE,Photography: lifestyle and location (1 day shoot),,"$2,500",,,4,weeks,depends on brand or visual identity
+,FALSE,"Video: interview or site update (8 minutes, includes editing, top and tail)",,"$1,250",,,1,weeks,depends on brand or visual identity
+,,LISTING PORTALS,,,,,TIME QTY,LENGTH,
+,FALSE,Apartments & Developments - standard,"$3,245",,,,3,days,"depends on brand or visual identity, renders, photography"
+,FALSE,Apartments & Developments - plus,"$4,125",,,,3,days,"depends on brand or visual identity, renders, photography"
+,FALSE,Apartments & Developments - premium,"$5,445",,,,2,days,"depends on brand or visual identity, renders, photography"
+,FALSE,REA - Project Profile (12 month rate) [NOTE THIS NEEDS TO BE CONFIRMED],"$6,299",,,,2,days,"depends on brand or visual identity, renders, photography"
+,FALSE,REA - Audience Extension - Lead Form,"$4,500",,,,2,days,"depends on brand or visual identity, renders, photography"
+,FALSE,REA - Native Ads,"$1,449",,,,2,days,"depends on brand or visual identity, renders, photography"
+,FALSE,DOMAIN - Project Profile (12 month rate) [NOTE THIS NEEDS TO BE CONFIRMED],"$1,260",,,,3,days,"depends on brand or visual identity, renders, photography"
+,FALSE,DOMAIN - Audience Extension (Social),"$5,000",,,,3,days,"depends on brand or visual identity, renders, photography"
+,FALSE,"Apartments.com.au - 3, 6 or 12 month campaign","$5,000",,,,3,days,"depends on brand or visual identity, renders, photography"
+,,CONTENT,,,,,TIME QTY,LENGTH,
+,FALSE,"Social Media Content Set Up Cost (content style, voice and tone doc)",,$860,,,2,weeks,depends on brand or visual identity
+,FALSE,Ghost Posts (up to 12 posts),,"$1,559",,,1,weeks,depends on brand or visual identity
+,FALSE,Social Media Content Management. Posts: 4 /mo (creation and posting),$775,,,,1,weeks,depends on brand or visual identity
+,TRUE,Social Media Content Management. Posts: 12/mo (creation and posting),"$1,559",,,,1,weeks,depends on brand or visual identity
+,FALSE,Social Media Content Management. Posts: 20/mo (creation and posting),"$2,425",,,,1,weeks,depends on brand or visual identity
+,TRUE,"Blog Post (1 per month: 300-400 words, 1 header image)",$450,,,,3,days,depends on brand or visual identity
+,FALSE,Community management + outreach,"$1,259",,,,NA,NA,
+,,PPC Advertising,,,,,TIME QTY,LENGTH,
+,FALSE,"PPC Ads Set Up Cost (set up of paid ads structure, audiences, targeting, pixel placement)",,"$1,250",,,1,weeks,none
+,FALSE,"PPC Campaign: 3 messages, 1 landing page (3 sections, up to 300 words)","$1,559",,,,1,weeks,depends on brand or visual identity
+,FALSE,Boosting posts (if no ppc runs),$520,,,,NA,NA,depends on ppc ads set up
+,,LANDING PAGE / WEBSITE,,,,,TIME QTY,LENGTH,
+,FALSE,"Landing Page: Simple LP (three segment, copy supplied, images supplied)",$49,$500,,,4,days,"depends on brand or visual identity, renders, photography"
+,FALSE,"Landing Page: Complex LP (more than three segments, copy and images not supplied)",$49,"$1,000",,,4,days,"depends on brand or visual identity, renders, photography"
+,FALSE,"Website: UI/UX design, 4 pages, desktop & mobile layout, brand integration",$49,"$10,000",,,4,weeks,"depends on brand or visual identity, renders, photography"
+,,CALL TRACKING  ,,,,,TIME QTY,LENGTH,
+,FALSE,Call tracking number (1 number),$55,$225,,,NA,NA,none
+,,EMAIL,,,,,TIME QTY,LENGTH,
+,FALSE,Email set up (ENC or EDM),,$450,,,1,weeks,none
+,TRUE,ENC Automated email series  (up to 3),$121,,,,1,weeks,Email set up (ENC or EDM)
+,TRUE,"Edm (1 per month, 3 sections, 3 images)",$490,,,,4,days,Email set up (ENC or EDM)
+,FALSE,Cold outreach email to the database / database reactivation (includes database generation),,"$2,259",,,1,weeks,Email set up (ENC or EDM)
+,,SMS Marketing,,,,,TIME QTY,LENGTH,
+,FALSE,Copywriting Anti Spam Act compliance (media cost charged separately),$220,,,,2,days,none
+,,,Per Month,One off cost,,,,,
+,,Total (+GST),"$2,620",$0,,,,,
+,All prices are excluding GST. Invoiced monthly.,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,CAMPAIGN DETAILS,,,,,,,
+,,Length of the campaign in months,6,,,,,,
+,,Media spend per month,10000,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,Total cost of media,"$60,000",,,,,,
+,,"Total cost of creative, delivery and management","$15,720",,,,,,
+,,Toal Cost ex GST,"$75,720",,,,,,

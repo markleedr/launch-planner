@@ -40,6 +40,7 @@ import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import { createProject, updateProject } from "@/lib/project-store";
 import {
+  buildTeneriffeRiversideSnapshot,
   CATEGORY_LABELS,
   formatAud,
   formatAudWhole,
@@ -73,7 +74,7 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-export function ProjectWizard() {
+export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
   const p = usePlanner();
   const navigate = useNavigate();
   const { user } = useSession();
@@ -90,7 +91,11 @@ export function ProjectWizard() {
   useLayoutEffect(() => {
     if (resetOnMount.current) return;
     resetOnMount.current = true;
-    p.resetDraft();
+    if (sample === "teneriffe") {
+      p.hydrate(buildTeneriffeRiversideSnapshot());
+    } else {
+      p.resetDraft();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -222,6 +227,14 @@ export function ProjectWizard() {
           </Select>
         </div>
       </div>
+
+      {sample === "teneriffe" && (
+        <p className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Pre-filled from the Master Sheet price list: 90 apartments at Teneriffe riverside, $200M
+          GRV, six-month campaign with wired deliverable dependencies. Save to keep it in your
+          workspace.
+        </p>
+      )}
 
       {step === "details" && <DetailsStep />}
       {step === "deliverables" && <DeliverablesStep />}
