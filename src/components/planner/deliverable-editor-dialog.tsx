@@ -466,11 +466,11 @@ export function DeliverableEditorDialog({
             </p>
           </div>
 
-          <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
+          <div className="grid gap-6 border-t pt-5">
             <Field label="Must be finished first">
-              <p className="text-xs text-muted-foreground">
-                Pick anything this one can&apos;t start without, for example the brand before the
-                website. You can pick more than one. The schedule and critical path follow it.
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Pick anything this deliverable can&apos;t start without (for example brand before
+                website). You can choose more than one. The schedule and critical path follow it.
               </p>
               <DependencyPicker
                 allDeliverables={allDeliverables}
@@ -480,10 +480,9 @@ export function DeliverableEditorDialog({
               />
             </Field>
             <Field label="Repeats on the schedule">
-              <p className="text-xs text-muted-foreground">
-                Doesn&apos;t repeat is a one-off, such as a brochure: the schedule shows it once.
-                Repeats every month is for a blog, email or SMS: the schedule marks each repeat on
-                the bar. What you pay for those months is set in the months field above.
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                One-off items (brochure) show once. Monthly items (blog, email, SMS) mark each
+                repeat on the schedule bar. Cost for those months is set in the months field above.
               </p>
               <Select
                 value={scheduleRepeatChoice(draft.recurrencePattern)}
@@ -498,7 +497,7 @@ export function DeliverableEditorDialog({
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -510,19 +509,18 @@ export function DeliverableEditorDialog({
                 </SelectContent>
               </Select>
             </Field>
+            <Field label="Dependency notes (private)">
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Optional reminder about this dependency. Only visible here, not shown to
+                contractors.
+              </p>
+              <Textarea
+                rows={2}
+                value={draft.dependencyNotes ?? ""}
+                onChange={(event) => patch({ dependencyNotes: event.target.value })}
+              />
+            </Field>
           </div>
-
-          <Field label="Dependency notes (private)">
-            <p className="text-xs text-muted-foreground">
-              A reminder for yourself about this dependency, for example what exactly to wait for.
-              Only visible here, not shown to contractors or anywhere else in the app.
-            </p>
-            <Textarea
-              rows={2}
-              value={draft.dependencyNotes ?? ""}
-              onChange={(event) => patch({ dependencyNotes: event.target.value })}
-            />
-          </Field>
 
           <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-4">
             <span className="font-semibold">Calculated total cost</span>
@@ -545,7 +543,7 @@ export function DeliverableEditorDialog({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <Label>{label}</Label>
       {children}
     </div>
@@ -592,10 +590,16 @@ function DependencyPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" className="w-full justify-start font-normal">
-          {selectedNames.length === 0
-            ? "Nothing, it can start straight away"
-            : selectedNames.join(", ")}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-9 w-full justify-start whitespace-normal px-3 py-2 text-left font-normal"
+        >
+          <span className="line-clamp-2">
+            {selectedNames.length === 0
+              ? "Nothing, it can start straight away"
+              : selectedNames.join(", ")}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-2" align="start">
