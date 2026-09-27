@@ -9,16 +9,50 @@
 
 import { catalogItemToDeliverable, DELIVERABLE_CATALOG } from "../deliverable-catalog";
 import { seedChecklist } from "../checklist";
+import type { Contact } from "../contacts";
 import { recommend } from "../recommend";
 import type { PlannerSnapshot } from "../persistence";
 import type { CatalogItem } from "../deliverable-catalog";
 import type { Deliverable } from "../types";
 
+/** Example agency / contractor directory for the Beachside Riverside sample. */
+export const TENERIFFE_SAMPLE_CONTACTS: Contact[] = [
+  {
+    id: "beachside-contact-sally",
+    name: "Sally",
+    organisation: "Media R Us",
+    type: "agency_head",
+    roleCategory: "Media",
+  },
+  {
+    id: "beachside-contact-ben",
+    name: "Ben",
+    organisation: "Creative Plus",
+    type: "agency_head",
+    roleCategory: "Creative",
+  },
+  {
+    id: "beachside-contact-mike",
+    name: "Mike",
+    organisation: "Performance PPC",
+    type: "agency_head",
+    roleCategory: "Performance",
+  },
+];
+
 /** Campaign length from the Master Sheet campaign details. */
 export const TENERIFFE_CAMPAIGN_MONTHS = 6;
 
-/** Media spend for the Beachside Riverside sample campaign. */
-export const TENERIFFE_MEDIA_BUDGET_DOLLARS = 6_000_000;
+/** Monthly Meta media buy for the Beachside Riverside sample. */
+export const TENERIFFE_MEDIA_META_MONTHLY_DOLLARS = 6_000;
+
+/** Monthly Google Ads media buy for the Beachside Riverside sample. */
+export const TENERIFFE_MEDIA_GOOGLE_MONTHLY_DOLLARS = 3_500;
+
+/** Total media budget across the campaign (Meta + Google × months). */
+export const TENERIFFE_MEDIA_BUDGET_DOLLARS =
+  (TENERIFFE_MEDIA_META_MONTHLY_DOLLARS + TENERIFFE_MEDIA_GOOGLE_MONTHLY_DOLLARS) *
+  TENERIFFE_CAMPAIGN_MONTHS;
 
 /** Gross realisation value for the 90-apartment riverside scheme. */
 export const TENERIFFE_GRV_DOLLARS = 150_000_000;
@@ -181,30 +215,33 @@ export function buildTeneriffeRiversideSnapshot(
     TENERIFFE_CATALOG_IDS.map((catalogId) => stableDeliverable(catalogId, campaignMonths)),
   );
 
-  // Allocate the media pool across active media channels so the plan shows
-  // both creative/management costs and the media buy.
+  // Media buys: Meta $6k/mo and Google $3.5k/mo for the campaign length.
+  // Listing portals are intentionally omitted from this sample.
   const mediaStart = new Date("2026-09-15T00:00:00");
   const mediaEnd = new Date(mediaStart);
   mediaEnd.setMonth(mediaEnd.getMonth() + campaignMonths);
-  const mediaMonthlyCents = Math.round(
-    (TENERIFFE_MEDIA_BUDGET_DOLLARS * 100) / Math.max(1, campaignMonths),
-  );
   const mediaShare = [
-    { id: "teneriffe-media-meta", name: "Meta media buy", share: 0.45 },
-    { id: "teneriffe-media-google", name: "Google Ads media buy", share: 0.35 },
-    { id: "teneriffe-media-listing", name: "Listing portal media buy", share: 0.2 },
+    {
+      id: "teneriffe-media-meta",
+      name: "Meta media buy",
+      monthlyDollars: TENERIFFE_MEDIA_META_MONTHLY_DOLLARS,
+    },
+    {
+      id: "teneriffe-media-google",
+      name: "Google Ads media buy",
+      monthlyDollars: TENERIFFE_MEDIA_GOOGLE_MONTHLY_DOLLARS,
+    },
   ].map((channel) => {
-    const monthly = Math.round(mediaMonthlyCents * channel.share);
     return {
       id: channel.id,
       name: channel.name,
-      description: `Master Sheet campaign media allocation (${campaignMonths} months).`,
+      description: `Sample campaign media buy (${campaignMonths} months).`,
       category: "digital_performance" as const,
       agencyCostCents: 0,
       agencyMonthlyCostCents: 0,
       productionCostCents: 0,
       mediaCostCents: 0,
-      mediaMonthlyCostCents: monthly,
+      mediaMonthlyCostCents: channel.monthlyDollars * 100,
       quantity: 1,
       months: campaignMonths,
       setupLeadDays: 5,
@@ -220,7 +257,7 @@ export function buildTeneriffeRiversideSnapshot(
   return {
     projectName: "Beachside Riverside Residences",
     projectBlurb:
-      "A 90-apartment riverside multi-residential launch on the Central Coast, NSW, planned from the Master Sheet price list with a six-month campaign, $150 million GRV and a $6 million media budget.",
+      "A 90-apartment riverside multi-residential launch on the Central Coast, NSW, planned from the Master Sheet price list with a six-month campaign, $150 million GRV and a $57,000 media budget (Meta $6k/mo and Google $3.5k/mo).",
     projectType: "multi_residential",
     units: 90,
     grv: String(TENERIFFE_GRV_DOLLARS),
@@ -242,6 +279,6 @@ export function buildTeneriffeRiversideSnapshot(
     personas: recommendation.personas,
     deliverables: [...deliverables, ...mediaShare],
     checklist: seedChecklist("multi_residential"),
-    contacts: [],
+    contacts: TENERIFFE_SAMPLE_CONTACTS.map((contact) => ({ ...contact })),
   };
 }
