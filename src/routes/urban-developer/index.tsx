@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Building2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GuestProjectCard } from "@/components/urban-developer/guest-project-card";
+import { NewProjectCoachmark } from "@/components/urban-developer/new-project-coachmark";
 import { trackEvent } from "@/lib/analytics";
 import { listGuestDashboardProjects } from "@/lib/urban-developer/guest-store";
 import type { ProjectRow } from "@/lib/project-store";
@@ -42,12 +43,14 @@ function GuestProjectsPage() {
               Beachside sample
             </Link>
           </Button>
-          <Button asChild>
-            <Link to="/urban-developer/new">
-              <Plus className="mr-1 size-4" />
-              New project
-            </Link>
-          </Button>
+          <NewProjectCoachmark>
+            <Button asChild>
+              <Link to="/urban-developer/new">
+                <Plus className="mr-1 size-4" />
+                New project
+              </Link>
+            </Button>
+          </NewProjectCoachmark>
         </div>
       </div>
 
