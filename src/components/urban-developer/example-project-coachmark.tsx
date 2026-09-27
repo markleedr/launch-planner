@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { PersistentCoachmark } from "@/components/urban-developer/persistent-coachmark";
-
-const DISMISS_KEY = "launch-planner:tud-example-project-coachmark-dismissed";
 
 /** Persistent callout pointing at the example project card. */
 export function ExampleProjectCoachmark({
@@ -11,10 +10,11 @@ export function ExampleProjectCoachmark({
   children: ReactNode;
   className?: string;
 }) {
+  const campaign = useGuestDemo();
   return (
     <PersistentCoachmark
       className={className ? `flex h-full w-full ${className}` : "flex h-full w-full"}
-      dismissKey={DISMISS_KEY}
+      dismissKey={`launch-planner:${campaign.id}-example-project-coachmark-dismissed`}
       title="Explore an example project"
       description="Open this sample to see a full launch plan with budget, schedule and deliverables."
       side="bottom"
