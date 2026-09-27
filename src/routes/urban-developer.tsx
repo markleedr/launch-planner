@@ -4,6 +4,7 @@ import { Check, Save } from "lucide-react";
 import { PlannerProvider, usePlanner } from "@/components/planner/planner-provider";
 import { GuestShell } from "@/components/urban-developer/guest-shell";
 import { InfoLeadToaster } from "@/components/urban-developer/info-lead-toaster";
+import { WelcomeBanner } from "@/components/urban-developer/welcome-banner";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { serializePlanner } from "@/lib/planner";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/urban-developer")({
       {
         name: "description",
         content:
-          "Free for Urban Developer readers through November. Try Launch Planner with no login: open an example project or create your own. Email only required to export a PDF.",
+          "Free for The Urban Developer readers, no account required. Try Launch Planner: open an example project or create your own. Email only required to export a PDF.",
       },
       { name: "robots", content: "noindex, nofollow" },
       {
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/urban-developer")({
       {
         property: "og:description",
         content:
-          "Try Launch Planner free through November. Create a project or view an example, no account needed.",
+          "Free for The Urban Developer readers, no account required. Create a project or view an example.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -55,12 +56,12 @@ function UrbanDeveloperLayout() {
 
   return (
     <PlannerProvider>
+      <WelcomeBanner />
       <UrbanDeveloperShell />
       <InfoLeadToaster />
     </PlannerProvider>
   );
 }
-
 function UrbanDeveloperShell() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const p = usePlanner();
