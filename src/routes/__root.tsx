@@ -222,8 +222,18 @@ function MetaPixelPageViews() {
 
   useEffect(() => {
     const decision = metaPageViewOnNavigate(metaPixelHref, href);
-    metaPixelHref = decision.previousHref;
-    if (decision.send) trackMetaPageView();
+    if (!decision.send) {
+      metaPixelHref = decision.previousHref;
+      return;
+    }
+
+    // Router state updates before TanStack flushes history.pushState. Sending
+    // immediately records the previous URL. Wait until that flush has run.
+    const timer = window.setTimeout(() => {
+      metaPixelHref = href;
+      trackMetaPageView();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [href]);
 
   return null;
