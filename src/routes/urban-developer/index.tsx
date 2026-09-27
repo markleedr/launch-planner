@@ -2,9 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExampleProjectCoachmark } from "@/components/urban-developer/example-project-coachmark";
 import { GuestProjectCard } from "@/components/urban-developer/guest-project-card";
+import { NewProjectCoachmark } from "@/components/urban-developer/new-project-coachmark";
 import { trackEvent } from "@/lib/analytics";
-import { listGuestDashboardProjects } from "@/lib/urban-developer/guest-store";
+import {
+  EXAMPLE_TENERIFFE_ID,
+  listGuestDashboardProjects,
+} from "@/lib/urban-developer/guest-store";
 import type { ProjectRow } from "@/lib/project-store";
 
 export const Route = createFileRoute("/urban-developer/")({
@@ -39,15 +44,17 @@ function GuestProjectsPage() {
           <Button asChild variant="outline">
             <Link to="/urban-developer/new" search={{ sample: "teneriffe" }}>
               <Building2 className="mr-1 size-4" />
-              Teneriffe sample
+              Beachside sample
             </Link>
           </Button>
-          <Button asChild>
-            <Link to="/urban-developer/new">
-              <Plus className="mr-1 size-4" />
-              New project
-            </Link>
-          </Button>
+          <NewProjectCoachmark>
+            <Button asChild>
+              <Link to="/urban-developer/new">
+                <Plus className="mr-1 size-4" />
+                New project
+              </Link>
+            </Button>
+          </NewProjectCoachmark>
         </div>
       </div>
 
@@ -56,11 +63,18 @@ function GuestProjectsPage() {
           {rows.length} {rows.length === 1 ? "project" : "projects"}
         </p>
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((row) => (
-            <li key={row.id} className="flex">
-              <GuestProjectCard project={row} />
-            </li>
-          ))}
+          {rows.map((row) => {
+            const card = <GuestProjectCard project={row} />;
+            return (
+              <li key={row.id} className="flex">
+                {row.id === EXAMPLE_TENERIFFE_ID ? (
+                  <ExampleProjectCoachmark>{card}</ExampleProjectCoachmark>
+                ) : (
+                  card
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>

@@ -175,7 +175,7 @@ function ProjectsPage() {
             <Button asChild variant="outline">
               <Link to="/planner/new" search={{ sample: "teneriffe" }}>
                 <Building2 className="mr-1 size-4" />
-                Teneriffe sample
+                Beachside sample
               </Link>
             </Button>
             <Button asChild>
@@ -209,7 +209,7 @@ function ProjectsPage() {
               <Button asChild variant="outline">
                 <Link to="/planner/new" search={{ sample: "teneriffe" }}>
                   <Building2 className="mr-1 size-4" />
-                  Start Teneriffe sample
+                  Start Beachside sample
                 </Link>
               </Button>
               <Button asChild>
