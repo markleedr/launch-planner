@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as Webinar23SeptRouteImport } from './routes/webinar-23-sept'
 import { Route as UrbanDeveloperRouteImport } from './routes/urban-developer'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -22,8 +23,12 @@ import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as Webinar23SeptIndexRouteImport } from './routes/webinar-23-sept/index'
 import { Route as UrbanDeveloperIndexRouteImport } from './routes/urban-developer/index'
 import { Route as PlannerIndexRouteImport } from './routes/planner/index'
+import { Route as Webinar23SeptSummaryRouteImport } from './routes/webinar-23-sept/summary'
+import { Route as Webinar23SeptPlanRouteImport } from './routes/webinar-23-sept/plan'
+import { Route as Webinar23SeptNewRouteImport } from './routes/webinar-23-sept/new'
 import { Route as UrbanDeveloperSummaryRouteImport } from './routes/urban-developer/summary'
 import { Route as UrbanDeveloperPlanRouteImport } from './routes/urban-developer/plan'
 import { Route as UrbanDeveloperNewRouteImport } from './routes/urban-developer/new'
@@ -39,6 +44,11 @@ import { Route as ApiPublicAuthWebhookRouteImport } from './routes/api/public/au
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Webinar23SeptRoute = Webinar23SeptRouteImport.update({
+  id: '/webinar-23-sept',
+  path: '/webinar-23-sept',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UrbanDeveloperRoute = UrbanDeveloperRouteImport.update({
@@ -101,6 +111,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Webinar23SeptIndexRoute = Webinar23SeptIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
 const UrbanDeveloperIndexRoute = UrbanDeveloperIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -110,6 +125,21 @@ const PlannerIndexRoute = PlannerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PlannerRoute,
+} as any)
+const Webinar23SeptSummaryRoute = Webinar23SeptSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
+const Webinar23SeptPlanRoute = Webinar23SeptPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
+const Webinar23SeptNewRoute = Webinar23SeptNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => Webinar23SeptRoute,
 } as any)
 const UrbanDeveloperSummaryRoute = UrbanDeveloperSummaryRouteImport.update({
   id: '/summary',
@@ -181,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/urban-developer': typeof UrbanDeveloperRouteWithChildren
+  '/webinar-23-sept': typeof Webinar23SeptRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -188,8 +219,12 @@ export interface FileRoutesByFullPath {
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
+  '/webinar-23-sept/new': typeof Webinar23SeptNewRoute
+  '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
+  '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner/': typeof PlannerIndexRoute
   '/urban-developer/': typeof UrbanDeveloperIndexRoute
+  '/webinar-23-sept/': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -214,8 +249,12 @@ export interface FileRoutesByTo {
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
+  '/webinar-23-sept/new': typeof Webinar23SeptNewRoute
+  '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
+  '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner': typeof PlannerIndexRoute
   '/urban-developer': typeof UrbanDeveloperIndexRoute
+  '/webinar-23-sept': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -236,6 +275,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/urban-developer': typeof UrbanDeveloperRouteWithChildren
+  '/webinar-23-sept': typeof Webinar23SeptRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -243,8 +283,12 @@ export interface FileRoutesById {
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
+  '/webinar-23-sept/new': typeof Webinar23SeptNewRoute
+  '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
+  '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner/': typeof PlannerIndexRoute
   '/urban-developer/': typeof UrbanDeveloperIndexRoute
+  '/webinar-23-sept/': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -266,6 +310,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/urban-developer'
+    | '/webinar-23-sept'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
@@ -273,8 +318,12 @@ export interface FileRouteTypes {
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
+    | '/webinar-23-sept/new'
+    | '/webinar-23-sept/plan'
+    | '/webinar-23-sept/summary'
     | '/planner/'
     | '/urban-developer/'
+    | '/webinar-23-sept/'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -299,8 +348,12 @@ export interface FileRouteTypes {
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
+    | '/webinar-23-sept/new'
+    | '/webinar-23-sept/plan'
+    | '/webinar-23-sept/summary'
     | '/planner'
     | '/urban-developer'
+    | '/webinar-23-sept'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -320,6 +373,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/urban-developer'
+    | '/webinar-23-sept'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
@@ -327,8 +381,12 @@ export interface FileRouteTypes {
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
+    | '/webinar-23-sept/new'
+    | '/webinar-23-sept/plan'
+    | '/webinar-23-sept/summary'
     | '/planner/'
     | '/urban-developer/'
+    | '/webinar-23-sept/'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -349,6 +407,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   UrbanDeveloperRoute: typeof UrbanDeveloperRouteWithChildren
+  Webinar23SeptRoute: typeof Webinar23SeptRouteWithChildren
   WelcomeRoute: typeof WelcomeRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiWorkflowsProcessRoute: typeof ApiWorkflowsProcessRoute
@@ -365,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/webinar-23-sept': {
+      id: '/webinar-23-sept'
+      path: '/webinar-23-sept'
+      fullPath: '/webinar-23-sept'
+      preLoaderRoute: typeof Webinar23SeptRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/urban-developer': {
@@ -451,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/webinar-23-sept/': {
+      id: '/webinar-23-sept/'
+      path: '/'
+      fullPath: '/webinar-23-sept/'
+      preLoaderRoute: typeof Webinar23SeptIndexRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
     '/urban-developer/': {
       id: '/urban-developer/'
       path: '/'
@@ -464,6 +537,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/planner/'
       preLoaderRoute: typeof PlannerIndexRouteImport
       parentRoute: typeof PlannerRoute
+    }
+    '/webinar-23-sept/summary': {
+      id: '/webinar-23-sept/summary'
+      path: '/summary'
+      fullPath: '/webinar-23-sept/summary'
+      preLoaderRoute: typeof Webinar23SeptSummaryRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
+    '/webinar-23-sept/plan': {
+      id: '/webinar-23-sept/plan'
+      path: '/plan'
+      fullPath: '/webinar-23-sept/plan'
+      preLoaderRoute: typeof Webinar23SeptPlanRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
+    '/webinar-23-sept/new': {
+      id: '/webinar-23-sept/new'
+      path: '/new'
+      fullPath: '/webinar-23-sept/new'
+      preLoaderRoute: typeof Webinar23SeptNewRouteImport
+      parentRoute: typeof Webinar23SeptRoute
     }
     '/urban-developer/summary': {
       id: '/urban-developer/summary'
@@ -578,6 +672,24 @@ const UrbanDeveloperRouteWithChildren = UrbanDeveloperRoute._addFileChildren(
   UrbanDeveloperRouteChildren,
 )
 
+interface Webinar23SeptRouteChildren {
+  Webinar23SeptNewRoute: typeof Webinar23SeptNewRoute
+  Webinar23SeptPlanRoute: typeof Webinar23SeptPlanRoute
+  Webinar23SeptSummaryRoute: typeof Webinar23SeptSummaryRoute
+  Webinar23SeptIndexRoute: typeof Webinar23SeptIndexRoute
+}
+
+const Webinar23SeptRouteChildren: Webinar23SeptRouteChildren = {
+  Webinar23SeptNewRoute: Webinar23SeptNewRoute,
+  Webinar23SeptPlanRoute: Webinar23SeptPlanRoute,
+  Webinar23SeptSummaryRoute: Webinar23SeptSummaryRoute,
+  Webinar23SeptIndexRoute: Webinar23SeptIndexRoute,
+}
+
+const Webinar23SeptRouteWithChildren = Webinar23SeptRoute._addFileChildren(
+  Webinar23SeptRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
@@ -591,6 +703,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   UrbanDeveloperRoute: UrbanDeveloperRouteWithChildren,
+  Webinar23SeptRoute: Webinar23SeptRouteWithChildren,
   WelcomeRoute: WelcomeRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiWorkflowsProcessRoute: ApiWorkflowsProcessRoute,

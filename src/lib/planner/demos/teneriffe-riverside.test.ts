@@ -8,6 +8,8 @@ import {
   TENERIFFE_CATALOG_IDS,
   TENERIFFE_GRV_DOLLARS,
   TENERIFFE_MEDIA_BUDGET_DOLLARS,
+  TENERIFFE_MEDIA_GOOGLE_MONTHLY_DOLLARS,
+  TENERIFFE_MEDIA_META_MONTHLY_DOLLARS,
   wireTeneriffeDependencies,
 } from "./teneriffe-riverside";
 import { catalogItemToDeliverable, DELIVERABLE_CATALOG } from "../deliverable-catalog";
@@ -20,7 +22,7 @@ describe("buildTeneriffeRiversideSnapshot", () => {
     expect(snap.units).toBe(90);
     expect(snap.grv).toBe("150000000");
     expect(snap.grv).toBe(String(TENERIFFE_GRV_DOLLARS));
-    expect(snap.mediaBudget).toBe("6000000");
+    expect(snap.mediaBudget).toBe("57000");
     expect(snap.mediaBudget).toBe(String(TENERIFFE_MEDIA_BUDGET_DOLLARS));
     expect(snap.address).toEqual({
       street: "",
@@ -29,6 +31,23 @@ describe("buildTeneriffeRiversideSnapshot", () => {
       postcode: "",
     });
     expect(snap.location).toBe("Central Coast");
+    expect(snap.contacts).toEqual([
+      expect.objectContaining({
+        name: "Sally",
+        organisation: "Media R Us",
+        type: "agency_head",
+      }),
+      expect.objectContaining({
+        name: "Ben",
+        organisation: "Creative Plus",
+        type: "agency_head",
+      }),
+      expect.objectContaining({
+        name: "Mike",
+        organisation: "Performance PPC",
+        type: "agency_head",
+      }),
+    ]);
   });
 
   test("includes Master Sheet catalogue services plus media allocation", () => {
@@ -77,8 +96,15 @@ describe("buildTeneriffeRiversideSnapshot", () => {
     expect(cpm.criticalPath.length).toBeGreaterThan(0);
   });
 
-  test("keeps total media allocation at the $6M media pool", () => {
+  test("keeps Meta and Google media buys at the sample monthly rates", () => {
     const snap = buildTeneriffeRiversideSnapshot();
+    const meta = snap.deliverables.find((d) => d.id === "teneriffe-media-meta")!;
+    const google = snap.deliverables.find((d) => d.id === "teneriffe-media-google")!;
+    const listing = snap.deliverables.find((d) => d.id === "teneriffe-media-listing");
+    expect(listing).toBeUndefined();
+    expect(meta.mediaMonthlyCostCents).toBe(TENERIFFE_MEDIA_META_MONTHLY_DOLLARS * 100);
+    expect(google.mediaMonthlyCostCents).toBe(TENERIFFE_MEDIA_GOOGLE_MONTHLY_DOLLARS * 100);
+
     const budget = summariseBudget(snap.deliverables, {
       mediaBudgetCents: parseDollarsToCents(snap.mediaBudget),
       grvCents: parseDollarsToCents(snap.grv),

@@ -1,23 +1,27 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, X } from "lucide-react";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { Button } from "@/components/ui/button";
 
-const DISMISS_KEY = "launch-planner:tud-welcome-banner-dismissed";
 const AUTO_HIDE_MS = 60_000;
 
-function wasDismissed(): boolean {
+function dismissKey(campaignId: string): string {
+  return `launch-planner:${campaignId}-welcome-banner-dismissed`;
+}
+
+function wasDismissed(key: string): boolean {
   if (typeof sessionStorage === "undefined") return false;
   try {
-    return sessionStorage.getItem(DISMISS_KEY) === "1";
+    return sessionStorage.getItem(key) === "1";
   } catch {
     return false;
   }
 }
 
-function markDismissed(): void {
+function markDismissed(key: string): void {
   if (typeof sessionStorage === "undefined") return;
   try {
-    sessionStorage.setItem(DISMISS_KEY, "1");
+    sessionStorage.setItem(key, "1");
   } catch {
     // ignore
   }
@@ -25,19 +29,21 @@ function markDismissed(): void {
 
 /** Top welcome banner shown on first visit; auto-hides after 1 minute. */
 export function WelcomeBanner() {
-  const [visible, setVisible] = useState(() => !wasDismissed());
+  const campaign = useGuestDemo();
+  const key = dismissKey(campaign.id);
+  const [visible, setVisible] = useState(() => !wasDismissed(key));
 
   useEffect(() => {
     if (!visible) return;
     const timer = window.setTimeout(() => {
-      markDismissed();
+      markDismissed(key);
       setVisible(false);
     }, AUTO_HIDE_MS);
     return () => window.clearTimeout(timer);
-  }, [visible]);
+  }, [visible, key]);
 
   function dismiss() {
-    markDismissed();
+    markDismissed(key);
     setVisible(false);
   }
 
@@ -45,7 +51,7 @@ export function WelcomeBanner() {
 
   return (
     <section
-      aria-label="Welcome for The Urban Developer readers"
+      aria-label={campaign.bannerHeading}
       className="relative border-b print:hidden"
       style={{
         background:
@@ -63,14 +69,13 @@ export function WelcomeBanner() {
 
       <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-10 text-center sm:py-12">
         <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          The Urban Developer
+          {campaign.bannerEyebrow}
         </p>
         <h1 className="mt-4 text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Welcome, The Urban Developer readers.
+          {campaign.bannerHeading}
         </h1>
         <p className="mt-4 max-w-xl text-pretty text-base text-foreground/90 sm:text-lg">
-          Plan your project launch. Free to try for The Urban Developer readers, no account
-          required.
+          {campaign.bannerSubhead}
         </p>
         <Button
           type="button"

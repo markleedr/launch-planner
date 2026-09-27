@@ -15,10 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { trackEvent, trackMetaLead } from "@/lib/analytics";
 import { serializePlanner, type PlannerSnapshot } from "@/lib/planner";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
-
-const LEAD_SOURCE = "urban-developer";
 
 function validateEmail(value: string): string | null {
   const trimmed = value.trim();
@@ -31,6 +30,8 @@ function validateEmail(value: string): string | null {
 
 /** Export PDF, prompting for email once if the guest has not claimed access yet. */
 export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }) {
+  const campaign = useGuestDemo();
+  const leadSource = campaign.leadSource;
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(() => getCapturedLeadEmail() ?? "");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
       const utm = captureUtmFromWindow();
       const { error } = await supabase.from("leads").insert({
         email: candidate.toLowerCase(),
-        source: LEAD_SOURCE,
+        source: leadSource,
         utm_source: utm.utm_source,
         utm_medium: utm.utm_medium,
         utm_campaign: utm.utm_campaign,
@@ -83,12 +84,12 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
       }
       setCapturedLeadEmail(candidate.toLowerCase());
       trackEvent("tud_email_submitted", {
-        source: LEAD_SOURCE,
+        source: leadSource,
         utm_source: utm.utm_source,
         utm_campaign: utm.utm_campaign,
       });
       trackMetaLead({
-        content_name: LEAD_SOURCE,
+        content_name: leadSource,
         utm_source: utm.utm_source,
         utm_medium: utm.utm_medium,
         utm_campaign: utm.utm_campaign,

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { PersistentCoachmark } from "@/components/urban-developer/persistent-coachmark";
-
-const DISMISS_KEY = "launch-planner:tud-new-project-coachmark-dismissed";
 
 /** Persistent callout pointing at the New project control. */
 export function NewProjectCoachmark({
@@ -11,10 +10,11 @@ export function NewProjectCoachmark({
   children: ReactNode;
   className?: string;
 }) {
+  const campaign = useGuestDemo();
   return (
     <PersistentCoachmark
       className={className ? `inline-flex ${className}` : "inline-flex"}
-      dismissKey={DISMISS_KEY}
+      dismissKey={`launch-planner:${campaign.id}-new-project-coachmark-dismissed`}
       title="Create a new project"
       description="Start here to build your own launch plan. No login needed."
       side="bottom"
