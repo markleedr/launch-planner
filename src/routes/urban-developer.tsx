@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Save } from "lucide-react";
 import { PlannerProvider, usePlanner } from "@/components/planner/planner-provider";
 import { GuestShell } from "@/components/urban-developer/guest-shell";
+import { InfoLeadToaster } from "@/components/urban-developer/info-lead-toaster";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { serializePlanner } from "@/lib/planner";
@@ -55,6 +56,7 @@ function UrbanDeveloperLayout() {
   return (
     <PlannerProvider>
       <UrbanDeveloperShell />
+      <InfoLeadToaster />
     </PlannerProvider>
   );
 }
