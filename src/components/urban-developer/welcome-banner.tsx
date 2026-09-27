@@ -69,7 +69,8 @@ export function WelcomeBanner() {
           Welcome, The Urban Developer readers.
         </h1>
         <p className="mt-4 max-w-xl text-pretty text-base text-foreground/90 sm:text-lg">
-          Plan your project launch. Free for The Urban Developer readers, no account required.
+          Plan your project launch. Free to try for The Urban Developer readers, no account
+          required.
         </p>
         <Button
           type="button"

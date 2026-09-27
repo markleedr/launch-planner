@@ -10,7 +10,7 @@ import { captureUtmFromWindow } from "@/lib/utm";
 
 const LEAD_SOURCE = "urban-developer";
 const DISMISS_KEY = "launch-planner:tud-info-toaster-dismissed";
-const SHOW_AFTER_MS = 10_000;
+const SHOW_AFTER_MS = 20_000;
 
 function wasDismissed(): boolean {
   if (typeof sessionStorage === "undefined") return false;

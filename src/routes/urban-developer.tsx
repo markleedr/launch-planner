@@ -24,7 +24,7 @@ export const Route = createFileRoute("/urban-developer")({
       {
         name: "description",
         content:
-          "Free for The Urban Developer readers, no account required. Try Launch Planner: open an example project or create your own. Email only required to export a PDF.",
+          "Free to try for The Urban Developer readers, no account required. Try Launch Planner: open an example project or create your own. Email only required to export a PDF.",
       },
       { name: "robots", content: "noindex, nofollow" },
       {
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/urban-developer")({
       {
         property: "og:description",
         content:
-          "Free for The Urban Developer readers, no account required. Create a project or view an example.",
+          "Free to try for The Urban Developer readers, no account required. Create a project or view an example.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
