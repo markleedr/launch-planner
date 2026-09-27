@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackMetaLead } from "@/lib/analytics";
 import { serializePlanner, type PlannerSnapshot } from "@/lib/planner";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
@@ -86,6 +86,14 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
         source: LEAD_SOURCE,
         utm_source: utm.utm_source,
         utm_campaign: utm.utm_campaign,
+      });
+      trackMetaLead({
+        content_name: LEAD_SOURCE,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        utm_content: utm.utm_content,
+        utm_term: utm.utm_term,
       });
       setOpen(false);
       await downloadPdf();
