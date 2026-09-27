@@ -10,6 +10,7 @@ import {
   resolveMetaPixelId,
   type AnalyticsEventName,
 } from "./analytics";
+import { setPosthogCaptureForTests } from "./posthog";
 
 describe("meta pixel", () => {
   test("uses the Launch Planner dataset id unless a numeric override is set", () => {
@@ -163,5 +164,96 @@ describe("emitAnalytics", () => {
       ),
     ).not.toThrow();
     expect(() => emitMetaLead({}, { content_name: "urban-developer" })).not.toThrow();
+  });
+});
+
+describe("posthog forwarding", () => {
+  test("forwards compact params and session UTMs, and never includes an email", () => {
+    const captured: unknown[][] = [];
+    setPosthogCaptureForTests((event, properties) => {
+      captured.push([event, properties]);
+    });
+
+    const previousWindow = globalThis.window;
+    const previousStorage = globalThis.sessionStorage;
+    const store = new Map<string, string>();
+    globalThis.sessionStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => store.clear(),
+      key: () => null,
+      length: 0,
+    } as Storage;
+    globalThis.window = {
+      location: { search: "?utm_source=tud&utm_medium=cpc&utm_campaign=oct&utm_term=apartments" },
+    } as Window & typeof globalThis;
+
+    const dataLayer: Record<string, unknown>[] = [];
+    try {
+      emitAnalytics({ dataLayer }, "tud_email_submitted", {
+        source: "urban-developer",
+        via: "info_toaster",
+        email: "person@example.com",
+        utm_source: null,
+        note: "reach me at other@example.com today",
+      });
+    } finally {
+      setPosthogCaptureForTests(null);
+      globalThis.window = previousWindow;
+      globalThis.sessionStorage = previousStorage;
+    }
+
+    expect(dataLayer).toEqual([
+      {
+        event: "tud_email_submitted",
+        source: "urban-developer",
+        via: "info_toaster",
+        email: "person@example.com",
+        utm_source: null,
+        note: "reach me at other@example.com today",
+      },
+    ]);
+    expect(captured).toEqual([
+      [
+        "tud_email_submitted",
+        {
+          source: "urban-developer",
+          via: "info_toaster",
+          note: "reach me at [redacted] today",
+          utm_source: "tud",
+          utm_medium: "cpc",
+          utm_campaign: "oct",
+          utm_term: "apartments",
+        },
+      ],
+    ]);
+    expect(JSON.stringify(captured)).not.toContain("person@example.com");
+    expect(JSON.stringify(captured)).not.toContain("other@example.com");
+  });
+
+  test("does not throw when PostHog is missing or throws", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    setPosthogCaptureForTests(null);
+    expect(() =>
+      emitAnalytics({ dataLayer }, "tud_demo_started", { source: "urban-developer" }),
+    ).not.toThrow();
+
+    setPosthogCaptureForTests(() => {
+      throw new Error("blocked");
+    });
+    expect(() =>
+      emitAnalytics({ dataLayer }, "tud_plan_generated", { source: "urban-developer" }),
+    ).not.toThrow();
+    setPosthogCaptureForTests(null);
+
+    expect(dataLayer).toEqual([
+      { event: "tud_demo_started", source: "urban-developer" },
+      { event: "tud_plan_generated", source: "urban-developer" },
+    ]);
   });
 });

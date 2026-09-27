@@ -1,8 +1,12 @@
 /**
  * Thin wrapper around the tracking tags loaded in `__root.tsx`.
- * Fires `dataLayer` and `gtag` for the existing Google stack, and the same
- * events as Meta custom events when the Pixel stub is present.
+ * Fires `dataLayer` and `gtag` for the existing Google stack, the same
+ * events as Meta custom events when the Pixel stub is present, and the
+ * same events to PostHog without email addresses.
  */
+
+import { capturePosthogEvent, posthogEventProperties } from "./posthog";
+import { captureUtmFromWindow } from "./utm";
 
 /** Public dataset id. Override with VITE_META_PIXEL_ID; otherwise use Launch Planner's pixel. */
 export const DEFAULT_META_PIXEL_ID = "974997054805397";
@@ -117,7 +121,7 @@ function callFbq(
   }
 }
 
-/** Send one event to dataLayer, gtag, and Meta. Safe when any of them is missing. */
+/** Send one event to dataLayer, gtag, Meta, and PostHog. Safe when any of them is missing. */
 export function emitAnalytics(
   host: AnalyticsHost,
   event: AnalyticsEventName,
@@ -141,6 +145,15 @@ export function emitAnalytics(
   }
 
   callFbq(host, "trackCustom", event, compactParams(params));
+
+  try {
+    capturePosthogEvent(
+      event,
+      posthogEventProperties(compactParams(params), captureUtmFromWindow()),
+    );
+  } catch {
+    // PostHog missing, blocked, or throwing must not break the other tags.
+  }
 }
 
 export function trackEvent(event: AnalyticsEventName, params: AnalyticsParams = {}): void {
