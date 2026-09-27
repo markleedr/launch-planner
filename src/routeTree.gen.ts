@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as UrbanDeveloperRouteImport } from './routes/urban-developer'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -34,6 +35,11 @@ import { Route as ApiPublicAuthWebhookRouteImport } from './routes/api/public/au
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UrbanDeveloperRoute = UrbanDeveloperRouteImport.update({
+  id: '/urban-developer',
+  path: '/urban-developer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/urban-developer': typeof UrbanDeveloperRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/urban-developer': typeof UrbanDeveloperRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/urban-developer': typeof UrbanDeveloperRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/urban-developer'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/urban-developer'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
+    | '/urban-developer'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  UrbanDeveloperRoute: typeof UrbanDeveloperRoute
   WelcomeRoute: typeof WelcomeRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiWorkflowsProcessRoute: typeof ApiWorkflowsProcessRoute
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/urban-developer': {
+      id: '/urban-developer'
+      path: '/urban-developer'
+      fullPath: '/urban-developer'
+      preLoaderRoute: typeof UrbanDeveloperRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -478,6 +498,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  UrbanDeveloperRoute: UrbanDeveloperRoute,
   WelcomeRoute: WelcomeRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiWorkflowsProcessRoute: ApiWorkflowsProcessRoute,

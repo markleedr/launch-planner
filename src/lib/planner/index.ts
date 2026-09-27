@@ -28,3 +28,7 @@ export {
   TENERIFFE_GRV_DOLLARS,
   TENERIFFE_MEDIA_BUDGET_DOLLARS,
 } from "./demos/teneriffe-riverside";
+export {
+  buildUrbanDeveloperDemoSnapshot,
+  type UrbanDeveloperDemoInput,
+} from "./demos/urban-developer";
