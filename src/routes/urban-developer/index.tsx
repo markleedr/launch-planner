@@ -31,8 +31,8 @@ function GuestProjectsPage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">My projects</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Free for Urban Developer readers through November. Open the example project or start
-            your own. No login. Email only if you want to export a PDF.
+            Free to try for The Urban Developer readers, no account required. Open the example
+            project or start your own. Email only if you want to export a PDF.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
