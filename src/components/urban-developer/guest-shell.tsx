@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { BarChart3, FileText, FolderOpen, Home, Menu, Plus } from "lucide-react";
 import { BrandLockup, Wordmark } from "@/components/brand";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import type { GuestDemoBasePath } from "@/lib/guest-demo/campaign";
+import { guestPath } from "@/lib/guest-demo/campaign";
 import { cn } from "@/lib/utils";
 
 type GuestSection = "projects" | "plan" | "summary";
@@ -17,7 +20,7 @@ interface GuestShellProps {
   title: string;
 }
 
-/** AppShell lookalike for the Urban Developer guest demo. No account or billing. */
+/** AppShell lookalike for public guest demos. No account or billing. */
 export function GuestShell({
   active,
   children,
@@ -25,11 +28,14 @@ export function GuestShell({
   projectNavigation = false,
   title,
 }: GuestShellProps) {
+  const campaign = useGuestDemo();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const sidebar = (
     <GuestSidebar
       active={active}
+      basePath={campaign.basePath}
+      brandLine={campaign.brandLine}
       onNavigate={() => setMenuOpen(false)}
       projectName={title}
       projectNavigation={projectNavigation}
@@ -69,7 +75,7 @@ export function GuestShell({
               <Wordmark className="text-base lg:hidden" />
               <div className="hidden min-w-0 lg:block">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  for The Urban Developer readers.
+                  {campaign.brandLine}
                 </p>
                 <p className="truncate text-xl font-bold tracking-tight text-foreground">{title}</p>
               </div>
@@ -86,20 +92,29 @@ export function GuestShell({
 
 function GuestSidebar({
   active,
+  basePath,
+  brandLine,
   onNavigate,
   projectName,
   projectNavigation,
 }: {
   active: GuestSection;
+  basePath: GuestDemoBasePath;
+  brandLine: string;
   onNavigate?: () => void;
   projectName: string;
   projectNavigation: boolean;
 }) {
+  const home = guestPath(basePath) as GuestDemoBasePath;
+  const plan = guestPath(basePath, "/plan") as `${GuestDemoBasePath}/plan`;
+  const summary = guestPath(basePath, "/summary") as `${GuestDemoBasePath}/summary`;
+  const newProject = guestPath(basePath, "/new") as `${GuestDemoBasePath}/new`;
+
   return (
     <div className="flex h-full w-full flex-col">
       <div className="border-b border-sidebar-border px-5 py-6">
         <BrandLockup className="text-white" />
-        <p className="mt-3 text-xs text-sidebar-foreground/55">for The Urban Developer readers.</p>
+        <p className="mt-3 text-xs text-sidebar-foreground/55">{brandLine}</p>
       </div>
 
       <nav aria-label="Primary navigation" className="flex flex-1 flex-col overflow-y-auto p-3">
@@ -107,7 +122,7 @@ function GuestSidebar({
           <div className="mb-5">
             <SidebarLabel>Current project</SidebarLabel>
             <Link
-              to="/urban-developer"
+              to={home}
               onClick={onNavigate}
               className="mb-1 block truncate rounded-lg px-3 py-1 text-sm font-semibold text-white hover:underline"
             >
@@ -118,14 +133,14 @@ function GuestSidebar({
               icon={<BarChart3 />}
               label="Plan"
               onNavigate={onNavigate}
-              to="/urban-developer/plan"
+              to={plan}
             />
             <SidebarLink
               active={active === "summary"}
               icon={<FileText />}
               label="Summary"
               onNavigate={onNavigate}
-              to="/urban-developer/summary"
+              to={summary}
             />
           </div>
         ) : null}
@@ -137,21 +152,21 @@ function GuestSidebar({
             icon={<FolderOpen />}
             label="Projects"
             onNavigate={onNavigate}
-            to="/urban-developer"
+            to={home}
           />
           <SidebarLink
             active={false}
             icon={<Plus />}
             label="New project"
             onNavigate={onNavigate}
-            to="/urban-developer/new"
+            to={newProject}
           />
         </div>
       </nav>
 
       <nav aria-label="Site navigation" className="space-y-1 border-t border-sidebar-border p-3">
         <p className="px-3 py-2 text-xs leading-relaxed text-sidebar-foreground/50">
-          Free through November. No login required. Email only to export a PDF.
+          No login required. Email only to export a PDF.
         </p>
         <Link to="/" onClick={onNavigate} className={SIDEBAR_LINK_CLASS}>
           <Home />
@@ -185,7 +200,11 @@ function SidebarLink({
     | "/urban-developer"
     | "/urban-developer/new"
     | "/urban-developer/plan"
-    | "/urban-developer/summary";
+    | "/urban-developer/summary"
+    | "/webinar-23-sept"
+    | "/webinar-23-sept/new"
+    | "/webinar-23-sept/plan"
+    | "/webinar-23-sept/summary";
 }) {
   return (
     <Link
