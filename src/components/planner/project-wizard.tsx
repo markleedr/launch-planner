@@ -81,7 +81,7 @@ export function ProjectWizard({
   sample?: "teneriffe";
   /** When true, persist to sessionStorage instead of Supabase. */
   guestMode?: boolean;
-  finishTo?: "/planner" | "/urban-developer/plan";
+  finishTo?: "/planner" | "/urban-developer/plan" | "/webinar-23-sept/plan";
 }) {
   const p = usePlanner();
   const navigate = useNavigate();
@@ -260,8 +260,8 @@ export function ProjectWizard({
       {sample === "teneriffe" && (
         <p className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           Pre-filled sample: Beachside Riverside Residences, 90 apartments on the Central Coast NSW,
-          $150M GRV and $6M media budget. Six-month campaign with wired deliverable dependencies.
-          Save to keep it in your workspace.
+          $150M GRV and $57k media budget (Meta $6k/mo, Google $3.5k/mo). Six-month campaign with
+          wired deliverable dependencies. Save to keep it in your workspace.
         </p>
       )}
 
