@@ -8,7 +8,7 @@ export type NewProjectSearch = {
 export const Route = createFileRoute("/planner/new")({
   validateSearch: (search: Record<string, unknown>): NewProjectSearch =>
     search.sample === "teneriffe" ? { sample: "teneriffe" } : {},
-  head: () => ({ meta: [{ title: "New project - Project Planner" }] }),
+  head: () => ({ meta: [{ title: "New project - Launch Planner" }] }),
   component: NewProjectRoute,
 });
 

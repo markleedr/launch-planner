@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { differenceInCalendarDays } from "date-fns";
 import { ChevronDown, Plus, Trash2, Undo2, X } from "lucide-react";
+import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DollarInput } from "@/components/planner/dollar-input";
+import { SectionExportMenu } from "@/components/planner/section-export-menu";
 import { Gantt, CriticalPathSummary } from "@/components/planner/gantt";
 import { CriticalIssueChecklist } from "@/components/planner/checklist";
 import { ContactsAndSuppliers } from "@/components/planner/contacts";
@@ -27,6 +29,8 @@ import { DeliverableEditorDialog } from "@/components/planner/deliverable-editor
 import { MediaCalculatorDialog } from "@/components/planner/media-calculator-dialog";
 import { RecommendDialog } from "@/components/planner/recommend-dialog";
 import { usePlanner } from "@/components/planner/planner-provider";
+import { useSession } from "@/hooks/use-session";
+import { createProject, updateProject } from "@/lib/project-store";
 import {
   BUYER_TYPE_LABELS,
   BUYER_TYPES,
@@ -34,11 +38,13 @@ import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
   UNIT_LABELS,
+  buildPlanSections,
   checklistProgress,
   deliverableCosts,
   formatAud,
   formatAudWhole,
   formatPercent,
+  resolveHeroImage,
   parseDollarsToCents,
   toCents,
   toDollars,
@@ -46,6 +52,7 @@ import {
   type DeliverableCategory,
   type ProjectType,
 } from "@/lib/planner";
+import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 
 const SECTIONS = [
   { id: "details", label: "Details" },
@@ -65,7 +72,7 @@ export const Route = createFileRoute("/planner/")({
     return Number.isFinite(mb) && mb > 0 ? { mediaBudget: mb } : {};
   },
   head: () => ({
-    meta: [{ title: "New project plan - Project Planner" }],
+    meta: [{ title: "Project plan - Launch Planner" }],
   }),
   component: PlannerEditorRoute,
 });
@@ -82,6 +89,10 @@ export function PlannerEditor({
   mediaBudgetFromSearch?: number;
 } = {}) {
   const p = usePlanner();
+  const { user } = useSession();
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const hero = resolveHeroImage(p.heroImageId, p.heroImageUrl);
   const applied = useRef(false);
   useEffect(() => {
     if (!applied.current && mediaBudgetFromSearch) {
@@ -110,6 +121,35 @@ export function PlannerEditor({
     setDeleteTarget(null);
   }
 
+  async function uploadCover(file: File) {
+    const problem = heroImageFileError(file);
+    if (problem) {
+      setCoverError(problem);
+      return;
+    }
+    if (!user) {
+      setCoverError("Sign in to upload your own image.");
+      return;
+    }
+    setCoverBusy(true);
+    setCoverError(null);
+    try {
+      const name = p.projectName.trim() || "Untitled project";
+      let projectId = p.currentProjectId;
+      if (!projectId) {
+        projectId = await createProject(name, p.toSnapshot());
+        p.setCurrentProjectId(projectId);
+      }
+      const publicUrl = await uploadProjectHero(projectId, file);
+      p.setHeroImageUrl(publicUrl);
+      await updateProject(projectId, name, { ...p.toSnapshot(), heroImageUrl: publicUrl });
+    } catch (reason) {
+      setCoverError(reason instanceof Error ? reason.message : "Could not upload this image.");
+    } finally {
+      setCoverBusy(false);
+    }
+  }
+
   function undoDeleteDeliverable() {
     if (!lastDeleted) return;
     const { deliverable, index } = lastDeleted;
@@ -121,6 +161,7 @@ export function PlannerEditor({
     setLastDeleted(null);
   }
 
+  const sections = buildPlanSections(p.toSnapshot());
   const checklist = checklistProgress(p.checklist);
   const daysLate = p.launchDateObj
     ? differenceInCalendarDays(p.schedule.projectEnd, p.launchDateObj)
@@ -218,12 +259,31 @@ export function PlannerEditor({
         {/* Intake */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Project details</CardTitle>
-            <CardDescription>
-              These inputs drive the GRV, budget benchmark and recommendations.
-            </CardDescription>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle>Project details</CardTitle>
+                <CardDescription>
+                  These inputs drive the GRV, budget benchmark and recommendations.
+                </CardDescription>
+              </div>
+              <SectionExportMenu section={sections.details} />
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3 sm:col-span-2">
+              <div className="overflow-hidden rounded-lg border">
+                <img src={hero.src} alt={hero.alt} className="aspect-[3/1] w-full object-cover" />
+              </div>
+              <HeroUploadButton
+                label={p.heroImageUrl ? "Replace image" : "Upload image"}
+                busy={coverBusy}
+                onFile={(file) => void uploadCover(file)}
+              />
+              <p className="text-xs text-muted-foreground">
+                JPG, PNG or WebP, up to 10 MB. This image is the project cover.
+              </p>
+              {coverError ? <p className="text-xs text-destructive">{coverError}</p> : null}
+            </div>
             <Field label="Project name">
               <Input value={p.projectName} onChange={(e) => p.setProjectName(e.target.value)} />
             </Field>
@@ -278,7 +338,7 @@ export function PlannerEditor({
               />
             </Field>
 
-            <Field label="Collateral request lead time">
+            <Field label="Materials lead time">
               <div className="relative">
                 <Input
                   type="number"
@@ -295,6 +355,10 @@ export function PlannerEditor({
                   business days
                 </span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                How many business days before a due date you want files in hand. This is saved on
+                the project as your own note.
+              </p>
             </Field>
 
             <Field label="Location">
@@ -381,7 +445,7 @@ export function PlannerEditor({
       {/* Deliverables & budget */}
       <Card id="budget" className="mt-6 scroll-mt-32">
         <CardHeader className="space-y-3">
-          <div className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle>Deliverables & budget</CardTitle>
               <CardDescription>
@@ -399,6 +463,7 @@ export function PlannerEditor({
                 <Plus className="mr-1 size-4" />
                 Add custom
               </Button>
+              <SectionExportMenu section={sections.budget} />
             </div>
           </div>
           {lastDeleted && (
@@ -425,66 +490,83 @@ export function PlannerEditor({
           )}
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2 pr-2 font-medium">Deliverable</th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      Production
-                      <HelpTip label="What is production cost?">
-                        Printing, delivery, press or fulfilment cost per unit.
-                      </HelpTip>
-                    </span>
-                  </th>
-                  <th className="w-40 py-2 px-2 text-right font-medium">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      Media
-                      <HelpTip label="What is media cost?">
-                        Placement on Meta, Google, radio, TV, magazines or another platform.
-                      </HelpTip>
-                    </span>
-                  </th>
-                  <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
-                  <th className="w-10 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {p.grouped.map(({ category, items }) => {
-                  const cat = p.budget.categories.find((c) => c.category === category);
-                  return (
-                    <CategoryGroup
-                      key={category}
-                      category={category}
-                      items={items}
-                      subtotalCents={cat?.totalCents ?? 0}
-                      allDeliverables={p.deliverables}
-                      onUpdate={p.updateDeliverable}
-                      onRemove={requestDeleteDeliverable}
-                      justAddedId={justAddedId}
-                      onJustAddedFocused={() => setJustAddedId(null)}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-right text-xs text-muted-foreground">
-            Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
-            above.
-          </p>
+          {p.deliverables.length === 0 ? (
+            <div className="rounded-md border border-dashed px-4 py-10 text-center">
+              <p className="font-medium">No deliverables yet</p>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+                Add a service from the catalog, or use Recommend to start from this project type.
+                Totals update as you add costs.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="py-2 pr-2 font-medium">Deliverable</th>
+                    <th className="w-40 py-2 px-2 text-right font-medium">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Production
+                        <HelpTip label="What is production cost?">
+                          Printing, delivery, press or fulfilment cost per unit.
+                        </HelpTip>
+                      </span>
+                    </th>
+                    <th className="w-40 py-2 px-2 text-right font-medium">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Media
+                        <HelpTip label="What is media cost?">
+                          Placement on Meta, Google, radio, TV, magazines or another platform.
+                        </HelpTip>
+                      </span>
+                    </th>
+                    <th className="w-32 py-2 px-2 text-right font-medium">Total</th>
+                    <th className="w-10 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.grouped.map(({ category, items }) => {
+                    const cat = p.budget.categories.find((c) => c.category === category);
+                    return (
+                      <CategoryGroup
+                        key={category}
+                        category={category}
+                        items={items}
+                        subtotalCents={cat?.totalCents ?? 0}
+                        allDeliverables={p.deliverables}
+                        onUpdate={p.updateDeliverable}
+                        onRemove={requestDeleteDeliverable}
+                        justAddedId={justAddedId}
+                        onJustAddedFocused={() => setJustAddedId(null)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {p.deliverables.length > 0 ? (
+            <p className="mt-3 text-right text-xs text-muted-foreground">
+              Grand total lines up with &ldquo;Planned spend (deliverables)&rdquo; in Financials
+              above.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
       {/* Schedule & critical path */}
       <Card id="schedule" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Marketing schedule & critical path</CardTitle>
-          <CardDescription>
-            Deliverables scheduled from their dependencies, lead times and recurrence. The critical
-            path drives the earliest completion date.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Marketing schedule & critical path</CardTitle>
+              <CardDescription>
+                Deliverables scheduled from their dependencies, lead times and how often they
+                repeat. The critical path drives the earliest completion date.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.schedule} />
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <CriticalPathSummary schedule={p.schedule} launchDate={p.launchDateObj} />
@@ -495,10 +577,15 @@ export function PlannerEditor({
       {/* Critical-issue checklist */}
       <Card id="checklist" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Critical issues checklist</CardTitle>
-          <CardDescription>
-            Key risks and considerations to review and sign off before launch.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Critical issues checklist</CardTitle>
+              <CardDescription>
+                Key risks and considerations to review and sign off before launch.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.checklist} />
+          </div>
         </CardHeader>
         <CardContent>
           <CriticalIssueChecklist items={p.checklist} onChange={p.setChecklist} />
@@ -508,11 +595,16 @@ export function PlannerEditor({
       {/* Team & suppliers */}
       <Card id="team" className="mt-6 scroll-mt-32">
         <CardHeader>
-          <CardTitle>Team & suppliers</CardTitle>
-          <CardDescription>
-            Build your directory, then allocate an owner and suppliers to each deliverable to plan
-            delegation.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Team & suppliers</CardTitle>
+              <CardDescription>
+                Organisations from the new-project step appear on the Summary. This list is
+                separate: use it to name an owner and suppliers on each deliverable.
+              </CardDescription>
+            </div>
+            <SectionExportMenu section={sections.team} />
+          </div>
         </CardHeader>
         <CardContent>
           <ContactsAndSuppliers

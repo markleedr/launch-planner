@@ -73,6 +73,48 @@ export const CATEGORY_LABELS: Record<DeliverableCategory, string> = {
   tv: "TV",
 };
 
+/** Where a category sits in the buyer journey. */
+export type CampaignStage = "attract" | "convert" | "nurture";
+
+export const CAMPAIGN_STAGE_LABELS: Record<CampaignStage, string> = {
+  attract: "Attract",
+  convert: "Convert",
+  nurture: "Nurture",
+};
+
+export const CAMPAIGN_STAGE_HINTS: Record<CampaignStage, string> = {
+  attract: "Reach new buyers.",
+  convert: "Turn attention into an enquiry or a visit.",
+  nurture: "Stay in touch with people who already know the project.",
+};
+
+export const CAMPAIGN_STAGE_ORDER: CampaignStage[] = ["attract", "convert", "nurture"];
+
+/** Each catalogue category belongs to one stage, so the picker can group them. */
+export const CATEGORY_STAGE: Record<DeliverableCategory, CampaignStage> = {
+  brand: "attract",
+  brand_collateral: "attract",
+  content: "attract",
+  render_photography: "attract",
+  paid_social: "attract",
+  outdoor: "attract",
+  print_press: "attract",
+  radio: "attract",
+  tv: "attract",
+  pr_events: "attract",
+  collateral: "convert",
+  landing_page_website: "convert",
+  website_build: "convert",
+  ppc_advertising: "convert",
+  digital_performance: "convert",
+  listing_portals: "convert",
+  call_tracking: "convert",
+  site_signage: "convert",
+  physical_display: "convert",
+  email_marketing: "nurture",
+  sms_marketing: "nurture",
+};
+
 /** Display order for categories wherever the catalogue is listed. */
 export const CATEGORY_ORDER: DeliverableCategory[] = [
   "brand",

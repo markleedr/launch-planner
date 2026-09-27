@@ -184,6 +184,7 @@ export async function downloadProjectSummaryPdf(
   parties: PublicProjectParty[],
   sharedFor?: string,
   sharedBy?: { fullName: string | null; organisationName: string | null } | null,
+  hideBudgets = false,
 ) {
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const heroUrl =
@@ -195,6 +196,7 @@ export async function downloadProjectSummaryPdf(
       heroUrl={heroUrl}
       sharedFor={sharedFor}
       sharedBy={sharedBy}
+      hideBudgets={hideBudgets}
     />,
   ).toBlob();
   const url = URL.createObjectURL(blob);
@@ -211,12 +213,14 @@ export function ProjectSummaryPdf({
   heroUrl,
   sharedFor,
   sharedBy,
+  hideBudgets = false,
 }: {
   snapshot: PlannerSnapshot;
   parties: PublicProjectParty[];
   heroUrl?: string;
   sharedFor?: string;
   sharedBy?: { fullName: string | null; organisationName: string | null } | null;
+  hideBudgets?: boolean;
 }) {
   const { financials, budget, grouped, schedule } = deriveProjectSummary(snapshot);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
@@ -273,23 +277,27 @@ export function ProjectSummaryPdf({
             value={formatAudWhole(financials.grvCents)}
             hint={snapshot.units ? `${snapshot.units} units` : undefined}
           />
-          <Metric
-            label="Media budget"
-            value={formatAudWhole(financials.mediaBudgetCents)}
-            hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
-          />
-          <Metric
-            label="Approved plan"
-            value={formatAudWhole(budget.grandTotalCents)}
-            hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
-          />
-          <Metric
-            label={overBudget ? "Over media budget" : "Under media budget"}
-            value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
-            hint={`${formatPercent(mediaBudgetUsedPct)} of media budget used`}
-            accent={overBudget ? NEGATIVE : POSITIVE}
-            valueColor={overBudget ? NEGATIVE : POSITIVE}
-          />
+          {hideBudgets ? null : (
+            <>
+              <Metric
+                label="Media budget"
+                value={formatAudWhole(financials.mediaBudgetCents)}
+                hint={`${formatPercent(financials.mediaBudgetPctOfGrv)} of GRV`}
+              />
+              <Metric
+                label="Approved plan"
+                value={formatAudWhole(budget.grandTotalCents)}
+                hint={`${formatPercent(budget.totalPctOfGrv)} of GRV`}
+              />
+              <Metric
+                label={overBudget ? "Over media budget" : "Under media budget"}
+                value={formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}
+                hint={`${formatPercent(mediaBudgetUsedPct)} of media budget used`}
+                accent={overBudget ? NEGATIVE : POSITIVE}
+                valueColor={overBudget ? NEGATIVE : POSITIVE}
+              />
+            </>
+          )}
         </View>
 
         <PdfSection title="Audience & channels">
@@ -355,48 +363,50 @@ export function ProjectSummaryPdf({
           </PdfSection>
         ) : null}
 
-        <PdfSection title="Approved budget">
-          <TableHeader
-            columns={["Category", "Production & agency", "Media", "Total"]}
-            widths={["38%", "22%", "18%", "22%"]}
-          />
-          {budget.categories.map((category, index) => (
-            <View key={category.category} style={rowStyle(index)} wrap={false}>
-              <Text style={[styles.cell, { width: "38%" }]}>
-                {CATEGORY_LABELS[category.category]}
+        {hideBudgets ? null : (
+          <PdfSection title="Approved budget">
+            <TableHeader
+              columns={["Category", "Production & agency", "Media", "Total"]}
+              widths={["38%", "22%", "18%", "22%"]}
+            />
+            {budget.categories.map((category, index) => (
+              <View key={category.category} style={rowStyle(index)} wrap={false}>
+                <Text style={[styles.cell, { width: "38%" }]}>
+                  {CATEGORY_LABELS[category.category]}
+                </Text>
+                <Text style={[styles.cell, { width: "22%", textAlign: "right" }]}>
+                  {formatAudWhole(category.productionCents)}
+                </Text>
+                <Text style={[styles.cell, { width: "18%", textAlign: "right" }]}>
+                  {formatAudWhole(category.mediaCents)}
+                </Text>
+                <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
+                  {formatAudWhole(category.totalCents)}
+                </Text>
+              </View>
+            ))}
+            <View style={[styles.row, styles.totalRow]} wrap={false}>
+              <Text style={[styles.cell, styles.bold, { width: "38%" }]}>Total approved plan</Text>
+              <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
+                {formatAudWhole(budget.productionTotalCents)}
               </Text>
-              <Text style={[styles.cell, { width: "22%", textAlign: "right" }]}>
-                {formatAudWhole(category.productionCents)}
-              </Text>
-              <Text style={[styles.cell, { width: "18%", textAlign: "right" }]}>
-                {formatAudWhole(category.mediaCents)}
+              <Text style={[styles.cell, styles.bold, { width: "18%", textAlign: "right" }]}>
+                {formatAudWhole(budget.mediaTotalCents)}
               </Text>
               <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
-                {formatAudWhole(category.totalCents)}
+                {formatAudWhole(budget.grandTotalCents)}
               </Text>
             </View>
-          ))}
-          <View style={[styles.row, styles.totalRow]} wrap={false}>
-            <Text style={[styles.cell, styles.bold, { width: "38%" }]}>Total approved plan</Text>
-            <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
-              {formatAudWhole(budget.productionTotalCents)}
-            </Text>
-            <Text style={[styles.cell, styles.bold, { width: "18%", textAlign: "right" }]}>
-              {formatAudWhole(budget.mediaTotalCents)}
-            </Text>
-            <Text style={[styles.cell, styles.bold, { width: "22%", textAlign: "right" }]}>
-              {formatAudWhole(budget.grandTotalCents)}
-            </Text>
-          </View>
-          <View style={styles.insight}>
-            <Text style={styles.insightText}>
-              This plan uses {formatPercent(mediaBudgetUsedPct)} of the{" "}
-              {formatAudWhole(financials.mediaBudgetCents)} approved media budget, leaving{" "}
-              {formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}{" "}
-              {overBudget ? "over budget" : "unallocated"}.
-            </Text>
-          </View>
-        </PdfSection>
+            <View style={styles.insight}>
+              <Text style={styles.insightText}>
+                This plan uses {formatPercent(mediaBudgetUsedPct)} of the{" "}
+                {formatAudWhole(financials.mediaBudgetCents)} approved media budget, leaving{" "}
+                {formatAudWhole(Math.abs(budget.varianceVsMediaBudgetCents))}{" "}
+                {overBudget ? "over budget" : "unallocated"}.
+              </Text>
+            </View>
+          </PdfSection>
+        )}
 
         <PdfSection title="Deliverables">
           {grouped.map((group) => (
@@ -405,24 +415,33 @@ export function ProjectSummaryPdf({
                 <Text style={[styles.bold, { marginBottom: 3 }]}>
                   {CATEGORY_LABELS[group.category]}
                 </Text>
-                <TableHeader columns={["Deliverable", "Timing", "Qty / months", "Approved cost"]} />
+                <TableHeader
+                  columns={
+                    hideBudgets
+                      ? ["Deliverable", "Timing", "Qty / months"]
+                      : ["Deliverable", "Timing", "Qty / months", "Approved cost"]
+                  }
+                  widths={hideBudgets ? ["54%", "26%", "20%"] : ["43%", "21%", "16%", "20%"]}
+                />
               </View>
               {group.items.map((deliverable, index) => {
-                const total = calculateProposalCost({
-                  notes: "",
-                  setupBusinessDays: deliverable.setupLeadDays,
-                  agencyOneOffCents: deliverable.agencyCostCents ?? 0,
-                  agencyMonthlyCents: deliverable.agencyMonthlyCostCents ?? 0,
-                  productionUnitCents: deliverable.productionCostCents,
-                  productionToBeConfirmed: deliverable.productionCostTbc ?? false,
-                  mediaOneOffCents: deliverable.mediaCostCents,
-                  mediaMonthlyCents: deliverable.mediaMonthlyCostCents ?? 0,
-                  quantity: deliverable.quantity ?? 1,
-                  months: deliverable.months ?? 0,
-                }).totalCents;
+                const total = hideBudgets
+                  ? 0
+                  : calculateProposalCost({
+                      notes: "",
+                      setupBusinessDays: deliverable.setupLeadDays,
+                      agencyOneOffCents: deliverable.agencyCostCents ?? 0,
+                      agencyMonthlyCents: deliverable.agencyMonthlyCostCents ?? 0,
+                      productionUnitCents: deliverable.productionCostCents,
+                      productionToBeConfirmed: deliverable.productionCostTbc ?? false,
+                      mediaOneOffCents: deliverable.mediaCostCents,
+                      mediaMonthlyCents: deliverable.mediaMonthlyCostCents ?? 0,
+                      quantity: deliverable.quantity ?? 1,
+                      months: deliverable.months ?? 0,
+                    }).totalCents;
                 return (
                   <View key={deliverable.id} style={rowStyle(index)} wrap={false}>
-                    <View style={[styles.cell, { width: "43%" }]}>
+                    <View style={[styles.cell, { width: hideBudgets ? "54%" : "43%" }]}>
                       <Text style={styles.bold}>{deliverable.name}</Text>
                       {deliverable.description ? (
                         <Text style={[styles.muted, { marginTop: 2 }]}>
@@ -430,22 +449,27 @@ export function ProjectSummaryPdf({
                         </Text>
                       ) : null}
                     </View>
-                    <Text style={[styles.cell, { width: "21%" }]}>
+                    <Text style={[styles.cell, { width: hideBudgets ? "26%" : "21%" }]}>
                       {deliverable.setupLeadDays} business days
                     </Text>
-                    <Text style={[styles.cell, { width: "16%" }]}>
+                    <Text style={[styles.cell, { width: hideBudgets ? "20%" : "16%" }]}>
                       {deliverable.quantity ?? 1} / {deliverable.months ?? 0}
                     </Text>
-                    <Text style={[styles.cell, styles.bold, { width: "20%", textAlign: "right" }]}>
-                      {formatAudWhole(total)}
-                      {deliverable.productionCostTbc ? " *" : ""}
-                    </Text>
+                    {hideBudgets ? null : (
+                      <Text
+                        style={[styles.cell, styles.bold, { width: "20%", textAlign: "right" }]}
+                      >
+                        {formatAudWhole(total)}
+                        {deliverable.productionCostTbc ? " *" : ""}
+                      </Text>
+                    )}
                   </View>
                 );
               })}
             </View>
           ))}
-          {snapshot.deliverables.some((deliverable) => deliverable.productionCostTbc) ? (
+          {!hideBudgets &&
+          snapshot.deliverables.some((deliverable) => deliverable.productionCostTbc) ? (
             <Text style={[styles.muted, { marginTop: 3 }]}>
               * Third-party production cost to be confirmed and currently counted as $0.
             </Text>
@@ -635,8 +659,8 @@ function TableHeader({
             styles.bold,
             styles.headerCell,
             {
-              width: widths[index],
-              textAlign: index === columns.length - 1 ? "right" : "left",
+              width: widths[index] ?? `${100 / columns.length}%`,
+              textAlign: index === columns.length - 1 && columns.length > 3 ? "right" : "left",
             },
           ]}
         >

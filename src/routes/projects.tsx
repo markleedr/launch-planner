@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FolderOpen, Plus, Building2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   duplicateProject,
   listProjects,
   renameProject,
+  updateProjectCover,
   type ProjectRow,
 } from "@/lib/project-store";
 import { syncSubscription } from "@/lib/billing/billing.server";
@@ -19,7 +20,7 @@ import { syncSubscription } from "@/lib/billing/billing.server";
 export const Route = createFileRoute("/projects")({
   validateSearch: (s: Record<string, unknown>): { checkout?: "success" } =>
     s.checkout === "success" ? { checkout: "success" } : {},
-  head: () => ({ meta: [{ title: "My projects - Project Planner" }] }),
+  head: () => ({ meta: [{ title: "My projects - Launch Planner" }] }),
   component: ProjectsRoute,
 });
 
@@ -68,16 +69,26 @@ function ProjectsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const listGeneration = useRef(0);
+  const hasRows = useRef(false);
 
   const refresh = useCallback(() => {
-    setLoading(true);
+    const generation = ++listGeneration.current;
+    if (!hasRows.current) setLoading(true);
     listProjects()
       .then((r) => {
+        if (generation !== listGeneration.current) return;
+        hasRows.current = r.length > 0;
         setRows(r);
         setError(null);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Could not load projects."))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (generation !== listGeneration.current) return;
+        setError(e instanceof Error ? e.message : "Could not load projects.");
+      })
+      .finally(() => {
+        if (generation === listGeneration.current) setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -116,6 +127,21 @@ function ProjectsPage() {
   function startRename(row: ProjectRow) {
     setRenamingId(row.id);
     setRenameValue(row.name);
+  }
+
+  async function changeCover(id: string, cover: { heroImageId: string; heroImageUrl: string }) {
+    const generation = ++listGeneration.current;
+    const previous = rows;
+    hasRows.current = true;
+    setRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...cover, updated_at: new Date().toISOString() } : r)),
+    );
+    try {
+      await updateProjectCover(id, cover);
+    } catch (e) {
+      if (generation === listGeneration.current) setRows(previous);
+      throw e instanceof Error ? e : new Error("Could not change this cover.");
+    }
   }
 
   async function commitRename(id: string) {
@@ -216,6 +242,7 @@ function ProjectsPage() {
                     onStartRename={() => startRename(r)}
                     onDuplicate={() => void duplicate(r.id)}
                     onDelete={() => void remove(r.id)}
+                    onChangeCover={(cover) => changeCover(r.id, cover)}
                   />
                 </li>
               ))}

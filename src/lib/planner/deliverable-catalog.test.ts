@@ -5,6 +5,7 @@ import {
   setupTimeToBusinessDays,
 } from "./deliverable-catalog";
 import { deliverableDurationDays } from "./cpm";
+import { CAMPAIGN_STAGE_ORDER, CATEGORY_LABELS, CATEGORY_STAGE } from "./labels";
 
 describe("DELIVERABLE_CATALOG", () => {
   test("contains every approved and supplemental service with unique catalog ids", () => {
@@ -31,6 +32,22 @@ describe("DELIVERABLE_CATALOG", () => {
     ]) {
       expect(names.has(name)).toBe(true);
     }
+  });
+
+  test("places every category in attract, convert, or nurture", () => {
+    for (const category of Object.keys(CATEGORY_LABELS) as (keyof typeof CATEGORY_LABELS)[]) {
+      expect(CAMPAIGN_STAGE_ORDER).toContain(CATEGORY_STAGE[category]);
+    }
+    for (const item of DELIVERABLE_CATALOG) {
+      expect(CAMPAIGN_STAGE_ORDER).toContain(CATEGORY_STAGE[item.category]);
+    }
+    expect(CATEGORY_STAGE.print_press).toBe("attract");
+    expect(CATEGORY_STAGE.paid_social).toBe("attract");
+    expect(CATEGORY_STAGE.listing_portals).toBe("convert");
+    expect(CATEGORY_STAGE.ppc_advertising).toBe("convert");
+    expect(CATEGORY_STAGE.call_tracking).toBe("convert");
+    expect(CATEGORY_STAGE.email_marketing).toBe("nurture");
+    expect(CATEGORY_STAGE.sms_marketing).toBe("nurture");
   });
 
   test("files services under the categories the planner shows", () => {

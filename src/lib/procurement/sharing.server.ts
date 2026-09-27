@@ -10,8 +10,9 @@ import {
   sha256,
   table,
 } from "./server-helpers";
+import { redactSharedBudgets, SHARE_HIDDEN_FIELDS } from "./share-privacy";
 
-const hiddenFieldSchema = z.enum(["representativeName", "email", "phone", "website"]);
+const hiddenFieldSchema = z.enum(SHARE_HIDDEN_FIELDS);
 
 export const createProjectShareLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -21,7 +22,7 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         providerName: z.string().trim().min(1).max(200),
         expiresAt: z.string().datetime().optional(),
-        hiddenContactFields: z.array(hiddenFieldSchema).max(4).default([]),
+        hiddenContactFields: z.array(hiddenFieldSchema).max(SHARE_HIDDEN_FIELDS.length).default([]),
         origin: z.string().url(),
       })
       .parse(input),
@@ -150,7 +151,8 @@ export const getSharedProject = createServerFn({ method: "GET" })
         ? { fullName: ownerFullName || null, organisationName: ownerOrganisationName || null }
         : null;
 
-    const hidden = new Set(link.hidden_contact_fields);
+    const hidden = new Set(link.hidden_contact_fields ?? []);
+    const hideBudgets = hidden.has("budget");
     const parties = ((partyRows ?? []) as Array<Record<string, unknown>>).map((row) => {
       const party = row.party as Record<string, unknown>;
       return {
@@ -174,10 +176,11 @@ export const getSharedProject = createServerFn({ method: "GET" })
       project: {
         id: project.id,
         name: project.name,
-        snapshot: project.data,
+        snapshot: hideBudgets ? redactSharedBudgets(project.data) : project.data,
       },
       parties,
       providerName: link.provider_name,
       sharedBy,
+      hideBudgets,
     };
   });

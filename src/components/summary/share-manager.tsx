@@ -20,8 +20,9 @@ import {
   listProjectShareLinks,
   revokeProjectShareLink,
 } from "@/lib/procurement/sharing.server";
+import type { ShareHiddenField } from "@/lib/procurement/share-privacy";
 
-type HiddenField = "representativeName" | "email" | "phone" | "website";
+type HiddenField = ShareHiddenField;
 
 interface ShareRow {
   id: string;
@@ -55,7 +56,8 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ShareRow | null>(null);
   const expiryInPast = Boolean(expiresAt) && new Date(expiresAt).getTime() < Date.now();
-  const allContactFieldsHidden = hiddenFields.length === PRIVACY_FIELDS.length;
+  const allContactFieldsHidden = PRIVACY_FIELDS.every((field) => hiddenFields.includes(field.id));
+  const budgetsHidden = hiddenFields.includes("budget");
 
   const refresh = useCallback(async () => {
     if (!projectId) return;
@@ -139,8 +141,9 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         <DialogHeader>
           <DialogTitle>Share with a provider</DialogTitle>
           <DialogDescription>
-            Create a unique private link for each provider you want to share this summary with.
-            Links can be revoked independently and do not show the project navigation.
+            Create a unique private link for each provider. Anyone with the link can read the
+            summary and download a PDF. They cannot edit the project. Hide contact details or the
+            budget if this provider should not see them. Links can be revoked independently.
           </DialogDescription>
         </DialogHeader>
 
@@ -195,6 +198,28 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
                 your team from this summary.
               </p>
             )}
+          </fieldset>
+
+          <fieldset className="rounded-md border p-3">
+            <legend className="px-1 text-sm font-medium">Hide budgets</legend>
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <Checkbox
+                className="mt-0.5"
+                checked={budgetsHidden}
+                onCheckedChange={(checked) =>
+                  setHiddenFields((current) =>
+                    checked ? [...current, "budget"] : current.filter((item) => item !== "budget"),
+                  )
+                }
+              />
+              <span>
+                Media budget, plan total and deliverable costs
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  These are left off the summary and the PDF for this link. The project&apos;s gross
+                  realisation value stays visible.
+                </span>
+              </span>
+            </label>
           </fieldset>
 
           {newUrl ? (

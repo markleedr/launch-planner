@@ -30,7 +30,16 @@ interface Row {
 
 /** A lightweight Gantt: category-grouped rows, lead-in + active bars,
  *  recurrence markers, critical-path emphasis, and a launch-date line. */
-export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate?: Date | null }) {
+export function Gantt({
+  schedule,
+  launchDate,
+  showCost = true,
+}: {
+  schedule: Schedule;
+  launchDate?: Date | null;
+  /** Shared summaries can leave costs off while still showing the dates. */
+  showCost?: boolean;
+}) {
   if (schedule.hasCycle) {
     return (
       <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -87,9 +96,11 @@ export function Gantt({ schedule, launchDate }: { schedule: Schedule; launchDate
                   <span className="truncate text-sm" title={r.label}>
                     {r.label}
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {formatAudWhole(r.item!.costCents)}
-                  </span>
+                  {showCost ? (
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {formatAudWhole(r.item!.costCents)}
+                    </span>
+                  ) : null}
                 </>
               )}
             </div>
@@ -364,10 +375,9 @@ function GanttLegend() {
       </LegendItem>
       <span className="flex items-center gap-1.5">
         <span className="size-1.5 rounded-full bg-background ring-1 ring-foreground/60" />
-        Recurrence
-        <HelpTip label='What does "Recurrence" mean?'>
-          A dot marks each repeat occurrence of a recurring deliverable, such as a weekly press ad
-          or a monthly EDM.
+        Repeats
+        <HelpTip label='What does "Repeats" mean?'>
+          A dot on the bar marks each time a repeating item happens, such as a monthly email or SMS.
         </HelpTip>
       </span>
       <span className="flex items-center gap-1.5">

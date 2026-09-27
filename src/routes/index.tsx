@@ -72,8 +72,8 @@ function Home() {
     },
     {
       icon: Users,
-      title: "Coordinate your team",
-      desc: "Invite contractors, suppliers and stakeholders to the project. Assign tasks, track approvals and keep everyone aligned.",
+      title: "Keep the team on the plan",
+      desc: "Add suppliers to the project and name an owner on each deliverable. When the plan is ready, send a private summary link or a PDF.",
     },
   ];
 
@@ -111,8 +111,8 @@ function Home() {
   const coordinationPillars = [
     {
       icon: Users,
-      title: "Contractors coordinated",
-      desc: "Assign photographers, copywriters and media buyers to a shared plan - everyone sees the same brief.",
+      title: "Team on the plan",
+      desc: "Add suppliers to the project and name an owner on each deliverable. Share a private summary or a PDF when the plan is ready.",
     },
     {
       icon: Calculator,
@@ -122,7 +122,7 @@ function Home() {
     {
       icon: ListChecks,
       title: "Deliverable lists",
-      desc: "Every asset, ad and creative accounted for - with owners, due dates and status in one place.",
+      desc: "Every asset, ad and creative on the plan, with an owner and suppliers named on each deliverable.",
     },
     {
       icon: CalendarClock,
@@ -462,8 +462,8 @@ function Home() {
                   </p>
                   {[
                     { name: "Belinda - Agency lead", role: "Owner" },
-                    { name: "Marcus - Photographer", role: "Booked · Wk 2" },
-                    { name: "Mary - Copywriter", role: "In progress" },
+                    { name: "Marcus - Photographer", role: "Supplier" },
+                    { name: "Mary - Copywriter", role: "Supplier" },
                   ].map((c) => (
                     <div
                       key={c.name}

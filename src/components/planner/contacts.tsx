@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Check, Globe, Mail, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -169,6 +170,7 @@ function ContactsDirectory({
   const [editWebsite, setEditWebsite] = useState("");
   const [editType, setEditType] = useState<ContactType>("supplier");
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Contact | null>(null);
   const viewing = contacts.find((c) => c.id === viewingId) ?? null;
 
   function startEdit(c: Contact) {
@@ -373,7 +375,7 @@ function ContactsDirectory({
                 className="size-8"
                 onClick={(e) => {
                   e.stopPropagation();
-                  remove(c.id);
+                  setRemoveTarget(c);
                 }}
                 aria-label={`Remove ${c.name}`}
               >
@@ -495,6 +497,20 @@ function ContactsDirectory({
           Add contact
         </Button>
       </div>
+      <ConfirmDialog
+        open={removeTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setRemoveTarget(null);
+        }}
+        title={`Remove "${removeTarget?.name}"?`}
+        description="This removes the contact from this project's directory."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (removeTarget) remove(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }

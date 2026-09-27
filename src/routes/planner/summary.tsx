@@ -12,7 +12,7 @@ import { listProjectParties } from "@/lib/procurement/procurement-store";
 
 export const Route = createFileRoute("/planner/summary")({
   head: () => ({
-    meta: [{ title: "Project summary - Project Planner" }],
+    meta: [{ title: "Project summary - Launch Planner" }],
   }),
   component: PlannerSummary,
 });

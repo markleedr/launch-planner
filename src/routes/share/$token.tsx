@@ -46,6 +46,7 @@ function SharedProjectSummary() {
             parties={parties}
             sharedFor={data.providerName}
             sharedBy={data.sharedBy}
+            hideBudgets={data.hideBudgets}
           />
         </div>
         <ProjectSummary
@@ -53,6 +54,7 @@ function SharedProjectSummary() {
           parties={parties}
           sharedFor={data.providerName}
           sharedBy={data.sharedBy}
+          hideBudgets={data.hideBudgets}
         />
       </main>
     </div>

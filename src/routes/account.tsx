@@ -183,6 +183,9 @@ function AccountPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             These details identify you inside Launch Planner. Each login has its own subscription
             and private project workspace.
+            {onboarding
+              ? ""
+              : " To change your card or cancel, open Billing in the sidebar. That takes you to Stripe. After you cancel, you can keep using Launch Planner until the end of the period you've paid for."}
           </p>
         </div>
 

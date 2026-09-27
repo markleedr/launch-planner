@@ -39,13 +39,19 @@ import { calculateProposalCost } from "@/lib/procurement";
 import { usePlannerOptional } from "./planner-provider";
 import { usePersistentDialog } from "./use-persistent-dialog";
 
-const RECURRENCE_OPTIONS = [
-  { value: "none", label: "No recurrence" },
-  { value: "monthly_full_bar", label: "Monthly - full active period" },
-  { value: "monthly_second_thursday", label: "Monthly - second Thursday" },
-  { value: "monthly_second_friday", label: "Monthly - second Friday" },
-  { value: "monthly_third_monday", label: "Monthly - third Monday" },
+const SCHEDULE_REPEAT_OPTIONS = [
+  { value: "none", label: "Doesn't repeat" },
+  { value: "monthly", label: "Repeats every month" },
 ] as const;
+
+/**
+ * Catalogue presets such as second Thursday are stored, but the schedule
+ * treats every non-empty pattern as one monthly mark. The editor therefore
+ * offers that single choice and leaves an existing preset untouched.
+ */
+function scheduleRepeatChoice(pattern: string | undefined): "none" | "monthly" {
+  return pattern ? "monthly" : "none";
+}
 
 type TimingMode = "lead_time" | "due_date" | "both";
 
@@ -473,21 +479,30 @@ export function DeliverableEditorDialog({
                 onChange={(ids) => patch({ dependsOn: ids })}
               />
             </Field>
-            <Field label="Recurrence pattern">
+            <Field label="Repeats on the schedule">
+              <p className="text-xs text-muted-foreground">
+                Doesn&apos;t repeat is a one-off, such as a brochure: the schedule shows it once.
+                Repeats every month is for a blog, email or SMS: the schedule marks each repeat on
+                the bar. What you pay for those months is set in the months field above.
+              </p>
               <Select
-                value={draft.recurrencePattern || "none"}
+                value={scheduleRepeatChoice(draft.recurrencePattern)}
                 onValueChange={(value) =>
-                  patch({
-                    recurrencePattern: value === "none" ? "" : value,
-                    recurrence: value === "none" ? undefined : { freq: "monthly", interval: 1 },
-                  })
+                  patch(
+                    value === "none"
+                      ? { recurrencePattern: "", recurrence: undefined }
+                      : {
+                          recurrencePattern: draft.recurrencePattern || "monthly_full_bar",
+                          recurrence: { freq: "monthly", interval: 1 },
+                        },
+                  )
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {RECURRENCE_OPTIONS.map((option) => (
+                  {SCHEDULE_REPEAT_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

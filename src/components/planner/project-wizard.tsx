@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  ImagePlus,
   Loader2,
   MapPin,
   Plus,
@@ -37,8 +36,9 @@ import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import { RecommendDialog } from "./recommend-dialog";
 import { usePlanner } from "./planner-provider";
 import { useSession } from "@/hooks/use-session";
-import { supabase } from "@/integrations/supabase/client";
+import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import { createProject, updateProject } from "@/lib/project-store";
+import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 import {
   buildTeneriffeRiversideSnapshot,
   CATEGORY_LABELS,
@@ -60,7 +60,6 @@ import {
 import { PROJECT_PARTY_ROLE_LABELS, PROJECT_PARTY_ROLES } from "@/lib/procurement/labels";
 import type { ProjectPartyRole } from "@/lib/procurement";
 import { calculateProposalCost } from "@/lib/procurement";
-import { prepareProjectHeroUpload } from "@/lib/planner/project-assets.server";
 import { attachProjectParty, saveDirectoryParty } from "@/lib/procurement/procurement.server";
 import { listDirectoryParties, listProjectParties } from "@/lib/procurement/procurement-store";
 
@@ -266,7 +265,14 @@ export function ProjectWizard({
         </p>
       )}
 
-      {step === "details" && <DetailsStep />}
+      {step === "details" && (
+        <DetailsStep
+          onSaved={(saved) => {
+            lastSavedSnapshot.current = saved;
+            setSaveState("saved");
+          }}
+        />
+      )}
       {step === "deliverables" && <DeliverablesStep />}
       {step === "media" && <MediaStep />}
       {step === "parties" && <PartiesStep ensureProject={persist} />}
@@ -313,8 +319,9 @@ export function ProjectWizard({
   );
 }
 
-function DetailsStep() {
+function DetailsStep({ onSaved }: { onSaved: (savedSnapshot: string) => void }) {
   const p = usePlanner();
+  const { user } = useSession();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -324,8 +331,6 @@ function DetailsStep() {
     postcodeTouched && p.address.postcode && !/^\d{4}$/.test(p.address.postcode)
       ? "Enter a 4-digit postcode."
       : null;
-  const canUploadHero = Boolean(p.currentProjectId);
-
   function regenerateBlurb() {
     setConfirmRegenerate(false);
     p.setProjectBlurb(
@@ -347,23 +352,29 @@ function DetailsStep() {
   }
 
   async function uploadHero(file: File) {
-    if (!p.currentProjectId) {
-      setUploadError("Save this step first, then upload your own hero image.");
+    const problem = heroImageFileError(file);
+    if (problem) {
+      setUploadError(problem);
+      return;
+    }
+    if (!user) {
+      setUploadError("Sign in to upload your own image.");
       return;
     }
     setUploading(true);
     setUploadError(null);
     try {
-      const prepared = await prepareProjectHeroUpload({
-        data: { projectId: p.currentProjectId, fileName: file.name },
-      });
-      const { error } = await supabase.storage
-        .from("project-heroes")
-        .uploadToSignedUrl(prepared.path, prepared.token, file, {
-          contentType: file.type || "image/jpeg",
-        });
-      if (error) throw error;
-      p.setHeroImageUrl(prepared.publicUrl);
+      const name = p.projectName.trim() || "Untitled project";
+      let projectId = p.currentProjectId;
+      if (!projectId) {
+        projectId = await createProject(name, p.toSnapshot());
+        p.setCurrentProjectId(projectId);
+      }
+      const publicUrl = await uploadProjectHero(projectId, file);
+      const snapshot = { ...p.toSnapshot(), heroImageUrl: publicUrl };
+      p.setHeroImageUrl(publicUrl);
+      await updateProject(projectId, name, snapshot);
+      onSaved(JSON.stringify(serializePlanner(snapshot)));
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Could not upload this image.");
     } finally {
@@ -430,7 +441,7 @@ function DetailsStep() {
               onChange={(event) => p.setLaunchDate(event.target.value)}
             />
           </Field>
-          <Field label="Request collateral before deadline">
+          <Field label="Materials lead time">
             <div className="relative">
               <Input
                 type="number"
@@ -448,7 +459,8 @@ function DetailsStep() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              We’ll request files and materials this many business days before they are due.
+              How many business days before a due date you want files in hand. This is saved on the
+              project as your own note.
             </p>
           </Field>
           <Field label="Street address" className="sm:col-span-2">
@@ -539,6 +551,16 @@ function DetailsStep() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3">
+            {p.heroImageUrl ? (
+              <div className="overflow-hidden rounded-lg border-2 border-foreground">
+                <img
+                  src={p.heroImageUrl}
+                  alt="Your project image"
+                  className="aspect-[3/1] w-full object-cover"
+                />
+                <span className="block px-2 py-1.5 text-xs font-medium">Your image</span>
+              </div>
+            ) : null}
             {HERO_IMAGE_LIBRARY.map((image) => (
               <button
                 key={image.id}
@@ -558,33 +580,12 @@ function DetailsStep() {
               </button>
             ))}
           </div>
-          <Label
-            className={`flex items-center justify-center rounded-md border border-dashed px-4 py-4 text-sm ${
-              canUploadHero ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-            }`}
-          >
-            {uploading ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <ImagePlus className="mr-2 size-4" />
-            )}
-            Upload replacement
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              disabled={uploading || !canUploadHero}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void uploadHero(file);
-              }}
-            />
-          </Label>
-          {!canUploadHero && (
-            <p className="text-xs text-muted-foreground">
-              Save this step first to upload your own image. Pick a built-in image above for now.
-            </p>
-          )}
+          <HeroUploadButton
+            label={p.heroImageUrl ? "Replace image" : "Upload image"}
+            busy={uploading}
+            onFile={(file) => void uploadHero(file)}
+          />
+          <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 10 MB.</p>
           {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
         </CardContent>
       </Card>
@@ -595,6 +596,7 @@ function DetailsStep() {
 function DeliverablesStep() {
   const p = usePlanner();
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Deliverable | null>(null);
 
   return (
     <Card>
@@ -651,7 +653,7 @@ function DeliverablesStep() {
                         deliverable={deliverable}
                         allDeliverables={p.deliverables}
                         onChange={(patch) => p.updateDeliverable(deliverable.id, patch)}
-                        onRemove={() => p.removeDeliverable(deliverable.id)}
+                        onRemove={() => setRemoveTarget(deliverable)}
                         justAdded={deliverable.id === justAddedId}
                       />
                     ))}
@@ -666,6 +668,20 @@ function DeliverablesStep() {
           </div>
         )}
       </CardContent>
+      <ConfirmDialog
+        open={removeTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setRemoveTarget(null);
+        }}
+        title={`Remove "${removeTarget?.name}"?`}
+        description="This takes the deliverable off this project. You can add it again from the catalog."
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (removeTarget) p.removeDeliverable(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </Card>
   );
 }
@@ -995,8 +1011,8 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
         <div>
           <h3 className="text-sm font-semibold">Team & suppliers by category</h3>
           <p className="text-sm text-muted-foreground">
-            Fill in a supplier for each category that applies to this project. Add more than one
-            where you want competing quotes.
+            Add a supplier for each category that applies. These names are saved on the project and
+            shown on the summary. Adding someone here does not email them or give them a login.
           </p>
         </div>
         {loading ? <Loader2 className="size-5 animate-spin" /> : null}
@@ -1041,11 +1057,6 @@ function PartiesStep({ ensureProject }: { ensureProject: () => Promise<string | 
                             </p>
                           ) : null}
                         </div>
-                        {item.party?.portal_enabled ? (
-                          <Badge variant="secondary" className="shrink-0">
-                            Portal contractor
-                          </Badge>
-                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -1235,10 +1246,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
                 label="Total deliverables"
                 value={`${p.deliverables.length} across ${p.grouped.length} ${p.grouped.length === 1 ? "category" : "categories"}`}
               />
-              <ReviewRow
-                label="Approved plan total"
-                value={formatAudWhole(p.budget.grandTotalCents)}
-              />
+              <ReviewRow label="Plan total" value={formatAudWhole(p.budget.grandTotalCents)} />
               <div className="mt-2 space-y-1">
                 {p.grouped.map(({ category, items }) => (
                   <div key={category} className="flex justify-between text-sm">
@@ -1264,7 +1272,7 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <ReviewSection title="Parties & contractors" onEdit={() => onEdit(3)}>
           {p.projectParties.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No contractors added yet. You can add them later from the Team & suppliers step.
+              No organisations added yet. Add them on this step. They show on the project summary.
             </p>
           ) : (
             <div className="space-y-1">
@@ -1286,10 +1294,9 @@ function ReviewStep({ onEdit }: { onEdit: (stepIndex: number) => void }) {
         <CardContent>
           <ol className="space-y-4">
             {[
-              "Refine costs, dates and dependencies in the project planner.",
-              "Review private contractor proposals and award each deliverable.",
-              "Track messages, collateral requests and approvals.",
-              "Share or export the approved client-facing summary.",
+              "Open the planner to adjust costs, dates and dependencies.",
+              "Add who owns each deliverable under Team.",
+              "Share a private summary link or export a PDF.",
             ].map((item, index) => (
               <li key={item} className="flex gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-background">
