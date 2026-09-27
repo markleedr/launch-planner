@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/select";
 import { Wordmark } from "@/components/brand";
 import { ProjectSummary } from "@/components/summary/project-summary";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { trackEvent } from "@/lib/analytics";
-import { captureLead } from "@/lib/leads/leads.server";
 import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPES,
@@ -66,6 +67,7 @@ function defaultLaunchDate(): string {
 function UrbanDeveloperPage() {
   const demoRef = useRef<HTMLElement | null>(null);
   const planRef = useRef<HTMLElement | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
   const [utm, setUtm] = useState<UtmParams>(emptyUtm);
   const [projectType, setProjectType] = useState<ProjectType>("multi_residential");
   const [units, setUnits] = useState(40);
@@ -135,11 +137,17 @@ function UrbanDeveloperPage() {
     return null;
   }
 
-  async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function resolveEmail(): string {
+    return (emailInputRef.current?.value ?? email).trim();
+  }
+
+  async function submitLead() {
     if (!snapshot) return;
 
-    const err = validateEmail(email);
+    const candidate = resolveEmail();
+    setEmail(candidate);
+
+    const err = validateEmail(candidate);
     if (err) {
       setEmailError(err);
       return;
@@ -149,18 +157,22 @@ function UrbanDeveloperPage() {
     setSubmitting(true);
 
     try {
-      await captureLead({
-        data: {
-          email: email.trim().toLowerCase(),
-          source: LEAD_SOURCE,
-          utm_source: utm.utm_source,
-          utm_medium: utm.utm_medium,
-          utm_campaign: utm.utm_campaign,
-          utm_content: utm.utm_content,
-          utm_term: utm.utm_term,
-          plan_snapshot: serializePlanner(snapshot),
-        },
+      const { error } = await supabase.from("leads").insert({
+        email: candidate.toLowerCase(),
+        source: LEAD_SOURCE,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        utm_content: utm.utm_content,
+        utm_term: utm.utm_term,
+        plan_snapshot: serializePlanner(snapshot) as Json,
       });
+
+      if (error) {
+        console.error("[leads] insert failed:", error.message);
+        throw new Error("We couldn't save your email just now. Please try again.");
+      }
+
       setSubmitted(true);
       trackEvent("tud_email_submitted", {
         source: LEAD_SOURCE,
@@ -174,6 +186,11 @@ function UrbanDeveloperPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void submitLead();
   }
 
   const unitLabel = UNIT_LABELS[projectType];
@@ -364,6 +381,7 @@ function UrbanDeveloperPage() {
                     <div className="space-y-2">
                       <Label htmlFor="tud-email">Work email</Label>
                       <Input
+                        ref={emailInputRef}
                         id="tud-email"
                         type="email"
                         autoComplete="email"
@@ -379,13 +397,18 @@ function UrbanDeveloperPage() {
                         disabled={submitting}
                       />
                       {emailError ? (
-                        <p id="tud-email-error" className="text-sm text-destructive" role="alert">
+                        <p
+                          id="tud-email-error"
+                          className="text-sm text-destructive"
+                          role="alert"
+                          aria-live="polite"
+                        >
                           {emailError}
                         </p>
                       ) : null}
                     </div>
                     {submitError ? (
-                      <p className="text-sm text-destructive" role="alert">
+                      <p className="text-sm text-destructive" role="alert" aria-live="polite">
                         {submitError}
                       </p>
                     ) : null}
@@ -394,6 +417,11 @@ function UrbanDeveloperPage() {
                       size="lg"
                       className="w-full rounded-full bg-brand text-black hover:bg-brand/90"
                       disabled={submitting}
+                      onClick={(e) => {
+                        // Ensure click works even if form submit is swallowed.
+                        e.preventDefault();
+                        void submitLead();
+                      }}
                     >
                       {submitting ? (
                         <>
