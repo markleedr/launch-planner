@@ -3,8 +3,8 @@ import { Loader2, Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { captureLead } from "@/lib/leads/leads.server";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
 
@@ -77,17 +77,26 @@ export function InfoLeadToaster() {
 
     try {
       const utm = captureUtmFromWindow();
-      const { error: insertError } = await supabase.from("leads").insert({
-        email: candidate.toLowerCase(),
-        source: LEAD_SOURCE,
-        utm_source: utm.utm_source,
-        utm_medium: utm.utm_medium,
-        utm_campaign: utm.utm_campaign,
-        utm_content: utm.utm_content || "info-toaster",
-        utm_term: utm.utm_term,
-      });
-      if (insertError) {
-        console.error("[leads] info toaster insert failed:", insertError.message);
+      try {
+        await captureLead({
+          data: {
+            email: candidate.toLowerCase(),
+            source: LEAD_SOURCE,
+            utm_source: utm.utm_source,
+            utm_medium: utm.utm_medium,
+            utm_campaign: utm.utm_campaign,
+            utm_content: utm.utm_content || "info-toaster",
+            utm_term: utm.utm_term,
+            capture_point: "info_toaster",
+            page_url: window.location.href.slice(0, 2000),
+            referrer: document.referrer.slice(0, 2000),
+          },
+        });
+      } catch (insertError) {
+        console.error(
+          "[leads] info toaster insert failed:",
+          insertError instanceof Error ? insertError.message : insertError,
+        );
         throw new Error("Could not send that just now. Please try again.");
       }
       setCapturedLeadEmail(candidate.toLowerCase());
