@@ -17,11 +17,11 @@ import type { Deliverable } from "../types";
 /** Campaign length from the Master Sheet campaign details. */
 export const TENERIFFE_CAMPAIGN_MONTHS = 6;
 
-/** Media spend from the Master Sheet ($10,000 / month × 6). */
-export const TENERIFFE_MEDIA_BUDGET_DOLLARS = 60_000;
+/** Media spend for the Beachside Riverside sample campaign. */
+export const TENERIFFE_MEDIA_BUDGET_DOLLARS = 6_000_000;
 
 /** Gross realisation value for the 90-apartment riverside scheme. */
-export const TENERIFFE_GRV_DOLLARS = 200_000_000;
+export const TENERIFFE_GRV_DOLLARS = 150_000_000;
 
 /**
  * Catalogue ids that form a full multi-res launch for a riverfront
@@ -174,15 +174,15 @@ export function buildTeneriffeRiversideSnapshot(
   const recommendation = recommend({
     projectType: "multi_residential",
     buyerTypes: [...buyerTypes],
-    state: "QLD",
+    state: "NSW",
   });
 
   const deliverables = wireTeneriffeDependencies(
     TENERIFFE_CATALOG_IDS.map((catalogId) => stableDeliverable(catalogId, campaignMonths)),
   );
 
-  // Allocate the Master Sheet media pool across active media channels so the
-  // plan shows both creative/management costs and the $60k media buy.
+  // Allocate the media pool across active media channels so the plan shows
+  // both creative/management costs and the media buy.
   const mediaStart = new Date("2026-09-15T00:00:00");
   const mediaEnd = new Date(mediaStart);
   mediaEnd.setMonth(mediaEnd.getMonth() + campaignMonths);
@@ -218,20 +218,20 @@ export function buildTeneriffeRiversideSnapshot(
   });
 
   return {
-    projectName: "Teneriffe Riverside Residences",
+    projectName: "Beachside Riverside Residences",
     projectBlurb:
-      "A 90-apartment riverfront multi-residential launch on the Brisbane River at Teneriffe, planned from the Master Sheet price list with a six-month campaign and $200 million GRV.",
+      "A 90-apartment riverside multi-residential launch on the Central Coast, NSW, planned from the Master Sheet price list with a six-month campaign, $150 million GRV and a $6 million media budget.",
     projectType: "multi_residential",
     units: 90,
     grv: String(TENERIFFE_GRV_DOLLARS),
     mediaBudget: String(TENERIFFE_MEDIA_BUDGET_DOLLARS),
     launchDate,
-    location: "Teneriffe",
+    location: "Central Coast",
     address: {
-      street: "88 Skyring Terrace",
-      suburb: "Teneriffe",
-      state: "QLD",
-      postcode: "4005",
+      street: "",
+      suburb: "Central Coast",
+      state: "NSW",
+      postcode: "",
     },
     heroImageId: "apartments",
     heroImageUrl: "",

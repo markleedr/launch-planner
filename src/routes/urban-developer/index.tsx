@@ -39,7 +39,7 @@ function GuestProjectsPage() {
           <Button asChild variant="outline">
             <Link to="/urban-developer/new" search={{ sample: "teneriffe" }}>
               <Building2 className="mr-1 size-4" />
-              Teneriffe sample
+              Beachside sample
             </Link>
           </Button>
           <Button asChild>

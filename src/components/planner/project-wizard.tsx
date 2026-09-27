@@ -259,9 +259,9 @@ export function ProjectWizard({
 
       {sample === "teneriffe" && (
         <p className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Pre-filled from the Master Sheet price list: 90 apartments at Teneriffe riverside, $200M
-          GRV, six-month campaign with wired deliverable dependencies. Save to keep it in your
-          workspace.
+          Pre-filled sample: Beachside Riverside Residences, 90 apartments on the Central Coast NSW,
+          $150M GRV and $6M media budget. Six-month campaign with wired deliverable dependencies.
+          Save to keep it in your workspace.
         </p>
       )}
 

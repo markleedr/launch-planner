@@ -13,19 +13,22 @@ import {
 import { catalogItemToDeliverable, DELIVERABLE_CATALOG } from "../deliverable-catalog";
 
 describe("buildTeneriffeRiversideSnapshot", () => {
-  test("sets Teneriffe riverside multi-res facts from the brief", () => {
+  test("sets Beachside Riverside multi-res facts from the brief", () => {
     const snap = buildTeneriffeRiversideSnapshot();
+    expect(snap.projectName).toBe("Beachside Riverside Residences");
     expect(snap.projectType).toBe("multi_residential");
     expect(snap.units).toBe(90);
+    expect(snap.grv).toBe("150000000");
     expect(snap.grv).toBe(String(TENERIFFE_GRV_DOLLARS));
+    expect(snap.mediaBudget).toBe("6000000");
     expect(snap.mediaBudget).toBe(String(TENERIFFE_MEDIA_BUDGET_DOLLARS));
     expect(snap.address).toEqual({
-      street: "88 Skyring Terrace",
-      suburb: "Teneriffe",
-      state: "QLD",
-      postcode: "4005",
+      street: "",
+      suburb: "Central Coast",
+      state: "NSW",
+      postcode: "",
     });
-    expect(snap.location).toBe("Teneriffe");
+    expect(snap.location).toBe("Central Coast");
   });
 
   test("includes Master Sheet catalogue services plus media allocation", () => {
@@ -74,7 +77,7 @@ describe("buildTeneriffeRiversideSnapshot", () => {
     expect(cpm.criticalPath.length).toBeGreaterThan(0);
   });
 
-  test("keeps total media allocation at the Master Sheet $60k pool", () => {
+  test("keeps total media allocation at the $6M media pool", () => {
     const snap = buildTeneriffeRiversideSnapshot();
     const budget = summariseBudget(snap.deliverables, {
       mediaBudgetCents: parseDollarsToCents(snap.mediaBudget),
@@ -86,7 +89,7 @@ describe("buildTeneriffeRiversideSnapshot", () => {
     expect(mediaOnly).toBe(TENERIFFE_MEDIA_BUDGET_DOLLARS * 100);
     expect(budget.mediaTotalCents).toBeGreaterThanOrEqual(mediaOnly);
     expect(budget.totalPctOfGrv).toBeGreaterThan(0);
-    expect(budget.totalPctOfGrv).toBeLessThan(0.05);
+    expect(budget.totalPctOfGrv).toBeLessThan(0.1);
   });
 });
 
