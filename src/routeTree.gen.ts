@@ -22,7 +22,11 @@ import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UrbanDeveloperIndexRouteImport } from './routes/urban-developer/index'
 import { Route as PlannerIndexRouteImport } from './routes/planner/index'
+import { Route as UrbanDeveloperSummaryRouteImport } from './routes/urban-developer/summary'
+import { Route as UrbanDeveloperPlanRouteImport } from './routes/urban-developer/plan'
+import { Route as UrbanDeveloperNewRouteImport } from './routes/urban-developer/new'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
 import { Route as PlannerSummaryRouteImport } from './routes/planner/summary'
 import { Route as PlannerNewRouteImport } from './routes/planner/new'
@@ -97,10 +101,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UrbanDeveloperIndexRoute = UrbanDeveloperIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
 const PlannerIndexRoute = PlannerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PlannerRoute,
+} as any)
+const UrbanDeveloperSummaryRoute = UrbanDeveloperSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const UrbanDeveloperPlanRoute = UrbanDeveloperPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const UrbanDeveloperNewRoute = UrbanDeveloperNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => UrbanDeveloperRoute,
 } as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
@@ -156,12 +180,16 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
-  '/urban-developer': typeof UrbanDeveloperRoute
+  '/urban-developer': typeof UrbanDeveloperRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/urban-developer/new': typeof UrbanDeveloperNewRoute
+  '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
+  '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
   '/planner/': typeof PlannerIndexRoute
+  '/urban-developer/': typeof UrbanDeveloperIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -179,12 +207,15 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
-  '/urban-developer': typeof UrbanDeveloperRoute
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/urban-developer/new': typeof UrbanDeveloperNewRoute
+  '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
+  '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
   '/planner': typeof PlannerIndexRoute
+  '/urban-developer': typeof UrbanDeveloperIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -204,12 +235,16 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
-  '/urban-developer': typeof UrbanDeveloperRoute
+  '/urban-developer': typeof UrbanDeveloperRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/urban-developer/new': typeof UrbanDeveloperNewRoute
+  '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
+  '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
   '/planner/': typeof PlannerIndexRoute
+  '/urban-developer/': typeof UrbanDeveloperIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
   '/api/public/auth/webhook': typeof ApiPublicAuthWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -235,7 +270,11 @@ export interface FileRouteTypes {
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/urban-developer/new'
+    | '/urban-developer/plan'
+    | '/urban-developer/summary'
     | '/planner/'
+    | '/urban-developer/'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -253,12 +292,15 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/terms'
-    | '/urban-developer'
     | '/welcome'
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/urban-developer/new'
+    | '/urban-developer/plan'
+    | '/urban-developer/summary'
     | '/planner'
+    | '/urban-developer'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -282,7 +324,11 @@ export interface FileRouteTypes {
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/urban-developer/new'
+    | '/urban-developer/plan'
+    | '/urban-developer/summary'
     | '/planner/'
+    | '/urban-developer/'
     | '/api/workflows/process'
     | '/api/public/auth/webhook'
     | '/api/public/stripe/webhook'
@@ -302,7 +348,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
-  UrbanDeveloperRoute: typeof UrbanDeveloperRoute
+  UrbanDeveloperRoute: typeof UrbanDeveloperRouteWithChildren
   WelcomeRoute: typeof WelcomeRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiWorkflowsProcessRoute: typeof ApiWorkflowsProcessRoute
@@ -405,12 +451,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/urban-developer/': {
+      id: '/urban-developer/'
+      path: '/'
+      fullPath: '/urban-developer/'
+      preLoaderRoute: typeof UrbanDeveloperIndexRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
     '/planner/': {
       id: '/planner/'
       path: '/'
       fullPath: '/planner/'
       preLoaderRoute: typeof PlannerIndexRouteImport
       parentRoute: typeof PlannerRoute
+    }
+    '/urban-developer/summary': {
+      id: '/urban-developer/summary'
+      path: '/summary'
+      fullPath: '/urban-developer/summary'
+      preLoaderRoute: typeof UrbanDeveloperSummaryRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/urban-developer/plan': {
+      id: '/urban-developer/plan'
+      path: '/plan'
+      fullPath: '/urban-developer/plan'
+      preLoaderRoute: typeof UrbanDeveloperPlanRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/urban-developer/new': {
+      id: '/urban-developer/new'
+      path: '/new'
+      fullPath: '/urban-developer/new'
+      preLoaderRoute: typeof UrbanDeveloperNewRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
     }
     '/share/$token': {
       id: '/share/$token'
@@ -486,6 +560,24 @@ const PlannerRouteChildren: PlannerRouteChildren = {
 const PlannerRouteWithChildren =
   PlannerRoute._addFileChildren(PlannerRouteChildren)
 
+interface UrbanDeveloperRouteChildren {
+  UrbanDeveloperNewRoute: typeof UrbanDeveloperNewRoute
+  UrbanDeveloperPlanRoute: typeof UrbanDeveloperPlanRoute
+  UrbanDeveloperSummaryRoute: typeof UrbanDeveloperSummaryRoute
+  UrbanDeveloperIndexRoute: typeof UrbanDeveloperIndexRoute
+}
+
+const UrbanDeveloperRouteChildren: UrbanDeveloperRouteChildren = {
+  UrbanDeveloperNewRoute: UrbanDeveloperNewRoute,
+  UrbanDeveloperPlanRoute: UrbanDeveloperPlanRoute,
+  UrbanDeveloperSummaryRoute: UrbanDeveloperSummaryRoute,
+  UrbanDeveloperIndexRoute: UrbanDeveloperIndexRoute,
+}
+
+const UrbanDeveloperRouteWithChildren = UrbanDeveloperRoute._addFileChildren(
+  UrbanDeveloperRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
@@ -498,7 +590,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
-  UrbanDeveloperRoute: UrbanDeveloperRoute,
+  UrbanDeveloperRoute: UrbanDeveloperRouteWithChildren,
   WelcomeRoute: WelcomeRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiWorkflowsProcessRoute: ApiWorkflowsProcessRoute,

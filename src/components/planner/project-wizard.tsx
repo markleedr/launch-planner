@@ -74,7 +74,16 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
+export function ProjectWizard({
+  sample,
+  guestMode = false,
+  finishTo = "/planner",
+}: {
+  sample?: "teneriffe";
+  /** When true, persist to sessionStorage instead of Supabase. */
+  guestMode?: boolean;
+  finishTo?: "/planner" | "/urban-developer/plan";
+}) {
   const p = usePlanner();
   const navigate = useNavigate();
   const { user } = useSession();
@@ -118,6 +127,27 @@ export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
   }, [currentSnapshot]);
 
   async function persist(): Promise<string | null> {
+    if (guestMode) {
+      setBusy(true);
+      setSaveState("idle");
+      try {
+        const { createGuestProjectId, saveGuestProject } =
+          await import("@/lib/urban-developer/guest-store");
+        const name = p.projectName.trim() || "Untitled project";
+        const id = p.currentProjectId ?? createGuestProjectId();
+        saveGuestProject(id, name, p.toSnapshot());
+        p.setCurrentProjectId(id);
+        setSaveState("saved");
+        lastSavedSnapshot.current = JSON.stringify(serializePlanner(p.toSnapshot()));
+        return id;
+      } catch (reason) {
+        setSaveError(reason instanceof Error ? reason.message : "Unknown error.");
+        setSaveState("error");
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    }
     if (!user) return null;
     setBusy(true);
     setSaveState("idle");
@@ -152,7 +182,7 @@ export function ProjectWizard({ sample }: { sample?: "teneriffe" }) {
   async function finish() {
     const id = await persist();
     navigate({
-      to: "/planner",
+      to: finishTo,
       search: id ? { projectId: id } : {},
     });
   }
