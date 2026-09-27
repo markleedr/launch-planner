@@ -1,29 +1,9 @@
-import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ProjectSummary } from "@/components/summary/project-summary";
-import { GatedExportPdfButton } from "@/components/urban-developer/gated-export-pdf";
-import { usePlanner } from "@/components/planner/planner-provider";
+import { GuestSummaryPage } from "@/components/guest-demo/guest-summary-page";
 
 export const Route = createFileRoute("/urban-developer/summary")({
   head: () => ({
     meta: [{ title: "Project summary - Launch Planner" }],
   }),
-  component: GuestSummaryRoute,
+  component: GuestSummaryPage,
 });
-
-function GuestSummaryRoute() {
-  const planner = usePlanner();
-  const snapshot = useMemo(() => planner.toSnapshot(), [planner]);
-
-  return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <p className="text-sm text-muted-foreground">
-          Export needs an email so we can send the plan and grant free access through November.
-        </p>
-        <GatedExportPdfButton snapshot={snapshot} />
-      </div>
-      <ProjectSummary snapshot={snapshot} parties={[]} />
-    </main>
-  );
-}
