@@ -67,19 +67,28 @@ export const Route = createFileRoute("/planner/")({
   head: () => ({
     meta: [{ title: "New project plan - Project Planner" }],
   }),
-  component: PlannerEditor,
+  component: PlannerEditorRoute,
 });
 
-function PlannerEditor() {
-  const p = usePlanner();
+function PlannerEditorRoute() {
   const { mediaBudget } = Route.useSearch();
+  return <PlannerEditor mediaBudgetFromSearch={mediaBudget} />;
+}
+
+/** Shared plan editor; also mounted on the Urban Developer guest demo. */
+export function PlannerEditor({
+  mediaBudgetFromSearch,
+}: {
+  mediaBudgetFromSearch?: number;
+} = {}) {
+  const p = usePlanner();
   const applied = useRef(false);
   useEffect(() => {
-    if (!applied.current && mediaBudget) {
-      p.setMediaBudget(String(mediaBudget));
+    if (!applied.current && mediaBudgetFromSearch) {
+      p.setMediaBudget(String(mediaBudgetFromSearch));
       applied.current = true;
     }
-  }, [mediaBudget, p]);
+  }, [mediaBudgetFromSearch, p]);
   const overBudget = p.budget.varianceVsMediaBudgetCents > 0;
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Deliverable | null>(null);
