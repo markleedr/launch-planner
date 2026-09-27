@@ -4,12 +4,20 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  META_PIXEL_ID,
+  metaPageViewOnNavigate,
+  metaPixelBootstrapScript,
+  metaPixelNoscriptSrc,
+  trackMetaPageView,
+} from "@/lib/analytics";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -146,6 +154,9 @@ gtag('js', new Date());
 gtag('config', 'G-927WGGV0VQ');
 gtag('config', 'AW-15449291724');`,
       },
+      {
+        children: metaPixelBootstrapScript(),
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -169,6 +180,15 @@ function RootShell({ children }: { children: ReactNode }) {
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        <noscript>
+          <img
+            alt=""
+            height={1}
+            width={1}
+            style={{ display: "none" }}
+            src={metaPixelNoscriptSrc(META_PIXEL_ID)}
+          />
+        </noscript>
         {children}
         <Scripts />
       </body>
@@ -182,9 +202,29 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <MetaPixelPageViews />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </TooltipProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * The base snippet already sends PageView for the document that loaded.
+ * Skip that first URL, then send one PageView per later client-side navigation.
+ * Module state so a Strict Mode effect replay does not send the first view twice.
+ */
+let metaPixelHref: string | null = null;
+
+function MetaPixelPageViews() {
+  const href = useRouterState({ select: (state) => state.location.href });
+
+  useEffect(() => {
+    const decision = metaPageViewOnNavigate(metaPixelHref, href);
+    metaPixelHref = decision.previousHref;
+    if (decision.send) trackMetaPageView();
+  }, [href]);
+
+  return null;
 }
