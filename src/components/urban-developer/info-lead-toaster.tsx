@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackMetaLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
@@ -57,6 +57,7 @@ export function InfoLeadToaster() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const metaLeadFired = useRef(false);
 
   useEffect(() => {
     if (wasDismissed(dismissKey) || getCapturedLeadEmail()) return;
@@ -112,6 +113,18 @@ export function InfoLeadToaster() {
         utm_source: utm.utm_source,
         utm_campaign: utm.utm_campaign,
       });
+      if (!metaLeadFired.current) {
+        metaLeadFired.current = true;
+        trackMetaLead({
+          content_name: leadSource,
+          via: "info_toaster",
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          utm_term: utm.utm_term,
+        });
+      }
       setDone(true);
       markDismissed(dismissKey);
       window.setTimeout(() => setVisible(false), 2200);
