@@ -3,28 +3,31 @@ import { Loader2, Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { trackEvent } from "@/lib/analytics";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
+import { trackEvent, trackMetaLead } from "@/lib/analytics";
+import { captureLead } from "@/lib/leads/leads.server";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
 
-const LEAD_SOURCE = "urban-developer";
-const DISMISS_KEY = "launch-planner:tud-info-toaster-dismissed";
-const SHOW_AFTER_MS = 10_000;
+const SHOW_AFTER_MS = 20_000;
 
-function wasDismissed(): boolean {
+function dismissKeyFor(campaignId: string): string {
+  return `launch-planner:${campaignId}-info-toaster-dismissed`;
+}
+
+function wasDismissed(key: string): boolean {
   if (typeof sessionStorage === "undefined") return false;
   try {
-    return sessionStorage.getItem(DISMISS_KEY) === "1";
+    return sessionStorage.getItem(key) === "1";
   } catch {
     return false;
   }
 }
 
-function markDismissed(): void {
+function markDismissed(key: string): void {
   if (typeof sessionStorage === "undefined") return;
   try {
-    sessionStorage.setItem(DISMISS_KEY, "1");
+    sessionStorage.setItem(key, "1");
   } catch {
     // ignore
   }
@@ -44,6 +47,9 @@ function validateEmail(value: string): string | null {
  * Appears after 10s; asks for an email to receive Launch Planner info.
  */
 export function InfoLeadToaster() {
+  const campaign = useGuestDemo();
+  const dismissKey = dismissKeyFor(campaign.id);
+  const leadSource = campaign.leadSource;
   const emailId = useId();
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
@@ -51,15 +57,16 @@ export function InfoLeadToaster() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const metaLeadFired = useRef(false);
 
   useEffect(() => {
-    if (wasDismissed() || getCapturedLeadEmail()) return;
+    if (wasDismissed(dismissKey) || getCapturedLeadEmail()) return;
     const timer = window.setTimeout(() => setVisible(true), SHOW_AFTER_MS);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [dismissKey]);
 
   function dismiss() {
-    markDismissed();
+    markDismissed(dismissKey);
     setVisible(false);
   }
 
@@ -77,28 +84,49 @@ export function InfoLeadToaster() {
 
     try {
       const utm = captureUtmFromWindow();
-      const { error: insertError } = await supabase.from("leads").insert({
-        email: candidate.toLowerCase(),
-        source: LEAD_SOURCE,
-        utm_source: utm.utm_source,
-        utm_medium: utm.utm_medium,
-        utm_campaign: utm.utm_campaign,
-        utm_content: utm.utm_content || "info-toaster",
-        utm_term: utm.utm_term,
-      });
-      if (insertError) {
-        console.error("[leads] info toaster insert failed:", insertError.message);
+      try {
+        await captureLead({
+          data: {
+            email: candidate.toLowerCase(),
+            source: leadSource,
+            utm_source: utm.utm_source,
+            utm_medium: utm.utm_medium,
+            utm_campaign: utm.utm_campaign,
+            utm_content: utm.utm_content || "info-toaster",
+            utm_term: utm.utm_term,
+            capture_point: "info_toaster",
+            page_url: window.location.href.slice(0, 2000),
+            referrer: document.referrer.slice(0, 2000),
+          },
+        });
+      } catch (insertError) {
+        console.error(
+          "[leads] info toaster insert failed:",
+          insertError instanceof Error ? insertError.message : insertError,
+        );
         throw new Error("Could not send that just now. Please try again.");
       }
       setCapturedLeadEmail(candidate.toLowerCase());
       trackEvent("tud_email_submitted", {
-        source: LEAD_SOURCE,
+        source: leadSource,
         via: "info_toaster",
         utm_source: utm.utm_source,
         utm_campaign: utm.utm_campaign,
       });
+      if (!metaLeadFired.current) {
+        metaLeadFired.current = true;
+        trackMetaLead({
+          content_name: leadSource,
+          via: "info_toaster",
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          utm_term: utm.utm_term,
+        });
+      }
       setDone(true);
-      markDismissed();
+      markDismissed(dismissKey);
       window.setTimeout(() => setVisible(false), 2200);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");

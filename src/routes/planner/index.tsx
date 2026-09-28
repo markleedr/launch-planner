@@ -190,6 +190,18 @@ export function PlannerEditor({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Plan
+        </p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight">Shape the marketing plan</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Use this screen to scope deliverables, set costs against your media budget, check the
+          schedule against launch, work through the critical checklist, and assign the team. The
+          tiles below keep budget, timing and open risks visible as you edit.
+        </p>
+      </header>
+
       <nav
         aria-label="Plan sections"
         className="sticky top-20 z-20 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b bg-muted px-6 py-2.5"

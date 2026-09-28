@@ -15,12 +15,8 @@ describe("section csv", () => {
 
   test("names each section file from the project", () => {
     const sections = buildPlanSections(buildTeneriffeRiversideSnapshot());
-    expect(sectionFilename(sections.budget, "csv")).toBe(
-      "teneriffe-riverside-residences-budget.csv",
-    );
-    expect(sectionFilename(sections.schedule, "pdf")).toBe(
-      "teneriffe-riverside-residences-schedule.pdf",
-    );
+    expect(sectionFilename(sections.budget, "csv")).toBe("beachside-residences-budget.csv");
+    expect(sectionFilename(sections.schedule, "pdf")).toBe("beachside-residences-schedule.pdf");
   });
 
   test("details include the financials shown on the plan", () => {
@@ -37,7 +33,7 @@ describe("section csv", () => {
     expect(csv).toContain(`"${formatAudWhole(financials.grvCents)}"`);
     expect(csv).toContain(`"${formatAudWhole(financials.mediaBudgetCents)}"`);
     expect(csv).toContain("Launch date,15/03/2027");
-    expect(csv).toContain("Location,Teneriffe");
+    expect(csv).toContain("Location,Central Coast");
     expect(csv).toContain('"Owner-occupier, Investor, Downsizer"');
   });
 
