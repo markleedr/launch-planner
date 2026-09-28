@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import type { ProjectRow } from "@/lib/project-store";
 import {
   formatAuDate,
@@ -10,9 +11,12 @@ import {
   resolveHeroImage,
   UNIT_LABELS,
 } from "@/lib/planner";
+import { guestPath, type GuestDemoBasePath } from "@/lib/guest-demo/campaign";
 import { EXAMPLE_TENERIFFE_ID } from "@/lib/urban-developer/guest-store";
 
 export function GuestProjectCard({ project }: { project: ProjectRow }) {
+  const campaign = useGuestDemo();
+  const planTo = guestPath(campaign.basePath, "/plan") as `${GuestDemoBasePath}/plan`;
   const hero = resolveHeroImage(project.heroImageId, project.heroImageUrl);
   const location = [project.suburb, project.state].filter(Boolean).join(", ");
   const grvCents = parseDollarsToCents(project.grv);
@@ -24,7 +28,7 @@ export function GuestProjectCard({ project }: { project: ProjectRow }) {
   return (
     <Card className="group flex h-full flex-col overflow-hidden">
       <Link
-        to="/urban-developer/plan"
+        to={planTo}
         search={{ projectId: project.id }}
         className="relative block aspect-[16/8] bg-muted"
         aria-label={`Open ${project.name}`}
@@ -48,7 +52,7 @@ export function GuestProjectCard({ project }: { project: ProjectRow }) {
       <CardContent className="flex flex-1 flex-col gap-4 p-4">
         <div className="min-w-0">
           <Link
-            to="/urban-developer/plan"
+            to={planTo}
             search={{ projectId: project.id }}
             className="block truncate text-base font-semibold hover:underline"
           >

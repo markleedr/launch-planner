@@ -66,6 +66,7 @@ export const captureLead = createServerFn({ method: "POST" })
 
     await forwardLeadToCrm({
       email: data.email,
+      source: data.source,
       capture_point: data.capture_point,
       page_url: data.page_url,
       referrer: data.referrer,

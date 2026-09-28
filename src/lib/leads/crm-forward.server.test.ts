@@ -6,6 +6,7 @@ const WEBHOOK_SECRET = "test-launch-planner-secret";
 
 const payload: CrmLeadForwardInput = {
   email: "reader@example.com",
+  source: "webinar-23-sept",
   capture_point: "pdf_export",
   page_url: "https://launchplanner.com.au/urban-developer/summary",
   referrer: "https://www.theurbandeveloper.com/article",
@@ -86,6 +87,7 @@ describe("forwardLeadToCrm", () => {
     expect(headers.get("content-type")).toBe("application/json");
     expect(JSON.parse(String(captured!.init.body))).toEqual({
       email: payload.email,
+      source: payload.source,
       capture_point: payload.capture_point,
       page_url: payload.page_url,
       referrer: payload.referrer,

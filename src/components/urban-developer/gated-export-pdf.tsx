@@ -11,13 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { trackEvent, trackMetaLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { serializePlanner, type PlannerSnapshot } from "@/lib/planner";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
-
-const LEAD_SOURCE = "urban-developer";
 
 function validateEmail(value: string): string | null {
   const trimmed = value.trim();
@@ -30,6 +29,8 @@ function validateEmail(value: string): string | null {
 
 /** Export PDF, prompting for email once if the guest has not claimed access yet. */
 export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }) {
+  const campaign = useGuestDemo();
+  const leadSource = campaign.leadSource;
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(() => getCapturedLeadEmail() ?? "");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
         await captureLead({
           data: {
             email: candidate.toLowerCase(),
-            source: LEAD_SOURCE,
+            source: leadSource,
             utm_source: utm.utm_source,
             utm_medium: utm.utm_medium,
             utm_campaign: utm.utm_campaign,
@@ -91,12 +92,13 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
       }
       setCapturedLeadEmail(candidate.toLowerCase());
       trackEvent("tud_email_submitted", {
-        source: LEAD_SOURCE,
+        source: leadSource,
+        via: "pdf_export",
         utm_source: utm.utm_source,
         utm_campaign: utm.utm_campaign,
       });
       trackMetaLead({
-        content_name: LEAD_SOURCE,
+        content_name: leadSource,
         utm_source: utm.utm_source,
         utm_medium: utm.utm_medium,
         utm_campaign: utm.utm_campaign,

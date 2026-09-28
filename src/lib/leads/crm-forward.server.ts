@@ -4,6 +4,8 @@ export const CRM_FORWARD_TIMEOUT_MS = 5_000;
 
 export interface CrmLeadForwardInput {
   email: string;
+  /** Campaign lead source from the guest demo, e.g. urban-developer or webinar-23-sept. */
+  source: string;
   capture_point: "info_toaster" | "pdf_export";
   page_url?: string | null;
   referrer?: string | null;
@@ -26,6 +28,7 @@ function webhookConfig(): { url: string; secret: string } | null {
 function forwardBody(input: CrmLeadForwardInput): Record<string, unknown> {
   const body: Record<string, unknown> = {
     email: input.email,
+    source: input.source,
     capture_point: input.capture_point,
     page_url: input.page_url ?? null,
     referrer: input.referrer ?? null,
