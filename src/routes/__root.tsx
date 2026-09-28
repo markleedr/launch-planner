@@ -18,6 +18,12 @@ import {
   metaPixelNoscriptSrc,
   trackMetaPageView,
 } from "@/lib/analytics";
+import {
+  capturePosthogPageView,
+  initPosthog,
+  schedulePosthogPageView,
+  type PosthogPageViewState,
+} from "@/lib/posthog";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -203,6 +209,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <MetaPixelPageViews />
+        <PostHogPageViews />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </TooltipProvider>
@@ -234,6 +241,32 @@ function MetaPixelPageViews() {
       trackMetaPageView();
     }, 0);
     return () => window.clearTimeout(timer);
+  }, [href]);
+
+  return null;
+}
+
+/**
+ * `$pageview` for the document that loaded, then one per client-side href change.
+ * Module state so a Strict Mode effect replay does not send the first view twice.
+ * The timeout waits until TanStack has flushed history.pushState.
+ */
+const posthogPageView: PosthogPageViewState = { href: null };
+
+function PostHogPageViews() {
+  const href = useRouterState({ select: (state) => state.location.href });
+
+  useEffect(() => {
+    initPosthog();
+    return schedulePosthogPageView(
+      posthogPageView,
+      href,
+      (callback) => {
+        const timer = window.setTimeout(callback, 0);
+        return () => window.clearTimeout(timer);
+      },
+      capturePosthogPageView,
+    );
   }, [href]);
 
   return null;
