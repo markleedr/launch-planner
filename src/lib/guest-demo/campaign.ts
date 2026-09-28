@@ -17,6 +17,20 @@ export interface GuestDemoCampaign {
   workspaceBlurb: string;
   pageTitle: string;
   metaDescription: string;
+  /**
+   * Optional cover image shown in the welcome banner.
+   * When set, image + CTA button link to `demoUrl`.
+   */
+  coverImageSrc?: string;
+  coverImageAlt?: string;
+  /** Absolute or site-root URL the cover image and CTA open */
+  demoUrl?: string;
+  /** Copy explaining how Launch Planner was used in the webinar */
+  webinarReferenceCopy?: string;
+  /** Short free-access note shown beside the CTA */
+  freeAccessNote?: string;
+  /** CTA button label */
+  ctaLabel?: string;
 }
 
 export const URBAN_DEVELOPER_CAMPAIGN: GuestDemoCampaign = {
@@ -43,12 +57,20 @@ export const WEBINAR_23_SEPT_CAMPAIGN: GuestDemoCampaign = {
   bannerEyebrow: "Launch Planner webinar",
   bannerHeading: "Welcome, webinar attendees.",
   bannerSubhead:
-    "Plan your project launch. Free to try for webinar attendees, no account required.",
+    "Plan your project launch. Free to try for webinar attendees until the end of November 2026, no account required.",
   workspaceBlurb:
-    "Free to try for webinar attendees, no account required. Open the example project or start your own. Email only if you want to export a PDF.",
+    "Free for webinar attendees until the end of November 2026, no account required. Open the example project or start your own. Email only if you want to export a PDF.",
   pageTitle: "Welcome, webinar attendees. - Launch Planner",
   metaDescription:
-    "Free to try for webinar attendees, no account required. Try Launch Planner: open an example project or create your own. Email only required to export a PDF.",
+    "Free for webinar attendees until the end of November 2026, no account required. Try Launch Planner: open an example project or create your own.",
+  coverImageSrc: "/webinar/cover.jpg",
+  coverImageAlt: "Launch Planner homepage: plan, scope and cost your property project.",
+  demoUrl: "https://launchplanner.com.au/webinar-23-sept",
+  webinarReferenceCopy:
+    "In the webinar we used Launch Planner live to scope a property project, build the deliverable plan, cost the media mix and walk the schedule. Open the workspace below to try the same flow on the Beachside sample or your own project.",
+  freeAccessNote:
+    "Free to use for webinar attendees until the end of November 2026. No account required.",
+  ctaLabel: "Open Launch Planner",
 };
 
 export function guestPath(
