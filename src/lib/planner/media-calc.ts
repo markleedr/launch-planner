@@ -12,6 +12,7 @@
  */
 
 import { toCents } from "./money";
+import { endDateForMonths, recurrenceFromMonths } from "./recurrence";
 import type { Deliverable } from "./types";
 
 export type MediaChannelKey = "meta" | "google" | "listing";
@@ -189,22 +190,22 @@ export function computeMediaPlan(input: MediaCalcInputs): MediaPlan {
 
 const MEDIA_DELIVERABLES: Record<
   MediaChannelKey,
-  Pick<Deliverable, "name" | "category"> & { requirements: string }
+  Pick<Deliverable, "name" | "category" | "description">
 > = {
   meta: {
     name: "Meta media campaign",
     category: "digital_performance",
-    requirements: "Paid social media placement across the approved Meta campaign.",
+    description: "Paid social media placement across the approved Meta campaign.",
   },
   google: {
     name: "Google Ads campaign",
     category: "digital_performance",
-    requirements: "Paid search and display placement across the approved Google campaign.",
+    description: "Paid search and display placement across the approved Google campaign.",
   },
   listing: {
     name: "Property listing portal campaign",
     category: "digital_performance",
-    requirements: "Approved property-listing portal placement for the campaign duration.",
+    description: "Approved property-listing portal placement for the campaign duration.",
   },
 };
 
@@ -222,11 +223,11 @@ export function mediaPlanToDeliverables(
 
   return MEDIA_CHANNELS.filter((channel) => input.channels[channel.key].active).map((channel) => {
     const definition = MEDIA_DELIVERABLES[channel.key];
+    const stretch = endDateForMonths(start, months);
     return {
       id: `media-${channel.key}-${crypto.randomUUID()}`,
       name: definition.name,
-      description: definition.requirements,
-      requirements: definition.requirements,
+      description: definition.description,
       requiredFormats: ["Campaign plan", "Monthly performance report"],
       category: definition.category,
       agencyCostCents: 0,
@@ -236,9 +237,10 @@ export function mediaPlanToDeliverables(
       mediaMonthlyCostCents: 0,
       quantity: 1,
       months,
+      recurrence: recurrenceFromMonths(months),
       setupLeadDays: 5,
       startDate: new Date(start),
-      endDate: new Date(end),
+      endDate: end.getTime() > stretch.getTime() ? new Date(end) : stretch,
     };
   });
 }
