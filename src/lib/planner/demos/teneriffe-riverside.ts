@@ -255,7 +255,7 @@ export function buildTeneriffeRiversideSnapshot(
   });
 
   return {
-    projectName: "Beachside Riverside Residences",
+    projectName: "Beachside Residences",
     projectBlurb:
       "A 90-apartment riverside multi-residential launch on the Central Coast, NSW, planned from the Master Sheet price list with a six-month campaign, $150 million GRV and a $57,000 media budget (Meta $6k/mo and Google $3.5k/mo).",
     projectType: "multi_residential",

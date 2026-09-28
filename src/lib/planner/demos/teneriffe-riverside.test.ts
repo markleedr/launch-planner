@@ -17,7 +17,7 @@ import { catalogItemToDeliverable, DELIVERABLE_CATALOG } from "../deliverable-ca
 describe("buildTeneriffeRiversideSnapshot", () => {
   test("sets Beachside Riverside multi-res facts from the brief", () => {
     const snap = buildTeneriffeRiversideSnapshot();
-    expect(snap.projectName).toBe("Beachside Riverside Residences");
+    expect(snap.projectName).toBe("Beachside Residences");
     expect(snap.projectType).toBe("multi_residential");
     expect(snap.units).toBe(90);
     expect(snap.grv).toBe("150000000");
