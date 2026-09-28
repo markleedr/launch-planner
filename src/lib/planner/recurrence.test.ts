@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { expandRecurrence } from "./recurrence";
+import { endDateForMonths, expandRecurrence, recurrenceFromMonths } from "./recurrence";
 import type { RecurrenceRule } from "./types";
 
 // 2026-06-01 is a Monday.
@@ -79,6 +79,55 @@ describe("expandRecurrence", () => {
       "5-10", // June
       "6-10", // July
       "7-10", // August
+    ]);
+  });
+});
+
+describe("recurrenceFromMonths", () => {
+  test("zero or unset is a one-off", () => {
+    expect(recurrenceFromMonths(undefined)).toBeUndefined();
+    expect(recurrenceFromMonths(0)).toBeUndefined();
+    expect(recurrenceFromMonths(-3)).toBeUndefined();
+  });
+
+  test("a positive count is monthly on that many months", () => {
+    expect(recurrenceFromMonths(1)).toEqual({
+      freq: "monthly",
+      interval: 1,
+      end: { kind: "count", count: 1 },
+    });
+    expect(recurrenceFromMonths(12)).toEqual({
+      freq: "monthly",
+      interval: 1,
+      end: { kind: "count", count: 12 },
+    });
+    expect(recurrenceFromMonths(6.9)).toEqual({
+      freq: "monthly",
+      interval: 1,
+      end: { kind: "count", count: 6 },
+    });
+  });
+});
+
+describe("endDateForMonths", () => {
+  test("zero or one month keeps a one-day bar", () => {
+    expect(endDateForMonths(MONDAY, 0).getTime()).toBe(new Date("2026-06-02T00:00:00").getTime());
+    expect(endDateForMonths(MONDAY, 1).getTime()).toBe(new Date("2026-06-02T00:00:00").getTime());
+  });
+
+  test("three months stretches to the same day two months later", () => {
+    const end = endDateForMonths(new Date("2026-06-10T00:00:00"), 3);
+    expect(`${end.getFullYear()}-${end.getMonth() + 1}-${end.getDate()}`).toBe("2026-8-10");
+  });
+
+  test("expandRecurrence sees every monthly mark inside that bar", () => {
+    const start = new Date("2026-06-10T00:00:00");
+    const months = 3;
+    const occ = expandRecurrence(recurrenceFromMonths(months), start, endDateForMonths(start, months));
+    expect(occ.map((o) => `${o.date.getMonth()}-${o.date.getDate()}`)).toEqual([
+      "5-10",
+      "6-10",
+      "7-10",
     ]);
   });
 });

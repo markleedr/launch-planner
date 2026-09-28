@@ -6,7 +6,8 @@
 
 import { RAW_SERVICE_TEMPLATES } from "./service-templates.generated";
 import { SUPPLEMENTAL_SERVICE_TEMPLATES } from "./supplemental-service-templates";
-import type { Deliverable, DeliverableCategory, RecurrenceRule, SetupTimeUnit } from "./types";
+import { endDateForMonths, recurrenceFromMonths } from "./recurrence";
+import type { Deliverable, DeliverableCategory, SetupTimeUnit } from "./types";
 
 export interface RawServiceTemplate {
   category: string;
@@ -82,7 +83,7 @@ const CATEGORY_OVERRIDES: Record<string, DeliverableCategory> = {
 function slugify(value: string): string {
   return value
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "_")
@@ -97,11 +98,6 @@ function setupUnit(value: string): SetupTimeUnit {
 export function setupTimeToBusinessDays(value: number, unit: SetupTimeUnit): number {
   const quantity = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
   return unit === "weeks" ? quantity * 5 : quantity;
-}
-
-function recurrenceFromPattern(pattern: string): RecurrenceRule | undefined {
-  if (!pattern) return undefined;
-  return { freq: "monthly", interval: 1 };
 }
 
 const IMPORTED_SERVICE_CATALOG: CatalogItem[] = RAW_SERVICE_TEMPLATES.filter(
@@ -152,9 +148,8 @@ export const DELIVERABLE_CATALOG: CatalogItem[] = [
 export function catalogItemToDeliverable(item: CatalogItem): Deliverable {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + (item.recurrencePattern ? 30 : 1));
   const hasMonthlyCost = item.agencyMonthlyCents > 0 || item.mediaMonthlyCents > 0;
+  const months = item.recurrencePattern || hasMonthlyCost ? 1 : 0;
 
   return {
     id: `cat-${item.catalogId}-${crypto.randomUUID()}`,
@@ -170,15 +165,15 @@ export function catalogItemToDeliverable(item: CatalogItem): Deliverable {
     mediaCostEditable: item.mediaEditable,
     mediaCostLocked: item.mediaLocked,
     quantity: 1,
-    months: hasMonthlyCost ? 1 : 0,
+    months,
     setupTimeValue: item.setupTimeValue,
     setupTimeUnit: item.setupTimeUnit,
     setupLeadDays: item.setupLeadDays,
     dependencyNotes: item.dependencyNotes,
     recurrencePattern: item.recurrencePattern,
-    recurrence: recurrenceFromPattern(item.recurrencePattern),
+    recurrence: recurrenceFromMonths(months),
     notes: item.notes,
     startDate: start,
-    endDate: end,
+    endDate: endDateForMonths(start, months),
   };
 }

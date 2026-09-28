@@ -28,7 +28,9 @@ import {
   CATEGORY_LABELS,
   dateInputValue,
   dependencyWouldCreateCycle,
+  endDateForMonths,
   formatAud,
+  recurrenceFromMonths,
   setupTimeToBusinessDays,
   toCents,
   toDollars,
@@ -38,20 +40,6 @@ import {
 import { calculateProposalCost } from "@/lib/procurement";
 import { usePlannerOptional } from "./planner-provider";
 import { usePersistentDialog } from "./use-persistent-dialog";
-
-const SCHEDULE_REPEAT_OPTIONS = [
-  { value: "none", label: "Doesn't repeat" },
-  { value: "monthly", label: "Repeats every month" },
-] as const;
-
-/**
- * Catalogue presets such as second Thursday are stored, but the schedule
- * treats every non-empty pattern as one monthly mark. The editor therefore
- * offers that single choice and leaves an existing preset untouched.
- */
-function scheduleRepeatChoice(pattern: string | undefined): "none" | "monthly" {
-  return pattern ? "monthly" : "none";
-}
 
 type TimingMode = "lead_time" | "due_date" | "both";
 
@@ -162,12 +150,27 @@ export function DeliverableEditorDialog({
     planner?.setDialogValue(dialogKey, next);
   }
 
+  function applyMonths(months: number): Partial<Deliverable> {
+    const count = Math.max(0, months);
+    return {
+      months: count,
+      recurrence: recurrenceFromMonths(count),
+      endDate: endDateForMonths(draft.startDate, count),
+      recurrencePattern: count > 0 ? draft.recurrencePattern || "monthly_full_bar" : "",
+    };
+  }
+
   function save() {
     const setupTimeValue =
       timing === "due_date" ? 0 : Math.max(0, draft.setupTimeValue ?? draft.setupLeadDays);
     const setupTimeUnit = draft.setupTimeUnit ?? "business_days";
+    const monthsPatch = applyMonths(draft.months ?? 0);
+    const nextEnd = monthsPatch.endDate;
     onSave({
       ...draft,
+      ...monthsPatch,
+      endDate:
+        nextEnd && draft.endDate && draft.endDate > nextEnd ? draft.endDate : nextEnd,
       name: draft.name.trim() || "Untitled service",
       collateralCutoffDate: timing === "lead_time" ? undefined : draft.collateralCutoffDate,
       setupTimeValue,
@@ -263,14 +266,6 @@ export function DeliverableEditorDialog({
               />
             </Field>
           </div>
-
-          <Field label="Requirements">
-            <Textarea
-              rows={3}
-              value={draft.requirements ?? ""}
-              onChange={(event) => patch({ requirements: event.target.value })}
-            />
-          </Field>
 
           <Field label="Notes">
             <Textarea
@@ -417,19 +412,8 @@ export function DeliverableEditorDialog({
             />
             <div className="grid gap-2 sm:col-span-2">
               <CheckRow
-                checked={draft.mediaCostEditable ?? false}
-                disabled={draft.mediaCostLocked}
-                onCheckedChange={(checked) => patch({ mediaCostEditable: checked })}
-                label="Media allowance is editable"
-              />
-              <CheckRow
                 checked={draft.mediaCostLocked ?? false}
-                onCheckedChange={(checked) =>
-                  patch({
-                    mediaCostLocked: checked,
-                    mediaCostEditable: checked ? false : draft.mediaCostEditable,
-                  })
-                }
+                onCheckedChange={(checked) => patch({ mediaCostLocked: checked })}
                 label="Lock the supplied media rate"
               />
             </div>
@@ -457,7 +441,9 @@ export function DeliverableEditorDialog({
                 type="number"
                 min={0}
                 value={draft.months ?? 0}
-                onChange={(event) => patch({ months: Math.max(0, Number(event.target.value)) })}
+                onChange={(event) =>
+                  patch(applyMonths(Math.max(0, Number(event.target.value))))
+                }
               />
             </Field>
             <p className="rounded-md bg-muted px-3 py-2 text-sm sm:col-span-2">
@@ -478,36 +464,6 @@ export function DeliverableEditorDialog({
                 selectedIds={draft.dependsOn ?? []}
                 onChange={(ids) => patch({ dependsOn: ids })}
               />
-            </Field>
-            <Field label="Repeats on the schedule">
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                One-off items (brochure) show once. Monthly items (blog, email, SMS) mark each
-                repeat on the schedule bar. Cost for those months is set in the months field above.
-              </p>
-              <Select
-                value={scheduleRepeatChoice(draft.recurrencePattern)}
-                onValueChange={(value) =>
-                  patch(
-                    value === "none"
-                      ? { recurrencePattern: "", recurrence: undefined }
-                      : {
-                          recurrencePattern: draft.recurrencePattern || "monthly_full_bar",
-                          recurrence: { freq: "monthly", interval: 1 },
-                        },
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHEDULE_REPEAT_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </Field>
             <Field label="Dependency notes (private)">
               <p className="text-xs leading-relaxed text-muted-foreground">

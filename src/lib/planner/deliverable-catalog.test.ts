@@ -107,9 +107,22 @@ describe("catalogItemToDeliverable", () => {
     expect(d.category).toBe("outdoor");
     expect(d.agencyCostCents).toBe(150_000);
     expect(d.mediaCostEditable).toBe(true);
+    expect(d.months).toBe(0);
+    expect(d.recurrence).toBeUndefined();
     expect(d.setupTimeValue).toBe(2);
     expect(d.setupTimeUnit).toBe("weeks");
     expect(deliverableDurationDays(d)).toBe(item.setupLeadDays + 1);
+  });
+
+  test("a monthly catalog item starts on a one-month repeat", () => {
+    const item = DELIVERABLE_CATALOG.find((c) => c.catalogId === "landing_page")!;
+    const d = catalogItemToDeliverable(item);
+    expect(d.months).toBe(1);
+    expect(d.recurrence).toEqual({
+      freq: "monthly",
+      interval: 1,
+      end: { kind: "count", count: 1 },
+    });
   });
 
   test("each conversion produces a unique id", () => {

@@ -7,6 +7,7 @@
 
 import {
   addDays,
+  addMonths,
   differenceInCalendarDays,
   differenceInCalendarMonths,
   startOfDay,
@@ -76,6 +77,27 @@ export function expandRecurrence(
 /** Convenience: expand a deliverable's placement over its own start/end dates. */
 export function deliverableOccurrences(d: Deliverable): Occurrence[] {
   return expandRecurrence(d.recurrence, d.startDate, d.endDate);
+}
+
+/**
+ * Months is the only switch for monthly repeats. Zero or unset = one-off.
+ * A positive count places that many same-day-of-month marks on the schedule.
+ */
+export function recurrenceFromMonths(months: number | undefined): RecurrenceRule | undefined {
+  const count = Math.max(0, Math.trunc(months ?? 0));
+  if (count <= 0) return undefined;
+  return { freq: "monthly", interval: 1, end: { kind: "count", count } };
+}
+
+/**
+ * Stretch the bar far enough for `expandRecurrence` to see every monthly mark.
+ * Months 0 or 1 keep a one-day bar so a single item still has width.
+ */
+export function endDateForMonths(start: Date, months: number | undefined): Date {
+  const count = Math.max(0, Math.trunc(months ?? 0));
+  const startDay = startOfDay(start);
+  if (count <= 1) return addDays(startDay, 1);
+  return addMonths(startDay, count - 1);
 }
 
 function matches(
