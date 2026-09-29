@@ -1,3 +1,5 @@
+import type { SearchMiddleware } from "@tanstack/react-router";
+
 /** UTM parameters captured from the landing URL and kept for the session. */
 
 export interface UtmParams {
@@ -68,6 +70,29 @@ export function loadPersistedUtm(): UtmParams | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Keep campaign UTMs in the address bar across in-app navigations.
+ *
+ * GA4 reads the landing URL when the Google tag sends the first hit. Guest
+ * links replace the search object, which would drop `utm_*` before a slow
+ * tag script runs. This copies only non-empty UTM strings onto the next search.
+ */
+export function retainCampaignSearch(): SearchMiddleware<Record<string, unknown>> {
+  return ({ search, next }) => {
+    const result: Record<string, unknown> = { ...next(search) };
+    for (const key of UTM_KEYS) {
+      const existing = result[key];
+      if (typeof existing === "string" && existing.trim()) continue;
+      const value = search[key];
+      if (typeof value !== "string") continue;
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      result[key] = trimmed.slice(0, 200);
+    }
+    return result;
+  };
 }
 
 /**
