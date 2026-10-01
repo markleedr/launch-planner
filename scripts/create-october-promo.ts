@@ -23,7 +23,7 @@
  * 1. Turn Stripe's test mode on (or live mode, when you mean to).
  * 2. Product catalogue → Coupons → Create coupon.
  *    ID OCT15FREE, name "OCT15 30-day trial", 100% off, duration once,
- *    redeem by 15 Oct 2026 11:59:59 pm Brisbane time.
+ *    redeem by 31 Oct 2026 11:59:59 pm Brisbane time.
  *    Do not apply this coupon to a customer or subscription.
  * 3. Create promotion code OCT15FREE on that coupon, expiring at the same
  *    moment. Customer eligibility: any customer, one use enforced by
@@ -129,7 +129,7 @@ async function main() {
     promotion: { type: "coupon", coupon: couponId },
   });
   console.log(
-    `Created promotion code ${createdCode.code} (${createdCode.id}), expires ${OCTOBER_PROMO_EXPIRES_AT.toISOString()} (11:59:59 pm AEST on 15 Oct 2026).`,
+    `Created promotion code ${createdCode.code} (${createdCode.id}), expires ${OCTOBER_PROMO_EXPIRES_AT.toISOString()} (11:59:59 pm AEST on 31 Oct 2026).`,
   );
   console.log(
     "Do not apply this coupon to a subscription. Launch Planner uses the code only to set a 30-day trial.",

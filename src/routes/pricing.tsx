@@ -255,7 +255,7 @@ function PricingPage() {
                       />
                       <p className="text-xs text-muted-foreground">
                         {OCTOBER_PROMO_CODE} gives 30 days free, instead of 14, for signups by 11:59
-                        pm AEST on 15 October 2026. One use per account.
+                        pm AEST on 31 October 2026. One use per account.
                       </p>
                     </div>
                     {promoCode.trim() ? (
@@ -495,7 +495,7 @@ function PricingPage() {
               <AccordionTrigger>Is there a free trial?</AccordionTrigger>
               <AccordionContent>
                 Yes. A new signup includes 14 days free. Sign up with {OCTOBER_PROMO_CODE} by 11:59
-                pm AEST on 15 October 2026 and that becomes 30 days free, not 44. When the trial
+                pm AEST on 31 October 2026 and that becomes 30 days free, not 44. When the trial
                 ends, subscribe to keep access. Your projects stay saved either way. The plan is
                 still {BILLING_PLAN.priceLabel} per month.
               </AccordionContent>

@@ -135,7 +135,7 @@ describe("October promotion code", () => {
     expect(draft.customer).toBe("cus_ada");
   });
 
-  test("the code is accepted at 11:59:59 pm AEST on 15 October 2026 and rejected a second later", () => {
+  test("the code is accepted at 11:59:59 pm AEST on 31 October 2026 and rejected a second later", () => {
     const accepted = evaluateSignupTrial({
       promoCode: OCTOBER_PROMO_CODE,
       email: "ada@example.com",
@@ -151,6 +151,41 @@ describe("October promotion code", () => {
     expect(accepted.ok).toBe(true);
     expect(rejected.ok).toBe(false);
     if (!rejected.ok) expect(rejected.message).toContain("expired");
+  });
+
+  test("a code signup on 31 October 2026 before 13:59:59Z still gets 30 days", () => {
+    const signupAt = new Date("2026-10-31T01:00:00.000Z");
+    const offer = evaluateSignupTrial({
+      promoCode: OCTOBER_PROMO_CODE,
+      email: "ada@example.com",
+      now: signupAt,
+      redemptions: [],
+      stripePromotion: ACTIVE_PROMO,
+    });
+    expect(offer.ok).toBe(true);
+    if (!offer.ok) return;
+    expect(offer.trialDays).toBe(PROMO_TRIAL_DAYS);
+    expect(offer.trialDays).toBe(30);
+    expect(offer.trialDays).not.toBe(DEFAULT_TRIAL_DAYS + PROMO_TRIAL_DAYS);
+    const trialEnd = trialEndFromSignup(signupAt, offer.trialDays);
+    expect(trialEnd.toISOString()).toBe("2026-11-30T01:00:00.000Z");
+    expect(trialEnd.getTime() - signupAt.getTime()).toBe(30 * 24 * 60 * 60 * 1000);
+  });
+
+  test("the code is rejected after 2026-10-31T13:59:59Z", () => {
+    const rejected = evaluateSignupTrial({
+      promoCode: OCTOBER_PROMO_CODE,
+      email: "ada@example.com",
+      now: new Date("2026-10-31T14:00:00.000Z"),
+      redemptions: [],
+      stripePromotion: ACTIVE_PROMO,
+    });
+    expect(rejected.ok).toBe(false);
+    if (!rejected.ok) {
+      expect(rejected.message).toBe(
+        "That promotion code expired at 11:59 pm AEST on 31 October 2026.",
+      );
+    }
   });
 
   test("a second use by the same account is rejected", () => {
@@ -270,7 +305,7 @@ describe("October Stripe coupon payload", () => {
     const coupon = octoberCouponCreateParams();
     expect(coupon.id).toBe("OCT15FREE");
     expect(coupon.redeem_by).toBe(Math.floor(OCTOBER_PROMO_EXPIRES_AT.getTime() / 1000));
-    expect(new Date(coupon.redeem_by * 1000).toISOString()).toBe("2026-10-15T13:59:59.000Z");
+    expect(new Date(coupon.redeem_by * 1000).toISOString()).toBe("2026-10-31T13:59:59.000Z");
     expect(coupon.metadata.effect).toBe("replace_14_day_trial_with_30_days");
     expect(coupon.metadata.apply_as_discount).toBe("false");
     expect(coupon.metadata.effect).not.toContain("44");

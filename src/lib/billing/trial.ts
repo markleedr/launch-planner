@@ -15,14 +15,14 @@ import {
 export const DEFAULT_TRIAL_DAYS = 14;
 export const PROMO_TRIAL_DAYS = 30;
 
-/** Customer-facing Stripe promotion code for the 15 October 2026 offer. */
+/** Customer-facing Stripe promotion code for the 31 October 2026 offer. */
 export const OCTOBER_PROMO_CODE = "OCT15FREE";
 
 /**
- * 11:59:59 pm on 15 October 2026 in Brisbane (AEST, UTC+10, no daylight saving).
+ * 11:59:59 pm on 31 October 2026 in Brisbane (AEST, UTC+10, no daylight saving).
  * The code is valid through this instant and rejected a second later.
  */
-export const OCTOBER_PROMO_EXPIRES_AT = new Date("2026-10-15T13:59:59.000Z");
+export const OCTOBER_PROMO_EXPIRES_AT = new Date("2026-10-31T13:59:59.000Z");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -180,7 +180,7 @@ export function evaluateSignupTrial(input: {
   if (now.getTime() > OCTOBER_PROMO_EXPIRES_AT.getTime()) {
     return {
       ok: false,
-      message: "That promotion code expired at 11:59 pm AEST on 15 October 2026.",
+      message: "That promotion code expired at 11:59 pm AEST on 31 October 2026.",
     };
   }
   if (input.stripePromotion !== undefined) {
@@ -205,7 +205,7 @@ export function promotionCodeAllowsRedemption(
   if (now.getTime() > cutoff) {
     return {
       ok: false,
-      message: "That promotion code expired at 11:59 pm AEST on 15 October 2026.",
+      message: "That promotion code expired at 11:59 pm AEST on 31 October 2026.",
     };
   }
   return { ok: true };
