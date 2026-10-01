@@ -82,7 +82,7 @@ export function ProjectWizard({
   sample?: "teneriffe";
   /** When true, persist to sessionStorage instead of Supabase. */
   guestMode?: boolean;
-  finishTo?: "/planner" | "/urban-developer/plan" | "/webinar-23-sept/plan";
+  finishTo?: "/planner" | "/urban-developer/plan" | "/webinar-23-sept/plan" | "/start/plan";
 }) {
   const p = usePlanner();
   const navigate = useNavigate();

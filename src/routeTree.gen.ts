@@ -19,6 +19,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UrbanDeveloperRouteImport } from './routes/urban-developer'
 import { Route as Webinar23SeptRouteImport } from './routes/webinar-23-sept'
@@ -27,6 +28,10 @@ import { Route as PlannerIndexRouteImport } from './routes/planner/index'
 import { Route as PlannerNewRouteImport } from './routes/planner/new'
 import { Route as PlannerSummaryRouteImport } from './routes/planner/summary'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
+import { Route as StartIndexRouteImport } from './routes/start/index'
+import { Route as StartNewRouteImport } from './routes/start/new'
+import { Route as StartPlanRouteImport } from './routes/start/plan'
+import { Route as StartSummaryRouteImport } from './routes/start/summary'
 import { Route as UrbanDeveloperIndexRouteImport } from './routes/urban-developer/index'
 import { Route as UrbanDeveloperNewRouteImport } from './routes/urban-developer/new'
 import { Route as UrbanDeveloperPlanRouteImport } from './routes/urban-developer/plan'
@@ -91,6 +96,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -130,6 +140,26 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const StartIndexRoute = StartIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StartRoute,
+} as any)
+const StartNewRoute = StartNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => StartRoute,
+} as any)
+const StartPlanRoute = StartPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => StartRoute,
+} as any)
+const StartSummaryRoute = StartSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => StartRoute,
 } as any)
 const UrbanDeveloperIndexRoute = UrbanDeveloperIndexRouteImport.update({
   id: '/',
@@ -209,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/start': typeof StartRouteWithChildren
   '/terms': typeof TermsRoute
   '/urban-developer': typeof UrbanDeveloperRouteWithChildren
   '/webinar-23-sept': typeof Webinar23SeptRouteWithChildren
@@ -216,6 +247,9 @@ export interface FileRoutesByFullPath {
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/start/new': typeof StartNewRoute
+  '/start/plan': typeof StartPlanRoute
+  '/start/summary': typeof StartSummaryRoute
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
@@ -223,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
   '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner/': typeof PlannerIndexRoute
+  '/start/': typeof StartIndexRoute
   '/urban-developer/': typeof UrbanDeveloperIndexRoute
   '/webinar-23-sept/': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
@@ -246,6 +281,9 @@ export interface FileRoutesByTo {
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/start/new': typeof StartNewRoute
+  '/start/plan': typeof StartPlanRoute
+  '/start/summary': typeof StartSummaryRoute
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
@@ -253,6 +291,7 @@ export interface FileRoutesByTo {
   '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
   '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner': typeof PlannerIndexRoute
+  '/start': typeof StartIndexRoute
   '/urban-developer': typeof UrbanDeveloperIndexRoute
   '/webinar-23-sept': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
@@ -273,6 +312,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/start': typeof StartRouteWithChildren
   '/terms': typeof TermsRoute
   '/urban-developer': typeof UrbanDeveloperRouteWithChildren
   '/webinar-23-sept': typeof Webinar23SeptRouteWithChildren
@@ -280,6 +320,9 @@ export interface FileRoutesById {
   '/planner/new': typeof PlannerNewRoute
   '/planner/summary': typeof PlannerSummaryRoute
   '/share/$token': typeof ShareTokenRoute
+  '/start/new': typeof StartNewRoute
+  '/start/plan': typeof StartPlanRoute
+  '/start/summary': typeof StartSummaryRoute
   '/urban-developer/new': typeof UrbanDeveloperNewRoute
   '/urban-developer/plan': typeof UrbanDeveloperPlanRoute
   '/urban-developer/summary': typeof UrbanDeveloperSummaryRoute
@@ -287,6 +330,7 @@ export interface FileRoutesById {
   '/webinar-23-sept/plan': typeof Webinar23SeptPlanRoute
   '/webinar-23-sept/summary': typeof Webinar23SeptSummaryRoute
   '/planner/': typeof PlannerIndexRoute
+  '/start/': typeof StartIndexRoute
   '/urban-developer/': typeof UrbanDeveloperIndexRoute
   '/webinar-23-sept/': typeof Webinar23SeptIndexRoute
   '/api/workflows/process': typeof ApiWorkflowsProcessRoute
@@ -308,6 +352,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/projects'
     | '/reset-password'
+    | '/start'
     | '/terms'
     | '/urban-developer'
     | '/webinar-23-sept'
@@ -315,6 +360,9 @@ export interface FileRouteTypes {
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/start/new'
+    | '/start/plan'
+    | '/start/summary'
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
@@ -322,6 +370,7 @@ export interface FileRouteTypes {
     | '/webinar-23-sept/plan'
     | '/webinar-23-sept/summary'
     | '/planner/'
+    | '/start/'
     | '/urban-developer/'
     | '/webinar-23-sept/'
     | '/api/workflows/process'
@@ -345,6 +394,9 @@ export interface FileRouteTypes {
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/start/new'
+    | '/start/plan'
+    | '/start/summary'
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
@@ -352,6 +404,7 @@ export interface FileRouteTypes {
     | '/webinar-23-sept/plan'
     | '/webinar-23-sept/summary'
     | '/planner'
+    | '/start'
     | '/urban-developer'
     | '/webinar-23-sept'
     | '/api/workflows/process'
@@ -371,6 +424,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/projects'
     | '/reset-password'
+    | '/start'
     | '/terms'
     | '/urban-developer'
     | '/webinar-23-sept'
@@ -378,6 +432,9 @@ export interface FileRouteTypes {
     | '/planner/new'
     | '/planner/summary'
     | '/share/$token'
+    | '/start/new'
+    | '/start/plan'
+    | '/start/summary'
     | '/urban-developer/new'
     | '/urban-developer/plan'
     | '/urban-developer/summary'
@@ -385,6 +442,7 @@ export interface FileRouteTypes {
     | '/webinar-23-sept/plan'
     | '/webinar-23-sept/summary'
     | '/planner/'
+    | '/start/'
     | '/urban-developer/'
     | '/webinar-23-sept/'
     | '/api/workflows/process'
@@ -405,6 +463,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  StartRoute: typeof StartRouteWithChildren
   TermsRoute: typeof TermsRoute
   UrbanDeveloperRoute: typeof UrbanDeveloperRouteWithChildren
   Webinar23SeptRoute: typeof Webinar23SeptRouteWithChildren
@@ -489,6 +548,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -544,6 +610,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/share/$token'
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/start/': {
+      id: '/start/'
+      path: '/'
+      fullPath: '/start/'
+      preLoaderRoute: typeof StartIndexRouteImport
+      parentRoute: typeof StartRoute
+    }
+    '/start/new': {
+      id: '/start/new'
+      path: '/new'
+      fullPath: '/start/new'
+      preLoaderRoute: typeof StartNewRouteImport
+      parentRoute: typeof StartRoute
+    }
+    '/start/plan': {
+      id: '/start/plan'
+      path: '/plan'
+      fullPath: '/start/plan'
+      preLoaderRoute: typeof StartPlanRouteImport
+      parentRoute: typeof StartRoute
+    }
+    '/start/summary': {
+      id: '/start/summary'
+      path: '/summary'
+      fullPath: '/start/summary'
+      preLoaderRoute: typeof StartSummaryRouteImport
+      parentRoute: typeof StartRoute
     }
     '/urban-developer/': {
       id: '/urban-developer/'
@@ -654,6 +748,22 @@ const PlannerRouteChildren: PlannerRouteChildren = {
 const PlannerRouteWithChildren =
   PlannerRoute._addFileChildren(PlannerRouteChildren)
 
+interface StartRouteChildren {
+  StartNewRoute: typeof StartNewRoute
+  StartPlanRoute: typeof StartPlanRoute
+  StartSummaryRoute: typeof StartSummaryRoute
+  StartIndexRoute: typeof StartIndexRoute
+}
+
+const StartRouteChildren: StartRouteChildren = {
+  StartNewRoute: StartNewRoute,
+  StartPlanRoute: StartPlanRoute,
+  StartSummaryRoute: StartSummaryRoute,
+  StartIndexRoute: StartIndexRoute,
+}
+
+const StartRouteWithChildren = StartRoute._addFileChildren(StartRouteChildren)
+
 interface UrbanDeveloperRouteChildren {
   UrbanDeveloperNewRoute: typeof UrbanDeveloperNewRoute
   UrbanDeveloperPlanRoute: typeof UrbanDeveloperPlanRoute
@@ -701,6 +811,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  StartRoute: StartRouteWithChildren,
   TermsRoute: TermsRoute,
   UrbanDeveloperRoute: UrbanDeveloperRouteWithChildren,
   Webinar23SeptRoute: Webinar23SeptRouteWithChildren,

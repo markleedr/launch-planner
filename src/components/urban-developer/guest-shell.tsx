@@ -204,7 +204,11 @@ function SidebarLink({
     | "/webinar-23-sept"
     | "/webinar-23-sept/new"
     | "/webinar-23-sept/plan"
-    | "/webinar-23-sept/summary";
+    | "/webinar-23-sept/summary"
+    | "/start"
+    | "/start/new"
+    | "/start/plan"
+    | "/start/summary";
 }) {
   return (
     <Link
