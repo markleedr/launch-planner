@@ -59,4 +59,44 @@ describe("campaign search retention", () => {
       utm_campaign: "tud-oct-nov-2026",
     });
   });
+
+  test("keeps paid-campaign UTMs on /start", async () => {
+    const history = createMemoryHistory({
+      initialEntries: [
+        "/start?utm_source=google&utm_medium=display&utm_campaign=launch-planner-retargeting&utm_content=rda",
+      ],
+    });
+    const router = createRouter({
+      routeTree,
+      history,
+      context: { queryClient: new QueryClient() },
+      isServer: false,
+      origin: "http://localhost",
+    });
+
+    await router.load();
+    expect(router.state.location.search).toMatchObject({
+      utm_source: "google",
+      utm_medium: "display",
+      utm_campaign: "launch-planner-retargeting",
+      utm_content: "rda",
+    });
+
+    await router.navigate({ to: "/start/new", search: { sample: "teneriffe" } });
+    expect(router.state.location.search).toMatchObject({
+      sample: "teneriffe",
+      utm_source: "google",
+      utm_medium: "display",
+      utm_campaign: "launch-planner-retargeting",
+      utm_content: "rda",
+    });
+
+    await router.navigate({ to: "/start/summary" });
+    expect(router.state.location.search).toMatchObject({
+      utm_source: "google",
+      utm_medium: "display",
+      utm_campaign: "launch-planner-retargeting",
+      utm_content: "rda",
+    });
+  });
 });
