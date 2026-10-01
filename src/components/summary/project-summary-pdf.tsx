@@ -187,8 +187,13 @@ export async function downloadProjectSummaryPdf(
   hideBudgets = false,
 ) {
   const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
-  const heroUrl =
-    typeof window !== "undefined" ? new URL(hero.src, window.location.origin).href : hero.src;
+  const { displayHeroSrc } = await import("@/components/planner/hero-image");
+  const heroSrc = await displayHeroSrc(hero.src);
+  const heroUrl = heroSrc.startsWith("http")
+    ? heroSrc
+    : typeof window !== "undefined"
+      ? new URL(heroSrc, window.location.origin).href
+      : heroSrc;
   const blob = await pdf(
     <ProjectSummaryPdf
       snapshot={snapshot}

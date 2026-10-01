@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Json } from "@/integrations/supabase/types";
 import {
   adminClient,
   assertProjectOwner,
@@ -11,6 +10,9 @@ import {
   table,
 } from "./server-helpers";
 import { redactSharedBudgets, SHARE_HIDDEN_FIELDS } from "./share-privacy";
+import type { Json } from "@/integrations/supabase/types";
+import { shareExpiryError } from "@/lib/planner/share-expiry";
+import { signStoredProjectHero } from "@/lib/planner/project-assets.server";
 
 const hiddenFieldSchema = z.enum(SHARE_HIDDEN_FIELDS);
 
@@ -21,7 +23,7 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
       .object({
         projectId: z.string().uuid(),
         providerName: z.string().trim().min(1).max(200),
-        expiresAt: z.string().datetime().optional(),
+        expiresAt: z.string().datetime(),
         hiddenContactFields: z.array(hiddenFieldSchema).max(SHARE_HIDDEN_FIELDS.length).default([]),
         origin: z.string().url(),
       })
@@ -32,6 +34,9 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
     const userId = context.userId as string;
     await assertProjectOwner(client, data.projectId, userId);
     const origin = cleanOrigin(data.origin);
+    const expiresAt = new Date(data.expiresAt);
+    const expiryProblem = shareExpiryError(expiresAt);
+    if (expiryProblem) throw new Error(expiryProblem);
     const rawToken = randomToken();
     const tokenHash = await sha256(rawToken);
     const { data: link, error } = await table(client, "project_share_link")
@@ -39,7 +44,7 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
         project_id: data.projectId,
         provider_name: data.providerName,
         token_hash: tokenHash,
-        expires_at: data.expiresAt ?? null,
+        expires_at: expiresAt.toISOString(),
         hidden_contact_fields: data.hiddenContactFields,
         created_by: userId,
       })
@@ -115,7 +120,7 @@ export const getSharedProject = createServerFn({ method: "GET" })
       view_count: number;
     };
     if (link.revoked_at) throw new Error("This shared summary has been revoked.");
-    if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
+    if (!link.expires_at || new Date(link.expires_at).getTime() < Date.now()) {
       throw new Error("This shared summary has expired.");
     }
 
@@ -172,11 +177,12 @@ export const getSharedProject = createServerFn({ method: "GET" })
       name: string;
       data: Json;
     };
+    const snapshot = hideBudgets ? redactSharedBudgets(project.data) : project.data;
     return {
       project: {
         id: project.id,
         name: project.name,
-        snapshot: hideBudgets ? redactSharedBudgets(project.data) : project.data,
+        snapshot: await withSignedHero(client, snapshot),
       },
       parties,
       providerName: link.provider_name,
@@ -184,3 +190,19 @@ export const getSharedProject = createServerFn({ method: "GET" })
       hideBudgets,
     };
   });
+
+async function withSignedHero(
+  client: Awaited<ReturnType<typeof adminClient>>,
+  snapshot: Json,
+): Promise<Json> {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return snapshot;
+  const hero = snapshot.heroImageUrl;
+  if (typeof hero !== "string" || hero.length === 0) return snapshot;
+  try {
+    const signed = await signStoredProjectHero(client, hero);
+    if (signed === hero) return snapshot;
+    return { ...snapshot, heroImageUrl: signed };
+  } catch {
+    return snapshot;
+  }
+}

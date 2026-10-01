@@ -16,9 +16,9 @@ import {
   formatPercent,
   formatProjectAddress,
   googleMapsUrl,
-  resolveHeroImage,
   type PlannerSnapshot,
 } from "@/lib/planner";
+import { ResolvedHeroImage } from "@/components/planner/hero-image";
 import { calculateProposalCost, PROJECT_PARTY_ROLE_LABELS } from "@/lib/procurement";
 import { deriveProjectSummary, type PublicProjectParty } from "./summary-model";
 
@@ -40,7 +40,6 @@ export function ProjectSummary({
     ? [sharedBy.fullName, sharedBy.organisationName].filter(Boolean).join(", ")
     : "";
   const { financials, budget, grouped, schedule, launchDate } = deriveProjectSummary(snapshot);
-  const hero = resolveHeroImage(snapshot.heroImageId, snapshot.heroImageUrl);
   const address = formatProjectAddress(snapshot.address) || snapshot.location;
   const mapUrl = googleMapsUrl(snapshot.address);
   const mapEmbedUrl = googleMapsEmbedUrl(address);
@@ -66,7 +65,11 @@ export function ProjectSummary({
 
       <section className="overflow-hidden rounded-xl border bg-card">
         <div className="relative aspect-[16/6] min-h-52 bg-muted">
-          <img src={hero.src} alt={hero.alt} className="h-full w-full object-cover" />
+          <ResolvedHeroImage
+            imageId={snapshot.heroImageId}
+            imageUrl={snapshot.heroImageUrl}
+            className="h-full w-full object-cover"
+          />
           <div className="absolute inset-0 bg-black/40" />
           <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">

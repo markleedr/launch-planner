@@ -21,6 +21,12 @@ import {
   revokeProjectShareLink,
 } from "@/lib/procurement/sharing.server";
 import type { ShareHiddenField } from "@/lib/procurement/share-privacy";
+import {
+  defaultShareExpiry,
+  maxShareExpiry,
+  shareExpiryError,
+  toDatetimeLocalValue,
+} from "@/lib/planner/share-expiry";
 
 type HiddenField = ShareHiddenField;
 
@@ -46,7 +52,7 @@ const PRIVACY_FIELDS: Array<{ id: HiddenField; label: string }> = [
 export function ShareManager({ projectId }: { projectId: string | null }) {
   const [open, setOpen] = useState(false);
   const [providerName, setProviderName] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [expiresAt, setExpiresAt] = useState(() => toDatetimeLocalValue(defaultShareExpiry()));
   const [hiddenFields, setHiddenFields] = useState<HiddenField[]>([]);
   const [rows, setRows] = useState<ShareRow[]>([]);
   const [newUrl, setNewUrl] = useState("");
@@ -55,7 +61,13 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ShareRow | null>(null);
-  const expiryInPast = Boolean(expiresAt) && new Date(expiresAt).getTime() < Date.now();
+  const expiryProblem = expiresAt
+    ? shareExpiryError(new Date(expiresAt))
+    : "Choose an expiry date.";
+  const expiryBounds = {
+    min: toDatetimeLocalValue(new Date()),
+    max: toDatetimeLocalValue(maxShareExpiry()),
+  };
   const allContactFieldsHidden = PRIVACY_FIELDS.every((field) => hiddenFields.includes(field.id));
   const budgetsHidden = hiddenFields.includes("budget");
 
@@ -77,8 +89,13 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!open) return;
+    setExpiresAt(toDatetimeLocalValue(defaultShareExpiry()));
+  }, [open]);
+
   async function create() {
-    if (!projectId || !providerName.trim()) return;
+    if (!projectId || !providerName.trim() || expiryProblem) return;
     setBusy(true);
     setError(null);
     try {
@@ -86,7 +103,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         data: {
           projectId,
           providerName: providerName.trim(),
-          expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+          expiresAt: new Date(expiresAt).toISOString(),
           hiddenContactFields: hiddenFields,
           origin: window.location.origin,
         },
@@ -142,8 +159,9 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
           <DialogTitle>Share with a provider</DialogTitle>
           <DialogDescription>
             Create a unique private link for each provider. Anyone with the link can read the
-            summary and download a PDF. They cannot edit the project. Hide contact details or the
-            budget if this provider should not see them. Links can be revoked independently.
+            summary and download a PDF until it expires. They cannot edit the project. Hide contact
+            details or the budget if this provider should not see them. Links can be revoked
+            independently.
           </DialogDescription>
         </DialogHeader>
 
@@ -159,17 +177,20 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="share-expiry">Optional expiry</Label>
+              <Label htmlFor="share-expiry">Expiry *</Label>
               <Input
                 id="share-expiry"
                 type="datetime-local"
-                min={nowLocalInputValue()}
+                required
+                min={expiryBounds.min}
+                max={expiryBounds.max}
                 value={expiresAt}
                 onChange={(event) => setExpiresAt(event.target.value)}
               />
-              {expiryInPast && (
-                <p className="text-xs text-destructive">Pick a time in the future.</p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Defaults to 30 days. The longest a link can last is 90 days.
+              </p>
+              {expiryProblem ? <p className="text-xs text-destructive">{expiryProblem}</p> : null}
             </div>
           </div>
 
@@ -331,7 +352,7 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
         <DialogFooter>
           <Button
             type="button"
-            disabled={busy || !providerName.trim() || expiryInPast}
+            disabled={busy || !providerName.trim() || Boolean(expiryProblem)}
             onClick={() => void create()}
           >
             {busy ? (
@@ -356,13 +377,6 @@ export function ShareManager({ projectId }: { projectId: string | null }) {
       />
     </Dialog>
   );
-}
-
-function nowLocalInputValue(): string {
-  const now = new Date();
-  now.setSeconds(0, 0);
-  const offsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function normaliseShareRow(row: Record<string, unknown>): ShareRow {

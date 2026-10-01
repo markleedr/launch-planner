@@ -45,7 +45,7 @@ export interface ShareLink {
   projectId: string;
   providerName: string;
   url?: string;
-  expiresAt?: string;
+  expiresAt: string;
   revokedAt?: string;
   hiddenContactFields: Array<"representativeName" | "email" | "phone" | "website" | "budget">;
   firstViewedAt?: string;

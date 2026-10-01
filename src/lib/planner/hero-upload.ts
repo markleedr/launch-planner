@@ -23,7 +23,10 @@ export function heroImageFileError(file: File): string | null {
   return null;
 }
 
-/** Upload a project cover and return its public URL. The caller saves that URL on the plan. */
+/**
+ * Upload a project cover and return its storage path. The caller saves that
+ * path on the plan. Pages turn it into a short-lived signed URL when shown.
+ */
 export async function uploadProjectHero(projectId: string, file: File): Promise<string> {
   const problem = heroImageFileError(file);
   if (problem) throw new Error(problem);
@@ -35,5 +38,5 @@ export async function uploadProjectHero(projectId: string, file: File): Promise<
     .from("project-heroes")
     .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType });
   if (error) throw error;
-  return prepared.publicUrl;
+  return prepared.path;
 }

@@ -1,7 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { adminClient, table } from "@/lib/procurement/server-helpers";
 import { forwardLeadToCrm } from "@/lib/leads/crm-forward.server";
+import {
+  allowAndRecord,
+  LEAD_EMAIL_LIMIT,
+  LEAD_IP_LIMIT,
+  LEAD_WINDOW_MS,
+  planSnapshotTooLarge,
+} from "@/lib/leads/lead-guard";
 
 const utmField = z
   .string()
@@ -27,7 +35,13 @@ const captureLeadSchema = z.object({
   utm_campaign: utmField,
   utm_content: utmField,
   utm_term: utmField,
-  plan_snapshot: z.record(z.unknown()).optional().nullable(),
+  plan_snapshot: z
+    .record(z.unknown())
+    .optional()
+    .nullable()
+    .refine((snapshot) => !planSnapshotTooLarge(snapshot), {
+      message: "That plan is too large to save with this request.",
+    }),
   capture_point: z.enum(["info_toaster", "pdf_export"]),
   page_url: urlField,
   referrer: urlField,
@@ -39,7 +53,9 @@ export type CaptureLeadInput = z.infer<typeof captureLeadSchema>;
 export const captureLead = createServerFn({ method: "POST" })
   .inputValidator((input) => captureLeadSchema.parse(input))
   .handler(async ({ data }) => {
+    assertIpRateLimit(clientAddress(getRequest()));
     const client = await adminClient();
+    await assertEmailRateLimit(client, data.email);
     const { data: inserted, error } = await table(client, "leads")
       .insert({
         email: data.email,
@@ -81,3 +97,42 @@ export const captureLead = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+const ipHits = new Map<string, number[]>();
+
+function clientAddress(request: Request | undefined): string {
+  const forwarded = request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (forwarded) return forwarded.slice(0, 200);
+  return "unknown";
+}
+
+function assertIpRateLimit(address: string): void {
+  const result = allowAndRecord(
+    ipHits.get(address) ?? [],
+    Date.now(),
+    LEAD_WINDOW_MS,
+    LEAD_IP_LIMIT,
+  );
+  ipHits.set(address, result.timestamps);
+  if (!result.allowed) {
+    throw new Error("Too many requests from this network. Please try again later.");
+  }
+}
+
+async function assertEmailRateLimit(
+  client: Awaited<ReturnType<typeof adminClient>>,
+  email: string,
+): Promise<void> {
+  const since = new Date(Date.now() - LEAD_WINDOW_MS).toISOString();
+  const { count, error } = await table(client, "leads")
+    .select("id", { count: "exact", head: true })
+    .eq("email", email)
+    .gte("created_at", since);
+  if (error) {
+    console.error("[leads] rate limit check failed:", error.message);
+    throw new Error("We couldn't save your email just now. Please try again.");
+  }
+  if ((count ?? 0) >= LEAD_EMAIL_LIMIT) {
+    throw new Error("That email has already been sent a few times. Please try again later.");
+  }
+}

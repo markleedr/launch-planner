@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { ResolvedHeroImage } from "@/components/planner/hero-image";
 import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import type { ProjectRow } from "@/lib/project-store";
 import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
@@ -85,8 +86,9 @@ export function ProjectCard({
         className="relative block aspect-[16/8] bg-muted"
         aria-label={`Open ${project.name}`}
       >
-        <img
-          src={hero.src}
+        <ResolvedHeroImage
+          imageId={project.heroImageId}
+          imageUrl={project.heroImageUrl}
           alt={hero.alt}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
@@ -341,8 +343,9 @@ function CoverDialog({
         <div className="grid gap-3 sm:grid-cols-2">
           {usingUpload ? (
             <div className="overflow-hidden rounded-lg border-2 border-foreground sm:col-span-2">
-              <img
-                src={project.heroImageUrl}
+              <ResolvedHeroImage
+                imageId={project.heroImageId}
+                imageUrl={project.heroImageUrl}
                 alt="Current cover"
                 className="aspect-[3/1] w-full object-cover"
               />
