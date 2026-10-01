@@ -57,14 +57,27 @@ export function stripeCustomerId(
   return typeof customer === "string" ? customer : customer.id;
 }
 
+type PeriodSubscription = {
+  status?: string;
+  trial_end?: number | null;
+  current_period_end?: number | null;
+  items?: { data?: Array<{ current_period_end?: number | null }> | null } | null;
+};
+
 /**
  * Stripe's 2025-03-31 API moved subscription period dates onto subscription
  * items. Supporting both shapes keeps existing and newer webhook versions safe.
+ * While the subscription is trialing, trial_end is the access boundary.
  */
-export function stripeCurrentPeriodEnd(subscription: Stripe.Subscription): Date | null {
-  const legacyEnd = (subscription as Stripe.Subscription & { current_period_end?: number })
-    .current_period_end;
-  const itemEnds = subscription.items.data
+export function stripeCurrentPeriodEnd(
+  subscription: Stripe.Subscription | PeriodSubscription,
+): Date | null {
+  const record = subscription as PeriodSubscription;
+  if (record.status === "trialing" && typeof record.trial_end === "number") {
+    return new Date(record.trial_end * 1000);
+  }
+  const legacyEnd = record.current_period_end ?? undefined;
+  const itemEnds = (record.items?.data ?? [])
     .map((item) => item.current_period_end)
     .filter((value): value is number => typeof value === "number");
   const unixSeconds = legacyEnd ?? (itemEnds.length ? Math.max(...itemEnds) : undefined);

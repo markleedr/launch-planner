@@ -39,10 +39,10 @@ function TermsAndConditions() {
 
       <LegalSection title="2. The service">
         <p>
-          Launch Planner helps property professionals prepare project details, deliverables, budgets,
-          schedules, supplier information, contractor requests, proposals, collateral workflows,
-          summaries and exports. We may improve or update the service over time, provided changes do
-          not remove rights that cannot lawfully be excluded.
+          Launch Planner helps property professionals prepare project details, deliverables,
+          budgets, schedules, supplier information, contractor requests, proposals, collateral
+          workflows, summaries and exports. We may improve or update the service over time, provided
+          changes do not remove rights that cannot lawfully be excluded.
         </p>
         <p>
           A subscription is licensed to one individual login. You must not share login credentials,
@@ -68,14 +68,19 @@ function TermsAndConditions() {
 
       <LegalSection title="4. Subscription, billing and cancellation">
         <p>
-          Launch Planner costs A$49 per month unless a different price is clearly displayed
-          before checkout. Prices are inclusive of GST where applicable. Stripe processes payment
-          details on our behalf.
+          Launch Planner costs A$49 per month unless a different price is clearly displayed before
+          checkout. Prices are inclusive of GST where applicable. Stripe processes payment details
+          on our behalf.
         </p>
         <LegalList>
           <li>
             Your subscription begins when Stripe confirms payment and renews automatically each
             month until cancelled.
+          </li>
+          <li>
+            When a free trial is offered, it starts when you finish signup. Paid features stop when
+            the trial ends, until you subscribe. We keep your account and projects; ending a trial
+            does not delete them. The monthly price above applies once a paid subscription starts.
           </li>
           <li>
             You authorise recurring charges to your selected payment method. If payment fails, we

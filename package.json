@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "bun test src",
+    "stripe:october-promo": "bun scripts/create-october-promo.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write ."
   },

@@ -21,6 +21,10 @@ const SUBSCRIPTION_EVENTS = new Set([
   "customer.subscription.deleted",
   "customer.subscription.paused",
   "customer.subscription.resumed",
+  // Sent a few days before trial end. The payload is a Subscription, same as
+  // the other subscription events. Sync it; do not 500 or treat it as foreign
+  // just because the status is trialing.
+  "customer.subscription.trial_will_end",
 ]);
 
 /** These events reference a subscription by id and need a retrieve first. */

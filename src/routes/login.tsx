@@ -113,8 +113,7 @@ function LoginPage() {
           <CardContent>
             {checkout === "success" && (
               <p className="mb-4 rounded-md bg-muted p-3 text-sm text-muted-foreground">
-                Payment complete. Check your email for a secure link to set your password, then sign
-                in here.
+                Check your email for a secure link to set your password, then sign in here.
               </p>
             )}
             <form onSubmit={submit} className="space-y-4">

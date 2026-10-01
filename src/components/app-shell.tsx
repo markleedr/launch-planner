@@ -18,7 +18,7 @@ import Footer from "@/components/home/Footer";
 import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { BILLING_ENABLED } from "@/hooks/use-subscription";
+import { BILLING_ENABLED, useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { createBillingPortalSession } from "@/lib/billing/billing.server";
 import { cn } from "@/lib/utils";
@@ -56,6 +56,7 @@ export function AppShell({
   title,
 }: AppShellProps) {
   const navigate = useNavigate();
+  const { trialLabel } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const [billingBusy, setBillingBusy] = useState(false);
 
@@ -141,6 +142,14 @@ export function AppShell({
               <NotificationBell />
             </div>
           </div>
+          {trialLabel ? (
+            <p
+              className="border-t px-4 py-2 text-center text-sm font-medium text-foreground sm:px-6 lg:px-8"
+              data-testid="trial-days-left"
+            >
+              {trialLabel}
+            </p>
+          ) : null}
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col">

@@ -14,7 +14,7 @@ import { syncSubscription } from "@/lib/billing/billing.server";
  */
 export function RequireSubscription({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useSession();
-  const { active, loading, billingEnabled, refresh } = useSubscription();
+  const { active, loading, billingEnabled, refresh, trialEnded } = useSubscription();
   const currentLocation = useRouterState({ select: (state) => state.location.href });
   const redirect = useRef(currentLocation).current;
   const [syncing, setSyncing] = useState(false);
@@ -51,7 +51,11 @@ export function RequireSubscription({ children }: { children: ReactNode }) {
   }
   if (loading || syncing) return null;
   if (!active && !syncAttempted.current) return null;
-  if (!active) return <Navigate to="/pricing" search={{ reason: "resubscribe" }} />;
+  if (!active) {
+    return (
+      <Navigate to="/pricing" search={{ reason: trialEnded ? "trial_ended" : "resubscribe" }} />
+    );
+  }
   granted.current = true;
   return <>{children}</>;
 }

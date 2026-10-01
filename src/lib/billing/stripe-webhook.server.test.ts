@@ -244,6 +244,75 @@ describe("Launch Planner Stripe webhook", () => {
     expect(harness.provisioned).toEqual([]);
   });
 
+  test("syncs a trialing Launch Planner subscription", async () => {
+    const webhookEvent = event(
+      "customer.subscription.created",
+      subscriptionObject(LP_PRICE, {
+        status: "trialing",
+        trial_end: 1_800_000_000,
+        metadata: { app: "launch-planner", user_id: LP_USER, promo_code: "OCT15FREE" },
+      }),
+    );
+    const harness = createHarness(webhookEvent);
+
+    const response = await handleStripeWebhook(post(), harness.deps);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true });
+    expect(harness.persisted).toHaveLength(1);
+    expect(harness.persisted[0]?.status).toBe("trialing");
+    expect(harness.persisted[0]?.trial_end).toBe(1_800_000_000);
+  });
+
+  test("syncs customer.subscription.trial_will_end and does not 500", async () => {
+    const webhookEvent = event(
+      "customer.subscription.trial_will_end",
+      subscriptionObject(LP_PRICE, { status: "trialing", trial_end: 1_800_000_000 }),
+    );
+    const harness = createHarness(webhookEvent);
+    harness.recogniseCustomer();
+
+    const response = await handleStripeWebhook(post(), harness.deps);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true });
+    expect(harness.persisted).toHaveLength(1);
+    expect(harness.persisted[0]?.status).toBe("trialing");
+  });
+
+  test("skips a Content Proof trial_will_end with 200", async () => {
+    const webhookEvent = event(
+      "customer.subscription.trial_will_end",
+      subscriptionObject(CP_PRICE, {
+        status: "trialing",
+        metadata: { app: "contentproof", user_id: "content-proof-user" },
+      }),
+    );
+    const harness = createHarness(webhookEvent);
+    harness.recogniseCustomer();
+
+    const response = await handleStripeWebhook(post(), harness.deps);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true, skipped: "foreign_product" });
+    expect(harness.persisted).toEqual([]);
+    expect(harness.lookups).toEqual([]);
+  });
+
+  test("an unknown customer trial_will_end is skipped with 200", async () => {
+    const webhookEvent = event(
+      "customer.subscription.trial_will_end",
+      subscriptionObject(LP_PRICE, { status: "trialing" }),
+    );
+    const harness = createHarness(webhookEvent);
+
+    const response = await handleStripeWebhook(post(), harness.deps);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true, skipped: "unknown_customer" });
+    expect(harness.persisted).toEqual([]);
+  });
+
   test("still returns 500 when a Launch Planner sync fails, so Stripe retries", async () => {
     const webhookEvent = event(
       "customer.subscription.updated",
