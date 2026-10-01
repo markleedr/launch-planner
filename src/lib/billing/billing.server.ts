@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type Stripe from "stripe";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAppOrigin, getStripe, stripeCurrentPeriodEnd, stripeCustomerId } from "./stripe.server";
+import { launchPlannerMetadata, UnknownStripeCustomerError } from "./launch-planner-billing";
 import { BILLING_PLAN, normaliseSubscriptionStatus, type SubscriptionStatus } from "./subscription";
 
 /** Lazy service-role table access. Only trusted server code can write billing state. */
@@ -56,7 +57,7 @@ async function ensureCustomer(userId: string, email?: string): Promise<string> {
   const customer = await getStripe().customers.create(
     {
       email,
-      metadata: { user_id: userId },
+      metadata: launchPlannerMetadata({ user_id: userId }),
     },
     { idempotencyKey: `project-profile-customer-${userId}` },
   );
@@ -69,23 +70,28 @@ async function ensureCustomer(userId: string, email?: string): Promise<string> {
   return customer.id;
 }
 
+/** Launch Planner user already stored against this Stripe customer, if any. */
+export async function findUserIdByStripeCustomerId(customerId: string): Promise<string | null> {
+  const table = await subscriptionTable();
+  const { data, error } = await table
+    .select("user_id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as { user_id: string } | null)?.user_id ?? null;
+}
+
 /** Resolve the owning user for a webhook subscription and persist its latest state. */
 export async function persistStripeSubscription(subscription: Stripe.Subscription): Promise<void> {
   const customerId = stripeCustomerId(subscription.customer);
   if (!customerId) throw new Error("Stripe subscription has no customer.");
 
   const table = await subscriptionTable();
-  let userId: string | undefined = subscription.metadata.user_id?.trim() || undefined;
-
-  if (!userId) {
-    const { data, error } = await table
-      .select("user_id")
-      .eq("stripe_customer_id", customerId)
-      .maybeSingle();
-    if (error) throw error;
-    userId = (data as { user_id: string } | null)?.user_id ?? undefined;
-  }
-  if (!userId) throw new Error("Could not match the Stripe customer to an account.");
+  const userId =
+    subscription.metadata.user_id?.trim() ||
+    (await findUserIdByStripeCustomerId(customerId)) ||
+    undefined;
+  if (!userId) throw new UnknownStripeCustomerError();
 
   const { error } = await table.upsert({
     user_id: userId,
@@ -158,7 +164,8 @@ export const startSignupCheckout = createServerFn({ method: "POST" }).handler(as
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      metadata: { signup_flow: "pay_first" },
+      metadata: launchPlannerMetadata({ signup_flow: "pay_first" }),
+      subscription_data: { metadata: launchPlannerMetadata() },
       success_url: `${getAppOrigin()}/welcome`,
       cancel_url: `${getAppOrigin()}/pricing?checkout=cancel`,
     });
@@ -212,9 +219,13 @@ export async function provisionCheckoutAccount(
   });
   if (upsertError) throw upsertError;
 
-  await getStripe().customers.update(customerId, { metadata: { user_id: userId } });
+  await getStripe().customers.update(customerId, {
+    metadata: launchPlannerMetadata({ user_id: userId }),
+  });
   if (typeof session.subscription === "string") {
-    await getStripe().subscriptions.update(session.subscription, { metadata: { user_id: userId } });
+    await getStripe().subscriptions.update(session.subscription, {
+      metadata: launchPlannerMetadata({ user_id: userId }),
+    });
   }
 
   const actionLink = linkData.properties?.action_link;
@@ -271,7 +282,8 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         client_reference_id: userId,
         line_items: [{ price: priceId, quantity: 1 }],
         allow_promotion_codes: true,
-        subscription_data: { metadata: { user_id: userId } },
+        metadata: launchPlannerMetadata(),
+        subscription_data: { metadata: launchPlannerMetadata({ user_id: userId }) },
         success_url: `${getAppOrigin()}/projects?checkout=success`,
         cancel_url: `${getAppOrigin()}/pricing?checkout=cancel`,
       });
