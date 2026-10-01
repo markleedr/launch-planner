@@ -719,7 +719,7 @@ export type Database = {
         Row: {
           created_at: string;
           created_by: string;
-          expires_at: string;
+          expires_at: string | null;
           first_viewed_at: string | null;
           hidden_contact_fields: string[];
           id: string;
@@ -733,7 +733,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           created_by: string;
-          expires_at?: string;
+          expires_at?: string | null;
           first_viewed_at?: string | null;
           hidden_contact_fields?: string[];
           id?: string;
@@ -747,7 +747,7 @@ export type Database = {
         Update: {
           created_at?: string;
           created_by?: string;
-          expires_at?: string;
+          expires_at?: string | null;
           first_viewed_at?: string | null;
           hidden_contact_fields?: string[];
           id?: string;

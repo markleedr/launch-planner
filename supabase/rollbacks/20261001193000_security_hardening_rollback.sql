@@ -1,8 +1,7 @@
--- Undo the security-hardening migrations from 20261001193000 through
+-- Undo the security-hardening migrations from 20261001193100 through
 -- 20261001193400. Run this whole script in the SQL editor. It does not
--- restore a share link's previous empty expiry: backfilled dates stay, and
--- the column becomes optional again. It does not delete project data.
--- Apply this only if the matching app release is rolled back too.
+-- delete project data. Apply this only if the matching app release is
+-- rolled back too. Share-link expiry is unchanged.
 
 -- 20261001193400_tighten_table_grants.sql
 grant all on table public.subscription to anon, authenticated;
@@ -40,11 +39,3 @@ create policy "project_heroes_public_read"
   for select
   to anon, authenticated
   using (bucket_id = 'project-heroes');
-
--- 20261001193000_share_link_expiry.sql
-alter table public.project_share_link
-  drop constraint if exists project_share_link_expires_within_max;
-alter table public.project_share_link
-  alter column expires_at drop default;
-alter table public.project_share_link
-  alter column expires_at drop not null;

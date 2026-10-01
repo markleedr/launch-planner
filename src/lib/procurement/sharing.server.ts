@@ -11,7 +11,6 @@ import {
 } from "./server-helpers";
 import { redactSharedBudgets, SHARE_HIDDEN_FIELDS } from "./share-privacy";
 import type { Json } from "@/integrations/supabase/types";
-import { shareExpiryError } from "@/lib/planner/share-expiry";
 import { signStoredProjectHero } from "@/lib/planner/project-assets.server";
 
 const hiddenFieldSchema = z.enum(SHARE_HIDDEN_FIELDS);
@@ -23,7 +22,7 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
       .object({
         projectId: z.string().uuid(),
         providerName: z.string().trim().min(1).max(200),
-        expiresAt: z.string().datetime(),
+        expiresAt: z.string().datetime().optional(),
         hiddenContactFields: z.array(hiddenFieldSchema).max(SHARE_HIDDEN_FIELDS.length).default([]),
         origin: z.string().url(),
       })
@@ -34,9 +33,6 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
     const userId = context.userId as string;
     await assertProjectOwner(client, data.projectId, userId);
     const origin = cleanOrigin(data.origin);
-    const expiresAt = new Date(data.expiresAt);
-    const expiryProblem = shareExpiryError(expiresAt);
-    if (expiryProblem) throw new Error(expiryProblem);
     const rawToken = randomToken();
     const tokenHash = await sha256(rawToken);
     const { data: link, error } = await table(client, "project_share_link")
@@ -44,7 +40,7 @@ export const createProjectShareLink = createServerFn({ method: "POST" })
         project_id: data.projectId,
         provider_name: data.providerName,
         token_hash: tokenHash,
-        expires_at: expiresAt.toISOString(),
+        expires_at: data.expiresAt ?? null,
         hidden_contact_fields: data.hiddenContactFields,
         created_by: userId,
       })
@@ -120,7 +116,7 @@ export const getSharedProject = createServerFn({ method: "GET" })
       view_count: number;
     };
     if (link.revoked_at) throw new Error("This shared summary has been revoked.");
-    if (!link.expires_at || new Date(link.expires_at).getTime() < Date.now()) {
+    if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
       throw new Error("This shared summary has expired.");
     }
 
