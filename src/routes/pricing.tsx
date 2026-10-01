@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -44,17 +44,24 @@ import {
 } from "@/components/ui/dialog";
 import { Wordmark } from "@/components/brand";
 import Footer from "@/components/home/Footer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useSession } from "@/hooks/use-session";
 import { BILLING_ENABLED, useSubscription } from "@/hooks/use-subscription";
 import { BILLING_PLAN } from "@/lib/billing/subscription";
-import { createCheckoutSession, startSignupCheckout } from "@/lib/billing/billing.server";
+import {
+  createCheckoutSession,
+  getTrialConfig,
+  startSignupCheckout,
+} from "@/lib/billing/billing.server";
+import { evaluateSignupTrial, OCTOBER_PROMO_CODE } from "@/lib/billing/trial";
 
 export const Route = createFileRoute("/pricing")({
   validateSearch: (
     s: Record<string, unknown>,
-  ): { checkout?: "cancel"; reason?: "resubscribe" } => ({
+  ): { checkout?: "cancel"; reason?: "resubscribe" | "trial_ended" } => ({
     ...(s.checkout === "cancel" ? { checkout: "cancel" as const } : {}),
-    ...(s.reason === "resubscribe" ? { reason: "resubscribe" as const } : {}),
+    ...(s.reason === "resubscribe" || s.reason === "trial_ended" ? { reason: s.reason } : {}),
   }),
   head: () => ({
     meta: [
@@ -85,7 +92,31 @@ function PricingPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoEmail, setPromoEmail] = useState("");
+  const [requireCard, setRequireCard] = useState(false);
   const hasSubscription = Boolean(user) && BILLING_ENABLED && active;
+  const returning = Boolean(user) && !hasSubscription;
+  const promoPreview = evaluateSignupTrial({
+    promoCode,
+    email: promoEmail || "preview@example.com",
+    requireCard,
+    now: new Date(),
+  });
+  const promoApplied = promoPreview.ok && promoPreview.promoCode === OCTOBER_PROMO_CODE;
+  const trialDays = promoApplied ? 30 : 14;
+
+  useEffect(() => {
+    let activeEffect = true;
+    getTrialConfig()
+      .then((config) => {
+        if (activeEffect) setRequireCard(config.requireCard);
+      })
+      .catch(() => {});
+    return () => {
+      activeEffect = false;
+    };
+  }, []);
 
   async function subscribe() {
     if (hasSubscription) {
@@ -95,9 +126,18 @@ function PricingPage() {
     setError(null);
     setBusy(true);
     try {
-      const { url, error: checkoutError } = user
-        ? await createCheckoutSession()
-        : await startSignupCheckout();
+      if (user) {
+        const { url, error: checkoutError } = await createCheckoutSession();
+        if (url) window.location.href = url;
+        else throw new Error(checkoutError ?? "Could not start checkout.");
+        return;
+      }
+      const { url, error: checkoutError } = await startSignupCheckout({
+        data: {
+          promoCode: promoCode.trim() || null,
+          email: promoCode.trim() ? promoEmail : null,
+        },
+      });
       if (url) window.location.href = url;
       else throw new Error(checkoutError ?? "Could not start checkout.");
     } catch (err) {
@@ -105,6 +145,12 @@ function PricingPage() {
       setBusy(false);
     }
   }
+
+  const primaryLabel = hasSubscription
+    ? "Open my projects"
+    : returning
+      ? `Subscribe for ${BILLING_PLAN.priceLabel}/month`
+      : `Start your ${trialDays}-day free trial`;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -121,14 +167,17 @@ function PricingPage() {
       </header>
 
       <main className="flex-1">
-        {reason === "resubscribe" && (
+        {(reason === "resubscribe" || reason === "trial_ended") && (
           <div className="mx-auto max-w-5xl px-6 pt-8">
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertTitle>No active subscription</AlertTitle>
+              <AlertTitle>
+                {reason === "trial_ended" ? "Your free trial has ended" : "No active subscription"}
+              </AlertTitle>
               <AlertDescription>
-                Your account doesn&apos;t have an active subscription, so you can&apos;t access
-                Launch Planner right now. Subscribe below to get back in.
+                {reason === "trial_ended"
+                  ? "Subscribe to keep using Launch Planner. Your projects and data are still saved."
+                  : "Your account doesn't have an active subscription, so you can't access Launch Planner right now. Subscribe below to get back in. Your projects and data are still saved."}
               </AlertDescription>
             </Alert>
           </div>
@@ -167,7 +216,13 @@ function PricingPage() {
                   </span>
                   <span className="ml-2 text-muted-foreground">{BILLING_PLAN.pricePeriod}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Billed monthly. Cancel anytime.</p>
+                <p className="text-sm text-muted-foreground">
+                  {returning
+                    ? "Billed monthly. Cancel anytime."
+                    : promoApplied
+                      ? `30 days free with ${OCTOBER_PROMO_CODE}, then ${BILLING_PLAN.priceLabel} per month. Cancel anytime.`
+                      : `14 days free, then ${BILLING_PLAN.priceLabel} per month. Cancel anytime.`}
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-3">
@@ -186,6 +241,39 @@ function PricingPage() {
                     Checkout cancelled - you haven&apos;t been charged.
                   </p>
                 )}
+                {!returning && !hasSubscription && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="promo-code">Promotion code</Label>
+                      <Input
+                        id="promo-code"
+                        name="promoCode"
+                        autoComplete="off"
+                        placeholder={OCTOBER_PROMO_CODE}
+                        value={promoCode}
+                        onChange={(event) => setPromoCode(event.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {OCTOBER_PROMO_CODE} gives 30 days free, instead of 14, for signups by 11:59
+                        pm AEST on 15 October 2026. One use per account.
+                      </p>
+                    </div>
+                    {promoCode.trim() ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="promo-email">Work email</Label>
+                        <Input
+                          id="promo-email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          value={promoEmail}
+                          onChange={(event) => setPromoEmail(event.target.value)}
+                          required
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                )}
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 {!BILLING_ENABLED && (
                   <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -200,16 +288,15 @@ function PricingPage() {
                   onClick={subscribe}
                   disabled={busy || !BILLING_ENABLED}
                 >
-                  {busy
-                    ? "Starting…"
-                    : hasSubscription
-                      ? "Open my projects"
-                      : `Subscribe for ${BILLING_PLAN.priceLabel}/month`}
+                  {busy ? "Starting…" : primaryLabel}
                 </Button>
                 {!hasSubscription && (
                   <p className="text-center text-xs text-muted-foreground">
-                    You&apos;ll pay on Stripe&apos;s secure checkout, then we&apos;ll email you a
-                    link to set your password.
+                    {returning
+                      ? "You'll pay on Stripe's secure checkout. Your projects stay saved."
+                      : requireCard
+                        ? "You'll add a card on Stripe. You won't be charged until the trial ends, then we'll email you a link to set your password."
+                        : "No card required. We'll email you a link to set your password."}
                   </p>
                 )}
                 <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
@@ -336,8 +423,10 @@ function PricingPage() {
             {[
               {
                 step: "1",
-                title: "Subscribe",
-                description: "Enter your email and card on Stripe's secure checkout.",
+                title: "Start a trial",
+                description: requireCard
+                  ? "Enter your email and card on Stripe. You won't be charged until the trial ends."
+                  : "Enter your email on Stripe. No card is required to start.",
               },
               {
                 step: "2",
@@ -405,9 +494,10 @@ function PricingPage() {
             <AccordionItem value="free-trial">
               <AccordionTrigger>Is there a free trial?</AccordionTrigger>
               <AccordionContent>
-                We don&apos;t offer a free trial. You can explore the calculator and the public
-                pages before subscribing, and you can cancel within the first billing period if it
-                isn&apos;t the right fit.
+                Yes. A new signup includes 14 days free. Sign up with {OCTOBER_PROMO_CODE} by 11:59
+                pm AEST on 15 October 2026 and that becomes 30 days free, not 44. When the trial
+                ends, subscribe to keep access. Your projects stay saved either way. The plan is
+                still {BILLING_PLAN.priceLabel} per month.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="team">
@@ -462,9 +552,7 @@ function PricingPage() {
                   onClick={subscribe}
                   disabled={busy || !BILLING_ENABLED}
                 >
-                  {hasSubscription
-                    ? "Open my projects"
-                    : `Subscribe for ${BILLING_PLAN.priceLabel}/month`}
+                  {primaryLabel}
                   <ChevronRight className="ml-1 size-4" />
                 </Button>
                 <Button
@@ -478,8 +566,9 @@ function PricingPage() {
               </div>
               {!hasSubscription && !user ? (
                 <p className="mt-4 text-xs text-white/70">
-                  You&apos;ll pay on Stripe&apos;s secure checkout, then we&apos;ll email you a link
-                  to set your password.
+                  {requireCard
+                    ? "You'll add a card on Stripe. You won't be charged until the trial ends."
+                    : "No card required. We'll email you a link to set your password."}
                 </p>
               ) : null}
               <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/60">
