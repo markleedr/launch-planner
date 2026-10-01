@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
-import { trackEvent, trackMetaLead } from "@/lib/analytics";
+import { trackMetaLead, trackSavedLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { serializePlanner, type PlannerSnapshot } from "@/lib/planner";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
@@ -91,11 +91,12 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
         throw new Error("We couldn't save your email just now. Please try again.");
       }
       setCapturedLeadEmail(candidate.toLowerCase());
-      trackEvent("tud_email_submitted", {
+      trackSavedLead({
+        formType: "pdf_download",
         source: leadSource,
-        via: "pdf_export",
-        utm_source: utm.utm_source,
-        utm_campaign: utm.utm_campaign,
+        formLocation: window.location.pathname,
+        campaignSource: utm.utm_source,
+        campaignName: utm.utm_campaign,
       });
       trackMetaLead({
         content_name: leadSource,

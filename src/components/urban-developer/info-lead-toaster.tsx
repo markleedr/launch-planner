@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
-import { trackEvent, trackMetaLead } from "@/lib/analytics";
+import { trackMetaLead, trackSavedLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
 import { captureUtmFromWindow } from "@/lib/utm";
@@ -107,11 +107,12 @@ export function InfoLeadToaster() {
         throw new Error("Could not send that just now. Please try again.");
       }
       setCapturedLeadEmail(candidate.toLowerCase());
-      trackEvent("tud_email_submitted", {
+      trackSavedLead({
+        formType: "toast",
         source: leadSource,
-        via: "info_toaster",
-        utm_source: utm.utm_source,
-        utm_campaign: utm.utm_campaign,
+        formLocation: window.location.pathname,
+        campaignSource: utm.utm_source,
+        campaignName: utm.utm_campaign,
       });
       if (!metaLeadFired.current) {
         metaLeadFired.current = true;
