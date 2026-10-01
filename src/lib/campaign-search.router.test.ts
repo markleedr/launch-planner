@@ -13,6 +13,10 @@ describe("campaign search retention", () => {
       routeTree,
       history,
       context: { queryClient: new QueryClient() },
+      // Bun resolves the router's server build. In tests that build leaves
+      // isServer unset, so this opt-in runs client navigation without a DOM.
+      isServer: false,
+      origin: "http://localhost",
     });
 
     await router.load();

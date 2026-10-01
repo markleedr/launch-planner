@@ -9,96 +9,41 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
-import { Route as Webinar23SeptRouteImport } from './routes/webinar-23-sept'
-import { Route as UrbanDeveloperRouteImport } from './routes/urban-developer'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ProjectsRouteImport } from './routes/projects'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as PlannerRouteImport } from './routes/planner'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DataDeletionRouteImport } from './routes/data-deletion'
-import { Route as CalculatorRouteImport } from './routes/calculator'
-import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as Webinar23SeptIndexRouteImport } from './routes/webinar-23-sept/index'
-import { Route as UrbanDeveloperIndexRouteImport } from './routes/urban-developer/index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as CalculatorRouteImport } from './routes/calculator'
+import { Route as DataDeletionRouteImport } from './routes/data-deletion'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UrbanDeveloperRouteImport } from './routes/urban-developer'
+import { Route as Webinar23SeptRouteImport } from './routes/webinar-23-sept'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as PlannerIndexRouteImport } from './routes/planner/index'
-import { Route as Webinar23SeptSummaryRouteImport } from './routes/webinar-23-sept/summary'
-import { Route as Webinar23SeptPlanRouteImport } from './routes/webinar-23-sept/plan'
-import { Route as Webinar23SeptNewRouteImport } from './routes/webinar-23-sept/new'
-import { Route as UrbanDeveloperSummaryRouteImport } from './routes/urban-developer/summary'
-import { Route as UrbanDeveloperPlanRouteImport } from './routes/urban-developer/plan'
-import { Route as UrbanDeveloperNewRouteImport } from './routes/urban-developer/new'
-import { Route as ShareTokenRouteImport } from './routes/share/$token'
-import { Route as PlannerSummaryRouteImport } from './routes/planner/summary'
 import { Route as PlannerNewRouteImport } from './routes/planner/new'
+import { Route as PlannerSummaryRouteImport } from './routes/planner/summary'
+import { Route as ShareTokenRouteImport } from './routes/share/$token'
+import { Route as UrbanDeveloperIndexRouteImport } from './routes/urban-developer/index'
+import { Route as UrbanDeveloperNewRouteImport } from './routes/urban-developer/new'
+import { Route as UrbanDeveloperPlanRouteImport } from './routes/urban-developer/plan'
+import { Route as UrbanDeveloperSummaryRouteImport } from './routes/urban-developer/summary'
+import { Route as Webinar23SeptIndexRouteImport } from './routes/webinar-23-sept/index'
+import { Route as Webinar23SeptNewRouteImport } from './routes/webinar-23-sept/new'
+import { Route as Webinar23SeptPlanRouteImport } from './routes/webinar-23-sept/plan'
+import { Route as Webinar23SeptSummaryRouteImport } from './routes/webinar-23-sept/summary'
 import { Route as ApiWorkflowsProcessRouteImport } from './routes/api/workflows/process'
-import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
-import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 import { Route as ApiPublicAuthWebhookRouteImport } from './routes/api/public/auth/webhook'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Webinar23SeptRoute = Webinar23SeptRouteImport.update({
-  id: '/webinar-23-sept',
-  path: '/webinar-23-sept',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UrbanDeveloperRoute = UrbanDeveloperRouteImport.update({
-  id: '/urban-developer',
-  path: '/urban-developer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlannerRoute = PlannerRouteImport.update({
-  id: '/planner',
-  path: '/planner',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataDeletionRoute = DataDeletionRouteImport.update({
-  id: '/data-deletion',
-  path: '/data-deletion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalculatorRoute = CalculatorRouteImport.update({
-  id: '/calculator',
-  path: '/calculator',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -106,64 +51,69 @@ const AccountRoute = AccountRouteImport.update({
   path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CalculatorRoute = CalculatorRouteImport.update({
+  id: '/calculator',
+  path: '/calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Webinar23SeptIndexRoute = Webinar23SeptIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => Webinar23SeptRoute,
+const DataDeletionRoute = DataDeletionRouteImport.update({
+  id: '/data-deletion',
+  path: '/data-deletion',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const UrbanDeveloperIndexRoute = UrbanDeveloperIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => UrbanDeveloperRoute,
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UrbanDeveloperRoute = UrbanDeveloperRouteImport.update({
+  id: '/urban-developer',
+  path: '/urban-developer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Webinar23SeptRoute = Webinar23SeptRouteImport.update({
+  id: '/webinar-23-sept',
+  path: '/webinar-23-sept',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerIndexRoute = PlannerIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => PlannerRoute,
-} as any)
-const Webinar23SeptSummaryRoute = Webinar23SeptSummaryRouteImport.update({
-  id: '/summary',
-  path: '/summary',
-  getParentRoute: () => Webinar23SeptRoute,
-} as any)
-const Webinar23SeptPlanRoute = Webinar23SeptPlanRouteImport.update({
-  id: '/plan',
-  path: '/plan',
-  getParentRoute: () => Webinar23SeptRoute,
-} as any)
-const Webinar23SeptNewRoute = Webinar23SeptNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => Webinar23SeptRoute,
-} as any)
-const UrbanDeveloperSummaryRoute = UrbanDeveloperSummaryRouteImport.update({
-  id: '/summary',
-  path: '/summary',
-  getParentRoute: () => UrbanDeveloperRoute,
-} as any)
-const UrbanDeveloperPlanRoute = UrbanDeveloperPlanRouteImport.update({
-  id: '/plan',
-  path: '/plan',
-  getParentRoute: () => UrbanDeveloperRoute,
-} as any)
-const UrbanDeveloperNewRoute = UrbanDeveloperNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => UrbanDeveloperRoute,
-} as any)
-const ShareTokenRoute = ShareTokenRouteImport.update({
-  id: '/share/$token',
-  path: '/share/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlannerSummaryRoute = PlannerSummaryRouteImport.update({
-  id: '/summary',
-  path: '/summary',
   getParentRoute: () => PlannerRoute,
 } as any)
 const PlannerNewRoute = PlannerNewRouteImport.update({
@@ -171,9 +121,74 @@ const PlannerNewRoute = PlannerNewRouteImport.update({
   path: '/new',
   getParentRoute: () => PlannerRoute,
 } as any)
+const PlannerSummaryRoute = PlannerSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => PlannerRoute,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UrbanDeveloperIndexRoute = UrbanDeveloperIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const UrbanDeveloperNewRoute = UrbanDeveloperNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const UrbanDeveloperPlanRoute = UrbanDeveloperPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const UrbanDeveloperSummaryRoute = UrbanDeveloperSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => UrbanDeveloperRoute,
+} as any)
+const Webinar23SeptIndexRoute = Webinar23SeptIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
+const Webinar23SeptNewRoute = Webinar23SeptNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
+const Webinar23SeptPlanRoute = Webinar23SeptPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
+const Webinar23SeptSummaryRoute = Webinar23SeptSummaryRouteImport.update({
+  id: '/summary',
+  path: '/summary',
+  getParentRoute: () => Webinar23SeptRoute,
+} as any)
 const ApiWorkflowsProcessRoute = ApiWorkflowsProcessRouteImport.update({
   id: '/api/workflows/process',
   path: '/api/workflows/process',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAuthWebhookRoute = ApiPublicAuthWebhookRouteImport.update({
+  id: '/api/public/auth/webhook',
+  path: '/api/public/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe/webhook',
+  path: '/api/public/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailQueueProcessRoute =
@@ -182,21 +197,6 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
-  id: '/lovable/email/auth/preview',
-  path: '/lovable/email/auth/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
-  id: '/api/public/stripe/webhook',
-  path: '/api/public/stripe/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicAuthWebhookRoute = ApiPublicAuthWebhookRouteImport.update({
-  id: '/api/public/auth/webhook',
-  path: '/api/public/auth/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -419,88 +419,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/webinar-23-sept': {
-      id: '/webinar-23-sept'
-      path: '/webinar-23-sept'
-      fullPath: '/webinar-23-sept'
-      preLoaderRoute: typeof Webinar23SeptRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/urban-developer': {
-      id: '/urban-developer'
-      path: '/urban-developer'
-      fullPath: '/urban-developer'
-      preLoaderRoute: typeof UrbanDeveloperRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planner': {
-      id: '/planner'
-      path: '/planner'
-      fullPath: '/planner'
-      preLoaderRoute: typeof PlannerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data-deletion': {
-      id: '/data-deletion'
-      path: '/data-deletion'
-      fullPath: '/data-deletion'
-      preLoaderRoute: typeof DataDeletionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calculator': {
-      id: '/calculator'
-      path: '/calculator'
-      fullPath: '/calculator'
-      preLoaderRoute: typeof CalculatorRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -510,88 +433,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/webinar-23-sept/': {
-      id: '/webinar-23-sept/'
-      path: '/'
-      fullPath: '/webinar-23-sept/'
-      preLoaderRoute: typeof Webinar23SeptIndexRouteImport
-      parentRoute: typeof Webinar23SeptRoute
+    '/data-deletion': {
+      id: '/data-deletion'
+      path: '/data-deletion'
+      fullPath: '/data-deletion'
+      preLoaderRoute: typeof DataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/urban-developer/': {
-      id: '/urban-developer/'
-      path: '/'
-      fullPath: '/urban-developer/'
-      preLoaderRoute: typeof UrbanDeveloperIndexRouteImport
-      parentRoute: typeof UrbanDeveloperRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/urban-developer': {
+      id: '/urban-developer'
+      path: '/urban-developer'
+      fullPath: '/urban-developer'
+      preLoaderRoute: typeof UrbanDeveloperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/webinar-23-sept': {
+      id: '/webinar-23-sept'
+      path: '/webinar-23-sept'
+      fullPath: '/webinar-23-sept'
+      preLoaderRoute: typeof Webinar23SeptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/planner/': {
       id: '/planner/'
       path: '/'
       fullPath: '/planner/'
       preLoaderRoute: typeof PlannerIndexRouteImport
-      parentRoute: typeof PlannerRoute
-    }
-    '/webinar-23-sept/summary': {
-      id: '/webinar-23-sept/summary'
-      path: '/summary'
-      fullPath: '/webinar-23-sept/summary'
-      preLoaderRoute: typeof Webinar23SeptSummaryRouteImport
-      parentRoute: typeof Webinar23SeptRoute
-    }
-    '/webinar-23-sept/plan': {
-      id: '/webinar-23-sept/plan'
-      path: '/plan'
-      fullPath: '/webinar-23-sept/plan'
-      preLoaderRoute: typeof Webinar23SeptPlanRouteImport
-      parentRoute: typeof Webinar23SeptRoute
-    }
-    '/webinar-23-sept/new': {
-      id: '/webinar-23-sept/new'
-      path: '/new'
-      fullPath: '/webinar-23-sept/new'
-      preLoaderRoute: typeof Webinar23SeptNewRouteImport
-      parentRoute: typeof Webinar23SeptRoute
-    }
-    '/urban-developer/summary': {
-      id: '/urban-developer/summary'
-      path: '/summary'
-      fullPath: '/urban-developer/summary'
-      preLoaderRoute: typeof UrbanDeveloperSummaryRouteImport
-      parentRoute: typeof UrbanDeveloperRoute
-    }
-    '/urban-developer/plan': {
-      id: '/urban-developer/plan'
-      path: '/plan'
-      fullPath: '/urban-developer/plan'
-      preLoaderRoute: typeof UrbanDeveloperPlanRouteImport
-      parentRoute: typeof UrbanDeveloperRoute
-    }
-    '/urban-developer/new': {
-      id: '/urban-developer/new'
-      path: '/new'
-      fullPath: '/urban-developer/new'
-      preLoaderRoute: typeof UrbanDeveloperNewRouteImport
-      parentRoute: typeof UrbanDeveloperRoute
-    }
-    '/share/$token': {
-      id: '/share/$token'
-      path: '/share/$token'
-      fullPath: '/share/$token'
-      preLoaderRoute: typeof ShareTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planner/summary': {
-      id: '/planner/summary'
-      path: '/summary'
-      fullPath: '/planner/summary'
-      preLoaderRoute: typeof PlannerSummaryRouteImport
       parentRoute: typeof PlannerRoute
     }
     '/planner/new': {
@@ -601,6 +531,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerNewRouteImport
       parentRoute: typeof PlannerRoute
     }
+    '/planner/summary': {
+      id: '/planner/summary'
+      path: '/summary'
+      fullPath: '/planner/summary'
+      preLoaderRoute: typeof PlannerSummaryRouteImport
+      parentRoute: typeof PlannerRoute
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/urban-developer/': {
+      id: '/urban-developer/'
+      path: '/'
+      fullPath: '/urban-developer/'
+      preLoaderRoute: typeof UrbanDeveloperIndexRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/urban-developer/new': {
+      id: '/urban-developer/new'
+      path: '/new'
+      fullPath: '/urban-developer/new'
+      preLoaderRoute: typeof UrbanDeveloperNewRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/urban-developer/plan': {
+      id: '/urban-developer/plan'
+      path: '/plan'
+      fullPath: '/urban-developer/plan'
+      preLoaderRoute: typeof UrbanDeveloperPlanRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/urban-developer/summary': {
+      id: '/urban-developer/summary'
+      path: '/summary'
+      fullPath: '/urban-developer/summary'
+      preLoaderRoute: typeof UrbanDeveloperSummaryRouteImport
+      parentRoute: typeof UrbanDeveloperRoute
+    }
+    '/webinar-23-sept/': {
+      id: '/webinar-23-sept/'
+      path: '/'
+      fullPath: '/webinar-23-sept/'
+      preLoaderRoute: typeof Webinar23SeptIndexRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
+    '/webinar-23-sept/new': {
+      id: '/webinar-23-sept/new'
+      path: '/new'
+      fullPath: '/webinar-23-sept/new'
+      preLoaderRoute: typeof Webinar23SeptNewRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
+    '/webinar-23-sept/plan': {
+      id: '/webinar-23-sept/plan'
+      path: '/plan'
+      fullPath: '/webinar-23-sept/plan'
+      preLoaderRoute: typeof Webinar23SeptPlanRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
+    '/webinar-23-sept/summary': {
+      id: '/webinar-23-sept/summary'
+      path: '/summary'
+      fullPath: '/webinar-23-sept/summary'
+      preLoaderRoute: typeof Webinar23SeptSummaryRouteImport
+      parentRoute: typeof Webinar23SeptRoute
+    }
     '/api/workflows/process': {
       id: '/api/workflows/process'
       path: '/api/workflows/process'
@@ -608,18 +608,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWorkflowsProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/queue/process': {
-      id: '/lovable/email/queue/process'
-      path: '/lovable/email/queue/process'
-      fullPath: '/lovable/email/queue/process'
-      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/auth/preview': {
-      id: '/lovable/email/auth/preview'
-      path: '/lovable/email/auth/preview'
-      fullPath: '/lovable/email/auth/preview'
-      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+    '/api/public/auth/webhook': {
+      id: '/api/public/auth/webhook'
+      path: '/api/public/auth/webhook'
+      fullPath: '/api/public/auth/webhook'
+      preLoaderRoute: typeof ApiPublicAuthWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe/webhook': {
@@ -629,11 +622,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/auth/webhook': {
-      id: '/api/public/auth/webhook'
-      path: '/api/public/auth/webhook'
-      fullPath: '/api/public/auth/webhook'
-      preLoaderRoute: typeof ApiPublicAuthWebhookRouteImport
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
