@@ -52,6 +52,7 @@ import {
   type DeliverableCategory,
   type ProjectType,
 } from "@/lib/planner";
+import { ResolvedHeroImage } from "@/components/planner/hero-image";
 import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
 
 const SECTIONS = [
@@ -284,7 +285,12 @@ export function PlannerEditor({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-3 sm:col-span-2">
               <div className="overflow-hidden rounded-lg border">
-                <img src={hero.src} alt={hero.alt} className="aspect-[3/1] w-full object-cover" />
+                <ResolvedHeroImage
+                  imageId={p.heroImageId}
+                  imageUrl={p.heroImageUrl}
+                  alt={hero.alt}
+                  className="aspect-[3/1] w-full object-cover"
+                />
               </div>
               <HeroUploadButton
                 label={p.heroImageUrl ? "Replace image" : "Upload image"}

@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Json } from "@/integrations/supabase/types";
 import {
   adminClient,
   assertProjectOwner,
@@ -11,6 +10,8 @@ import {
   table,
 } from "./server-helpers";
 import { redactSharedBudgets, SHARE_HIDDEN_FIELDS } from "./share-privacy";
+import type { Json } from "@/integrations/supabase/types";
+import { signStoredProjectHero } from "@/lib/planner/project-assets.server";
 
 const hiddenFieldSchema = z.enum(SHARE_HIDDEN_FIELDS);
 
@@ -172,11 +173,12 @@ export const getSharedProject = createServerFn({ method: "GET" })
       name: string;
       data: Json;
     };
+    const snapshot = hideBudgets ? redactSharedBudgets(project.data) : project.data;
     return {
       project: {
         id: project.id,
         name: project.name,
-        snapshot: hideBudgets ? redactSharedBudgets(project.data) : project.data,
+        snapshot: await withSignedHero(client, snapshot),
       },
       parties,
       providerName: link.provider_name,
@@ -184,3 +186,19 @@ export const getSharedProject = createServerFn({ method: "GET" })
       hideBudgets,
     };
   });
+
+async function withSignedHero(
+  client: Awaited<ReturnType<typeof adminClient>>,
+  snapshot: Json,
+): Promise<Json> {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return snapshot;
+  const hero = snapshot.heroImageUrl;
+  if (typeof hero !== "string" || hero.length === 0) return snapshot;
+  try {
+    const signed = await signStoredProjectHero(client, hero);
+    if (signed === hero) return snapshot;
+    return { ...snapshot, heroImageUrl: signed };
+  } catch {
+    return snapshot;
+  }
+}

@@ -36,6 +36,7 @@ import { MediaCalculatorDialog } from "./media-calculator-dialog";
 import { RecommendDialog } from "./recommend-dialog";
 import { usePlanner } from "./planner-provider";
 import { useSession } from "@/hooks/use-session";
+import { ResolvedHeroImage } from "@/components/planner/hero-image";
 import { HeroUploadButton } from "@/components/planner/hero-upload-button";
 import { createProject, updateProject } from "@/lib/project-store";
 import { heroImageFileError, uploadProjectHero } from "@/lib/planner/hero-upload";
@@ -553,8 +554,9 @@ function DetailsStep({ onSaved }: { onSaved: (savedSnapshot: string) => void }) 
           <div className="grid gap-3">
             {p.heroImageUrl ? (
               <div className="overflow-hidden rounded-lg border-2 border-foreground">
-                <img
-                  src={p.heroImageUrl}
+                <ResolvedHeroImage
+                  imageId={p.heroImageId}
+                  imageUrl={p.heroImageUrl}
                   alt="Your project image"
                   className="aspect-[3/1] w-full object-cover"
                 />
