@@ -1,5 +1,11 @@
-import { describe, expect, test } from "bun:test";
-import { emptyUtm, hasAnyUtm, parseUtmFromSearch, retainCampaignSearch } from "./utm";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+  captureUtmFromWindow,
+  emptyUtm,
+  hasAnyUtm,
+  parseUtmFromSearch,
+  retainCampaignSearch,
+} from "./utm";
 
 describe("utm helpers", () => {
   test("parses UTM params from a query string", () => {
@@ -63,5 +69,46 @@ describe("retainCampaignSearch", () => {
         next: () => ({ utm_source: "kept" }),
       }),
     ).toEqual({ utm_source: "kept" });
+  });
+});
+
+describe("captureUtmFromWindow across the Urban Developer pages", () => {
+  const previousWindow = globalThis.window;
+  const previousStorage = globalThis.sessionStorage;
+
+  afterEach(() => {
+    globalThis.window = previousWindow;
+    globalThis.sessionStorage = previousStorage;
+  });
+
+  function visit(search: string) {
+    globalThis.window = { location: { search } } as Window & typeof globalThis;
+  }
+
+  test("keeps the landing UTMs on later pages that have none in the URL", () => {
+    const store = new Map<string, string>();
+    globalThis.sessionStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+      clear: () => store.clear(),
+      key: () => null,
+      length: 0,
+    } as Storage;
+
+    visit("?utm_source=theurbandeveloper&utm_medium=banner&utm_campaign=tud_oct&utm_content=hero");
+    const landing = captureUtmFromWindow();
+    expect(landing.utm_source).toBe("theurbandeveloper");
+
+    for (const page of ["", "?projectId=abc"]) {
+      visit(page);
+      expect(captureUtmFromWindow()).toEqual({
+        utm_source: "theurbandeveloper",
+        utm_medium: "banner",
+        utm_campaign: "tud_oct",
+        utm_content: "hero",
+        utm_term: null,
+      });
+    }
   });
 });

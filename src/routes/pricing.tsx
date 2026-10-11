@@ -146,6 +146,8 @@ function PricingPage() {
     }
   }
 
+  // TODO(Mark): TUD surfaces say "free for October" but this page still shows the
+  // 14-day trial and OCT15FREE (30 days). Pricing and trial mechanics are unchanged.
   const primaryLabel = hasSubscription
     ? "Open my projects"
     : returning

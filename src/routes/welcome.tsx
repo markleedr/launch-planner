@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Footer from "@/components/home/Footer";
+import { trackSignUp } from "@/lib/analytics";
 
 export const Route = createFileRoute("/welcome")({
   head: () => ({ meta: [{ title: "You're subscribed - Launch Planner" }] }),
@@ -16,6 +18,9 @@ const STEPS = [
 ];
 
 function WelcomePage() {
+  useEffect(() => {
+    trackSignUp("stripe_checkout");
+  }, []);
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex flex-1 items-center justify-center px-6 py-12">

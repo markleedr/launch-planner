@@ -7,6 +7,9 @@ import { useGuestDemo } from "@/components/guest-demo/guest-demo-context";
 import { trackMetaLead, trackSavedLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
+import { BookingCta } from "@/components/urban-developer/booking-cta";
+import { QualificationFields } from "@/components/urban-developer/qualification-fields";
+import { EMPTY_QUALIFICATION } from "@/lib/leads/qualification";
 import { captureUtmFromWindow } from "@/lib/utm";
 
 const SHOW_AFTER_MS = 20_000;
@@ -56,6 +59,7 @@ export function InfoLeadToaster() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [qualification, setQualification] = useState(EMPTY_QUALIFICATION);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const metaLeadFired = useRef(false);
 
@@ -94,6 +98,8 @@ export function InfoLeadToaster() {
             utm_campaign: utm.utm_campaign,
             utm_content: utm.utm_content || "info-toaster",
             utm_term: utm.utm_term,
+            role: qualification.role,
+            next_launch: qualification.nextLaunch,
             capture_point: "info_toaster",
             page_url: window.location.href.slice(0, 2000),
             referrer: document.referrer.slice(0, 2000),
@@ -113,6 +119,8 @@ export function InfoLeadToaster() {
         formLocation: window.location.pathname,
         campaignSource: utm.utm_source,
         campaignName: utm.utm_campaign,
+        role: qualification.role,
+        nextLaunch: qualification.nextLaunch,
       });
       if (!metaLeadFired.current) {
         metaLeadFired.current = true;
@@ -128,7 +136,6 @@ export function InfoLeadToaster() {
       }
       setDone(true);
       markDismissed(dismissKey);
-      window.setTimeout(() => setVisible(false), 2200);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");
     } finally {
@@ -168,9 +175,12 @@ export function InfoLeadToaster() {
         </div>
 
         {done ? (
-          <p className="text-sm text-muted-foreground" role="status">
-            Thanks. We&apos;ll be in touch shortly.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground" role="status">
+              Thanks. We&apos;ll email you an overview. Launch Planner is free for October.
+            </p>
+            <BookingCta location="info_toaster" />
+          </div>
         ) : (
           <form className="space-y-2" onSubmit={(e) => void submit(e)} noValidate>
             <Label htmlFor={emailId} className="sr-only">
@@ -202,6 +212,12 @@ export function InfoLeadToaster() {
                 {busy ? <Loader2 className="size-4 animate-spin" /> : "Send"}
               </Button>
             </div>
+            <QualificationFields
+              value={qualification}
+              onChange={setQualification}
+              disabled={busy}
+              compact
+            />
             {error ? (
               <p className="text-xs text-destructive" role="alert">
                 {error}

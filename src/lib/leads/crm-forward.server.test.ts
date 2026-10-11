@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { forwardLeadToCrm, type CrmLeadForwardInput } from "./crm-forward.server";
+import {
+  forwardLeadToCrm,
+  warnIfCrmForwardUnconfigured,
+  type CrmLeadForwardInput,
+} from "./crm-forward.server";
 
 const WEBHOOK_URL = "https://crm.example/functions/v1/launch-planner-lead";
 const WEBHOOK_SECRET = "test-launch-planner-secret";
@@ -15,6 +19,8 @@ const payload: CrmLeadForwardInput = {
   utm_campaign: "november",
   utm_content: "hero",
   utm_term: "launch",
+  role: "Marketing manager",
+  next_launch: "Within 3 months",
   submitted_at: "2026-09-27T00:00:00.000Z",
   lp_lead_id: "11111111-1111-1111-1111-111111111111",
 };
@@ -96,10 +102,43 @@ describe("forwardLeadToCrm", () => {
       utm_campaign: payload.utm_campaign,
       utm_content: payload.utm_content,
       utm_term: payload.utm_term,
+      role: payload.role,
+      next_launch: payload.next_launch,
       submitted_at: payload.submitted_at,
       lp_lead_id: payload.lp_lead_id,
     });
     expect(captured!.init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  test("sends null role and next_launch when blank", async () => {
+    process.env.CRM_LEAD_WEBHOOK_URL = WEBHOOK_URL;
+    process.env.CRM_LEAD_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    let body = "";
+    installFetch(async (_input, init) => {
+      body = String(init?.body ?? "");
+      return new Response("ok", { status: 200 });
+    });
+    await forwardLeadToCrm({ ...payload, role: undefined, next_launch: null });
+    expect(JSON.parse(body)).toMatchObject({ role: null, next_launch: null });
+  });
+
+  test("warns at startup only when the webhook env is unset", () => {
+    const originalWarn = console.warn;
+    const warnings: unknown[][] = [];
+    console.warn = (...args: unknown[]) => void warnings.push(args);
+    try {
+      delete process.env.CRM_LEAD_WEBHOOK_URL;
+      delete process.env.CRM_LEAD_WEBHOOK_SECRET;
+      expect(warnIfCrmForwardUnconfigured()).toBe(false);
+      expect(warnings).toHaveLength(1);
+      process.env.CRM_LEAD_WEBHOOK_URL = WEBHOOK_URL;
+      expect(warnIfCrmForwardUnconfigured()).toBe(false);
+      process.env.CRM_LEAD_WEBHOOK_SECRET = WEBHOOK_SECRET;
+      expect(warnIfCrmForwardUnconfigured()).toBe(true);
+      expect(warnings).toHaveLength(2);
+    } finally {
+      console.warn = originalWarn;
+    }
   });
 
   test("omits lp_lead_id when the insert did not return one", async () => {
