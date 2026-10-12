@@ -14,6 +14,8 @@ export interface CrmLeadForwardInput {
   utm_campaign?: string | null;
   utm_content?: string | null;
   utm_term?: string | null;
+  role?: string | null;
+  next_launch?: string | null;
   submitted_at: string;
   lp_lead_id?: string | null;
 }
@@ -23,6 +25,15 @@ function webhookConfig(): { url: string; secret: string } | null {
   const secret = process.env.CRM_LEAD_WEBHOOK_SECRET?.trim();
   if (!url || !secret) return null;
   return { url, secret };
+}
+
+/** Log once at server start when lead forwarding is not configured. Returns whether it is. */
+export function warnIfCrmForwardUnconfigured(): boolean {
+  if (webhookConfig()) return true;
+  console.warn(
+    "[leads] CRM_LEAD_WEBHOOK_URL or CRM_LEAD_WEBHOOK_SECRET is unset: leads will be saved but not forwarded to the CRM",
+  );
+  return false;
 }
 
 function forwardBody(input: CrmLeadForwardInput): Record<string, unknown> {
@@ -37,6 +48,8 @@ function forwardBody(input: CrmLeadForwardInput): Record<string, unknown> {
     utm_campaign: input.utm_campaign ?? null,
     utm_content: input.utm_content ?? null,
     utm_term: input.utm_term ?? null,
+    role: input.role ?? null,
+    next_launch: input.next_launch ?? null,
     submitted_at: input.submitted_at,
   };
   if (input.lp_lead_id) body.lp_lead_id = input.lp_lead_id;

@@ -10,6 +10,7 @@ import {
   metaPixelBootstrapScript,
   metaPixelNoscriptSrc,
   resolveMetaPixelId,
+  savedLeadParams,
   type AnalyticsEventName,
 } from "./analytics";
 import { setPosthogCaptureForTests } from "./posthog";
@@ -437,6 +438,42 @@ describe("saved lead GA4 events", () => {
       "tud_email_submitted",
       "generate_lead",
       "tud_pdf_download_submitted",
+    ]);
+  });
+});
+
+describe("qualification and booking events", () => {
+  test("saved lead params include role and next_launch, and drop blanks", () => {
+    const base = { formType: "toast" as const, source: "urban-developer", formLocation: "/x" };
+    const params = savedLeadParams({
+      ...base,
+      role: "Marketing manager",
+      nextLaunch: "Within 3 months",
+    });
+    expect(params.role).toBe("Marketing manager");
+    expect(params.next_launch).toBe("Within 3 months");
+    const blank = savedLeadParams({ ...base, role: "", nextLaunch: null });
+    expect(blank).not.toHaveProperty("role");
+    expect(blank).not.toHaveProperty("next_launch");
+    expect(JSON.stringify(params)).not.toContain("@");
+  });
+
+  test("tud_booking_clicked and lp_sign_up reach dataLayer without an email", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    setPosthogCaptureForTests(() => {});
+    try {
+      emitAnalytics({ dataLayer }, "tud_booking_clicked", { location: "pdf_export" });
+      emitAnalytics({ dataLayer }, "lp_sign_up", {
+        method: "stripe_checkout",
+        email: "person@example.com",
+        utm_source: "theurbandeveloper",
+      });
+    } finally {
+      setPosthogCaptureForTests(null);
+    }
+    expect(dataLayer).toEqual([
+      { event: "tud_booking_clicked", location: "pdf_export" },
+      { event: "lp_sign_up", method: "stripe_checkout", utm_source: "theurbandeveloper" },
     ]);
   });
 });

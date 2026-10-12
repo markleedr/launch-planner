@@ -16,6 +16,9 @@ import { trackMetaLead, trackSavedLead } from "@/lib/analytics";
 import { captureLead } from "@/lib/leads/leads.server";
 import { serializePlanner, type PlannerSnapshot } from "@/lib/planner";
 import { getCapturedLeadEmail, setCapturedLeadEmail } from "@/lib/urban-developer/guest-store";
+import { BookingCta } from "@/components/urban-developer/booking-cta";
+import { QualificationFields } from "@/components/urban-developer/qualification-fields";
+import { EMPTY_QUALIFICATION } from "@/lib/leads/qualification";
 import { captureUtmFromWindow } from "@/lib/utm";
 
 function validateEmail(value: string): string | null {
@@ -36,6 +39,8 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
   const [emailError, setEmailError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [qualification, setQualification] = useState(EMPTY_QUALIFICATION);
+  const [captured, setCaptured] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -77,6 +82,8 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
             utm_campaign: utm.utm_campaign,
             utm_content: utm.utm_content,
             utm_term: utm.utm_term,
+            role: qualification.role,
+            next_launch: qualification.nextLaunch,
             plan_snapshot: serializePlanner(snapshot),
             capture_point: "pdf_export",
             page_url: window.location.href.slice(0, 2000),
@@ -97,6 +104,8 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
         formLocation: window.location.pathname,
         campaignSource: utm.utm_source,
         campaignName: utm.utm_campaign,
+        role: qualification.role,
+        nextLaunch: qualification.nextLaunch,
       });
       trackMetaLead({
         content_name: leadSource,
@@ -106,12 +115,13 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
         utm_content: utm.utm_content,
         utm_term: utm.utm_term,
       });
-      setOpen(false);
+      setCaptured(true);
       await downloadPdf();
     } catch (caught) {
       setSubmitError(
         caught instanceof Error ? caught.message : "Something went wrong. Please try again.",
       );
+    } finally {
       setBusy(false);
     }
   }
@@ -122,6 +132,7 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
       void downloadPdf();
       return;
     }
+    setCaptured(false);
     setOpen(true);
   }
 
@@ -139,68 +150,102 @@ export function GatedExportPdfButton({ snapshot }: { snapshot: PlannerSnapshot }
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter your email to export</DialogTitle>
-            <DialogDescription>
-              We&apos;ll send your plan and set up free access through November. No login needed.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void captureAndDownload();
-            }}
-            noValidate
-          >
-            <div className="space-y-2">
-              <Label htmlFor="tud-export-email">Work email</Label>
-              <Input
-                ref={inputRef}
-                id="tud-export-email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                placeholder="you@company.com.au"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (emailError) setEmailError(null);
+          {captured ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Your plan is on its way</DialogTitle>
+                <DialogDescription>
+                  Your PDF is downloading. Launch Planner is free for October.
+                </DialogDescription>
+              </DialogHeader>
+              {exportError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {exportError}
+                </p>
+              ) : null}
+              <BookingCta location="pdf_export" />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Enter your email to export</DialogTitle>
+                <DialogDescription>
+                  We&apos;ll send your plan. Launch Planner is free for October. No login needed.
+                </DialogDescription>
+              </DialogHeader>
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void captureAndDownload();
                 }}
-                aria-invalid={Boolean(emailError)}
-                disabled={busy}
-              />
-              {emailError ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {emailError}
-                </p>
-              ) : null}
-              {submitError ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {submitError}
-                </p>
-              ) : null}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-brand text-black hover:bg-brand/90"
-                disabled={busy}
+                noValidate
               >
-                {busy ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  "Export PDF"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="tud-export-email">Work email</Label>
+                  <Input
+                    ref={inputRef}
+                    id="tud-export-email"
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="you@company.com.au"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    aria-invalid={Boolean(emailError)}
+                    disabled={busy}
+                  />
+                  {emailError ? (
+                    <p className="text-sm text-destructive" role="alert">
+                      {emailError}
+                    </p>
+                  ) : null}
+                  {submitError ? (
+                    <p className="text-sm text-destructive" role="alert">
+                      {submitError}
+                    </p>
+                  ) : null}
+                </div>
+                <QualificationFields
+                  value={qualification}
+                  onChange={setQualification}
+                  disabled={busy}
+                />
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setOpen(false)}
+                    disabled={busy}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-brand text-black hover:bg-brand/90"
+                    disabled={busy}
+                  >
+                    {busy ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Export PDF"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

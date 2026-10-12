@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { adminClient, table } from "@/lib/procurement/server-helpers";
+import { leadNextLaunchField, leadRoleField } from "@/lib/leads/qualification";
 import { forwardLeadToCrm } from "@/lib/leads/crm-forward.server";
 import {
   allowAndRecord,
@@ -35,6 +36,8 @@ const captureLeadSchema = z.object({
   utm_campaign: utmField,
   utm_content: utmField,
   utm_term: utmField,
+  role: leadRoleField,
+  next_launch: leadNextLaunchField,
   plan_snapshot: z
     .record(z.unknown())
     .optional()
@@ -65,6 +68,8 @@ export const captureLead = createServerFn({ method: "POST" })
         utm_campaign: data.utm_campaign,
         utm_content: data.utm_content,
         utm_term: data.utm_term,
+        role: data.role,
+        next_launch: data.next_launch,
         plan_snapshot: data.plan_snapshot ?? null,
       })
       .select("id")
@@ -91,6 +96,8 @@ export const captureLead = createServerFn({ method: "POST" })
       utm_campaign: data.utm_campaign,
       utm_content: data.utm_content,
       utm_term: data.utm_term,
+      role: data.role,
+      next_launch: data.next_launch,
       submitted_at: new Date().toISOString(),
       lp_lead_id: lpLeadId,
     });

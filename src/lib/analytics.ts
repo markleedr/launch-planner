@@ -22,7 +22,9 @@ export type AnalyticsEventName =
   | "tud_page_view"
   | "tud_demo_started"
   | "tud_plan_generated"
-  | "tud_email_submitted";
+  | "tud_email_submitted"
+  | "tud_booking_clicked"
+  | "lp_sign_up";
 
 interface FbqFunction {
   (...args: unknown[]): void;
@@ -173,6 +175,9 @@ export interface SavedLeadInput {
   formLocation: string;
   campaignSource?: string | null;
   campaignName?: string | null;
+  /** Optional qualification answers. Fixed option labels, never free text. */
+  role?: string | null;
+  nextLaunch?: string | null;
 }
 
 const LEAD_VIA: Record<LeadFormType, "info_toaster" | "pdf_export"> = {
@@ -208,6 +213,10 @@ export function savedLeadParams(input: SavedLeadInput): Record<string, string> {
     params.campaign_name = campaignName;
     params.utm_campaign = campaignName;
   }
+  const role = optionalCampaignValue(input.role);
+  if (role) params.role = role;
+  const nextLaunch = optionalCampaignValue(input.nextLaunch);
+  if (nextLaunch) params.next_launch = nextLaunch;
   return params;
 }
 
@@ -320,4 +329,22 @@ export function emitMetaLead(host: AnalyticsHost, params: AnalyticsParams = {}):
 export function trackMetaLead(params: AnalyticsParams = {}): void {
   if (typeof window === "undefined") return;
   emitMetaLead(window, params);
+}
+
+const SIGN_UP_SENT_KEY = "launch-planner:lp-sign-up-sent";
+
+/**
+ * Fire `lp_sign_up` once per browser session when a new account has been created.
+ * UTMs come from the session store. No email address is sent.
+ */
+export function trackSignUp(method: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (sessionStorage.getItem(SIGN_UP_SENT_KEY) === "1") return;
+    sessionStorage.setItem(SIGN_UP_SENT_KEY, "1");
+  } catch {
+    // Storage blocked: send anyway.
+  }
+  const utm = captureUtmFromWindow();
+  emitAnalytics(window, "lp_sign_up", { method, ...utm });
 }
