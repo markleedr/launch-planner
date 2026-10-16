@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   CheckCircle2,
@@ -10,8 +8,6 @@ import {
   ListChecks,
   Users,
   CalendarClock,
-  Menu,
-  X,
 } from "lucide-react";
 import Footer from "@/components/home/Footer";
 import { GetStartedButton } from "@/components/billing/get-started-button";
@@ -44,16 +40,10 @@ export const Route = createFileRoute("/")({
 });
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="inline-flex items-center rounded-full bg-brand/15 text-brand-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wider mb-4">
-      <span className="text-brand">{children}</span>
-    </div>
-  );
+  return <p className="text-sm font-medium text-muted-foreground mb-4">{children}</p>;
 }
 
 function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const steps = [
     {
       icon: Building2,
@@ -133,155 +123,100 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-transparent backdrop-blur-md supports-[backdrop-filter]:bg-black/20">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-brand">
-              <span className="text-xs sm:text-sm font-bold text-black">LP</span>
-            </div>
+      {/* ============ HERO ============ */}
+      <section className="relative min-h-[600px] md:h-[700px] flex items-center justify-center px-6 pt-16 pb-8 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${heroBg})` }}
+        />
+        <div className="absolute inset-0 bg-black/55" />
+
+        <header className="absolute top-0 left-0 right-0 z-50">
+          <div className="h-16 max-w-7xl mx-auto px-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-normal text-white text-sm sm:text-base">Launch Planner</span>
-              <Badge
-                variant="outline"
-                className="hidden sm:inline-flex rounded-full text-xs font-semibold bg-transparent text-white/80 border-white/40 px-2 py-0.5"
-              >
+              <Link to="/" className="hover:opacity-80 transition-opacity">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-brand flex items-center justify-center text-black text-lg font-bold shadow-sm">
+                    LP
+                  </div>
+                  <span className="text-lg font-semibold text-white">Launch Planner</span>
+                </div>
+              </Link>
+              <span className="inline-flex items-center border border-white/40 bg-transparent text-white/80 text-xs font-semibold rounded-full px-2 py-0.5">
                 beta
-              </Badge>
+              </span>
             </div>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-8">
-            <a
-              href="#how"
-              className="text-sm font-normal text-white/80 hover:text-white transition-colors"
-            >
-              How it works
-            </a>
-            <a
-              href="#features"
-              className="text-sm font-normal text-white/80 hover:text-white transition-colors"
-            >
-              Features
-            </a>
-            <Link
-              to="/pricing"
-              className="text-sm font-normal text-white/80 hover:text-white transition-colors"
-            >
-              Pricing
-            </Link>
-          </nav>
-
-          <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              asChild
-              className="text-white hover:bg-white/10 rounded-full font-semibold"
-            >
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <GetStartedButton
-              withArrow={false}
-              className="bg-brand hover:bg-brand/90 text-black rounded-full font-semibold px-6"
-            />
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-white hover:bg-white/10"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/10 z-30">
-            <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
+            <nav className="hidden md:flex items-center gap-8">
               <a
                 href="#how"
-                className="text-sm text-white/80 py-2"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
               >
                 How it works
               </a>
               <a
                 href="#features"
-                className="text-sm text-white/80 py-2"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
               >
                 Features
               </a>
               <Link
                 to="/pricing"
-                className="text-sm text-white/80 py-2"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
               >
                 Pricing
               </Link>
-              <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                <Button
-                  variant="ghost"
-                  asChild
-                  className="w-full text-white hover:bg-white/10 rounded-full font-semibold"
-                >
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
-                <GetStartedButton
-                  withArrow={false}
-                  onNavigate={() => setMobileMenuOpen(false)}
-                  className="w-full bg-brand hover:bg-brand/90 text-black rounded-full font-semibold"
-                />
-              </div>
+            </nav>
+            <nav className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <GetStartedButton
+                size="sm"
+                withArrow={false}
+                className="h-8 px-3 text-xs rounded-md font-semibold shadow-none bg-brand text-black hover:bg-brand/90"
+              />
             </nav>
           </div>
-        )}
-      </header>
+        </header>
 
-      {/* ============ HERO ============ */}
-      <section
-        className="relative min-h-[600px] md:min-h-[700px] flex flex-col"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/50" />
-
-        <div className="relative z-10 flex-1 flex flex-col justify-center container mx-auto px-4 sm:px-6 pt-28 pb-16">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6 sm:mb-8 leading-[1.05]">
-              plan, scope & cost your
-              <br />
-              <span className="relative inline-block">
-                property project
-                <span className="absolute bottom-0.5 sm:bottom-1 left-0 w-full h-2 sm:h-3 bg-brand/90 -z-10" />
-              </span>
-              <span className="text-brand">.</span>
-            </h1>
-            <p className="text-base sm:text-lg lg:text-xl text-white/80 mb-8 sm:mb-10 max-w-2xl mx-auto">
-              Plan your property marketing workflow. Scope with accurate estimates, build service
-              deliverables, and coordinate contractors.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <GetStartedButton
-                size="lg"
-                className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-black rounded-full font-semibold text-base px-8"
-              />
-            </div>
+        <div className="relative max-w-4xl mx-auto text-center">
+          <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight tracking-tight text-white mb-6">
+            plan, scope & cost your
+            <br />
+            property project<span className="text-brand">.</span>
+          </h1>
+          <p className="text-xl font-normal text-white/90 mb-10 max-w-2xl mx-auto">
+            Plan your property marketing workflow. Scope with accurate estimates, build service
+            deliverables, and coordinate contractors.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <GetStartedButton
+              size="lg"
+              withArrow={false}
+              className="text-base px-8 h-12 rounded-md font-semibold shadow-none bg-brand text-black hover:bg-brand/90"
+            />
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="text-base px-8 h-12 bg-white/10 border-white text-white hover:bg-white hover:text-foreground rounded-md font-semibold"
+            >
+              <a href="#how">See how it works</a>
+            </Button>
           </div>
         </div>
+      </section>
 
-        <div className="relative z-10 w-full bg-brand">
-          <div className="container mx-auto px-4 sm:px-6 py-3 text-center text-xs sm:text-sm text-black">
-            Plan your next campaign budget before you spend a dollar.&nbsp;
-            <Link to="/calculator" className="font-semibold underline underline-offset-2">
-              Try the Media Calculator →
-            </Link>
-          </div>
+      {/* Media Calculator strapline */}
+      <section className="w-full bg-brand">
+        <div className="container mx-auto px-4 sm:px-6 py-3 text-center text-xs sm:text-sm text-black">
+          Plan your next campaign budget before you spend a dollar.&nbsp;
+          <Link to="/calculator" className="font-semibold underline underline-offset-2">
+            Try the Media Calculator
+          </Link>
         </div>
       </section>
 
@@ -524,27 +459,19 @@ function Home() {
       </section>
 
       {/* ============ FINAL CTA ============ */}
-      <section className="py-16 sm:py-24 bg-brand">
-        <div className="container mx-auto px-4 sm:px-6 text-center max-w-2xl">
-          <div className="flex justify-center mb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/10">
-              <Building2 className="h-6 w-6 text-black" />
-            </div>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-black mb-4 leading-tight">
-            get your projects
-            <br />
-            under control<span className="text-black/80">.</span>
+      <section className="py-20 md:py-28 px-6 bg-brand">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-6 leading-[1.1]">
+            get your projects under control<span className="text-black">.</span>
           </h2>
-          <p className="text-base sm:text-lg text-black/70 mb-8">
+          <p className="text-black/80 mb-10 max-w-xl mx-auto text-lg">
             Join the property marketing teams who've replaced the chaos with confidence.
           </p>
-          <div className="flex justify-center">
-            <GetStartedButton
-              size="lg"
-              className="bg-black hover:bg-black/90 text-white rounded-full font-semibold text-base px-8"
-            />
-          </div>
+          <GetStartedButton
+            size="lg"
+            withArrow={false}
+            className="text-base px-10 h-12 bg-white text-foreground hover:bg-white/90 rounded-md font-semibold"
+          />
         </div>
       </section>
 
