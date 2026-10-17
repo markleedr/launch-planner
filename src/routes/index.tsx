@@ -188,7 +188,7 @@ function Home() {
             <br />
             property project<span className="text-brand">.</span>
           </h1>
-          <p className="text-xl font-normal text-white/90 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl font-normal leading-relaxed text-white/90 mb-10 max-w-2xl mx-auto">
             Plan your property marketing workflow. Scope with accurate estimates, build service
             deliverables, and coordinate contractors.
           </p>
