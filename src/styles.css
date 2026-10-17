@@ -71,7 +71,7 @@
 :root {
   --radius: 0.625rem;
   /* Launch Planner reporting UI palette (Brand Guidelines v2025.1). */
-  --brand: oklch(0.8848 0.1816 94.9);
+  --brand: oklch(0.8452 0.1694 86.7);
   --brand-foreground: oklch(0.1949 0.0068 258.37);
   --background: oklch(0.9908 0.0013 106.42);
   --foreground: oklch(0.1949 0.0068 258.37);
