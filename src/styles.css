@@ -180,3 +180,11 @@
     margin: 0;
   }
 }
+
+@layer components {
+  .strapline {
+    background-color: color-mix(in srgb, var(--brand) 10%, #fcfcfb);
+    border-top: 1px solid color-mix(in srgb, var(--brand) 25%, #fcfcfb);
+    border-bottom: 1px solid color-mix(in srgb, var(--brand) 25%, #fcfcfb);
+  }
+}
