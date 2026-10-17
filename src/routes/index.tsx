@@ -211,10 +211,10 @@ function Home() {
       </section>
 
       {/* Media Calculator strapline */}
-      <section className="w-full bg-brand">
-        <div className="container mx-auto px-4 sm:px-6 py-3 text-center text-xs sm:text-sm text-black">
-          Plan your next campaign budget before you spend a dollar.&nbsp;
-          <Link to="/calculator" className="font-semibold underline underline-offset-2">
+      <section className="w-full bg-brand/10 border-y border-brand/20">
+        <div className="container mx-auto px-6 py-4 text-center text-sm md:text-base text-foreground">
+          Plan your next campaign budget before you spend a dollar.{' '}
+          <Link to="/calculator" className="font-semibold text-foreground underline underline-offset-4 hover:opacity-80">
             Try the Media Calculator
           </Link>
         </div>
