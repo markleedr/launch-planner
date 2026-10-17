@@ -98,7 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Plan your property marketing workflow. Scope with accurate estimates, build service deliverables, and coordinate contractors.",
       },
-      { name: "author", content: "Lovable" },
+      { name: "author", content: "Project Profile" },
       { property: "og:title", content: "Launch Planner - plan, scope & cost property projects." },
       {
         property: "og:description",
@@ -107,7 +107,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Launch Planner - plan, scope & cost property projects." },
       {
         name: "twitter:description",
@@ -126,9 +125,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "icon", href: "/favicon.png?v=2", type: "image/png" },
+      { rel: "icon", href: "/favicon.ico?v=2", sizes: "any" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png?v=2" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
