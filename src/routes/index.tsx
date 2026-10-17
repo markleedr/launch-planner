@@ -10,6 +10,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import Footer from "@/components/home/Footer";
+import AppSwitcher from "@/components/AppSwitcher";
 import { GetStartedButton } from "@/components/billing/get-started-button";
 import heroBg from "@/assets/hero-property-bg.jpg";
 import calculatorShot from "@/assets/features/calculator.jpg";
@@ -178,6 +179,7 @@ function Home() {
                 withArrow={false}
                 className="h-8 px-3 text-xs rounded-md font-semibold shadow-none bg-brand text-black hover:bg-brand/90"
               />
+              <AppSwitcher hero currentTool="launch-planner" />
             </nav>
           </div>
         </header>
@@ -213,8 +215,11 @@ function Home() {
       {/* Media Calculator strapline */}
       <section className="w-full strapline">
         <div className="container mx-auto px-6 py-4 text-center text-sm md:text-base text-foreground">
-          Plan your next campaign budget before you spend a dollar.{' '}
-          <Link to="/calculator" className="font-semibold text-foreground underline underline-offset-4 hover:opacity-80">
+          Plan your next campaign budget before you spend a dollar.{" "}
+          <Link
+            to="/calculator"
+            className="font-semibold text-foreground underline underline-offset-4 hover:opacity-80"
+          >
             Try the Media Calculator
           </Link>
         </div>
