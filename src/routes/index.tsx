@@ -211,7 +211,7 @@ function Home() {
       </section>
 
       {/* Media Calculator strapline */}
-      <section className="w-full bg-brand/10 border-y border-brand/20">
+      <section className="w-full strapline">
         <div className="container mx-auto px-6 py-4 text-center text-sm md:text-base text-foreground">
           Plan your next campaign budget before you spend a dollar.{' '}
           <Link to="/calculator" className="font-semibold text-foreground underline underline-offset-4 hover:opacity-80">
