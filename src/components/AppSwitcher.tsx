@@ -26,8 +26,8 @@ const BLACK = "#131518";
  * Drawn in `currentColor`. Used in the menu tiles and the home page header.
  */
 const MARK_PROPS = {
-  width: 24,
-  height: 24,
+  width: "100%",
+  height: "100%",
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
@@ -37,7 +37,7 @@ const MARK_PROPS = {
 };
 
 const IconLaunchPlanner: FC = () => (
-  <svg {...MARK_PROPS}>
+  <svg {...MARK_PROPS} viewBox="0 0.5 24 24">
     <path d="M7 19V8.5L13 5.5V19" />
     <path d="M13 10.5H16.5V19" />
     <path d="M4 19.5H20" />
@@ -53,7 +53,7 @@ const IconConversionPages: FC = () => (
 );
 
 const IconCampaignReport: FC = () => (
-  <svg {...MARK_PROPS}>
+  <svg {...MARK_PROPS} viewBox="0.35 -0.55 24 24">
     <path d="M6 13.5V17.5" />
     <path d="M11.5 9.5V17.5" />
     <path d="M17 11.5V17.5" />
@@ -69,7 +69,7 @@ const IconLeadReactivation: FC = () => (
 );
 
 const IconContentProof: FC = () => (
-  <svg {...MARK_PROPS}>
+  <svg {...MARK_PROPS} viewBox="0 0.35 24 24">
     <path d="M5 7H19" />
     <path d="M5 11.5H19" />
     <path d="M5 16H11" />
@@ -85,7 +85,7 @@ const IconManagedServices: FC = () => (
 );
 
 const IconAdProof: FC = () => (
-  <svg {...MARK_PROPS}>
+  <svg {...MARK_PROPS} viewBox="-0.5 0 24 24">
     <path d="M10.5 4.5H7a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-3" />
     <path d="M8.5 11.5l3 3 7-8.5" />
   </svg>
