@@ -19,71 +19,75 @@ const TOOLS = [
 
 type ToolId = (typeof TOOLS)[number]["id"];
 
-const ICON_PROPS = {
+const BLACK = "#131518";
+
+/**
+ * Product marks: one 24px grid, one rounded stroke weight, one solid dot.
+ * Drawn in `currentColor`. Used in the menu tiles and the home page header.
+ */
+const MARK_PROPS = {
   width: 24,
   height: 24,
   viewBox: "0 0 24 24",
   fill: "none",
-  stroke: YELLOW,
-  strokeWidth: 1.8,
+  stroke: "currentColor",
+  strokeWidth: 2.6,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
 
 const IconLaunchPlanner: FC = () => (
-  <svg {...ICON_PROPS}>
-    <rect x="3" y="3" width="7" height="7" rx="1" fill={YELLOW} opacity="0.35" />
-    <rect x="14" y="3" width="7" height="7" rx="1" fill={YELLOW} opacity="0.35" />
-    <rect x="3" y="14" width="7" height="7" rx="1" fill={YELLOW} opacity="0.35" />
-    <line x1="17.5" y1="15" x2="17.5" y2="21" />
-    <line x1="14.5" y1="18" x2="20.5" y2="18" />
+  <svg {...MARK_PROPS}>
+    <path d="M7 19V8.5L13 5.5V19" />
+    <path d="M13 10.5H16.5V19" />
+    <path d="M4 19.5H20" />
   </svg>
 );
 
 const IconConversionPages: FC = () => (
-  <svg {...ICON_PROPS}>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <line x1="3" y1="9" x2="21" y2="9" />
-    <line x1="7" y1="13" x2="17" y2="13" />
-    <line x1="7" y1="16.5" x2="14" y2="16.5" />
+  <svg {...MARK_PROPS}>
+    <rect x="3.5" y="5" width="17" height="14" rx="3" />
+    <path d="M3.5 9.5H20.5" />
+    <circle cx="12" cy="14.2" r="1.3" fill="currentColor" />
   </svg>
 );
 
 const IconCampaignReport: FC = () => (
-  <svg {...ICON_PROPS}>
-    <polyline points="2,12 6,12 9,6 12,18 15,10 18,14 22,14" />
+  <svg {...MARK_PROPS}>
+    <path d="M6 13.5V17.5" />
+    <path d="M11.5 9.5V17.5" />
+    <path d="M17 11.5V17.5" />
+    <circle cx="17" cy="7" r="1.6" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const IconLeadReactivation: FC = () => (
-  <svg {...ICON_PROPS}>
-    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-    <polyline points="21,3 21,8 16,8" />
-    <line x1="12" y1="7" x2="12" y2="12" />
-    <line x1="12" y1="12" x2="15.5" y2="14.5" />
+  <svg {...MARK_PROPS}>
+    <path d="M12 5A7 7 0 1 1 5.2 10.2" />
+    <circle cx="7" cy="6.6" r="1.7" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const IconContentProof: FC = () => (
-  <svg {...ICON_PROPS}>
-    <rect x="4" y="3" width="16" height="18" rx="2" />
-    <path d="M9 12l2 2 4-4" />
-    <line x1="8" y1="7" x2="16" y2="7" />
+  <svg {...MARK_PROPS}>
+    <path d="M5 7H19" />
+    <path d="M5 11.5H19" />
+    <path d="M5 16H11" />
+    <circle cx="17" cy="16" r="1.7" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const IconManagedServices: FC = () => (
-  <svg {...ICON_PROPS}>
+  <svg {...MARK_PROPS}>
     <circle cx="12" cy="8" r="3.5" />
     <path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" />
   </svg>
 );
 
 const IconAdProof: FC = () => (
-  <svg {...ICON_PROPS}>
-    <rect x="3" y="4" width="18" height="14" rx="2" />
-    <path d="M10 14l2 2 4-4" />
-    <line x1="3" y1="21" x2="21" y2="21" />
+  <svg {...MARK_PROPS}>
+    <path d="M10.5 4.5H7a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-3" />
+    <path d="M8.5 11.5l3 3 7-8.5" />
   </svg>
 );
 
@@ -95,6 +99,24 @@ const ICONS: Record<ToolId, FC> = {
   "content-proof": IconContentProof,
   "managed-services": IconManagedServices,
   "ad-proof": IconAdProof,
+};
+
+export type ProductId = ToolId;
+
+/** The yellow-circle product logo used in each site's home page header. */
+export const ProductLogo: FC<{ id: ToolId; size?: number }> = ({ id, size = 48 }) => {
+  const Icon = ICONS[id];
+  return (
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full shadow-sm"
+      style={{ width: size, height: size, background: YELLOW, color: BLACK }}
+      aria-hidden="true"
+    >
+      <span style={{ display: "flex", width: size * 0.6, height: size * 0.6 }}>
+        <Icon />
+      </span>
+    </span>
+  );
 };
 
 const WaffleIcon: FC = () => (
@@ -200,12 +222,15 @@ export default function AppSwitcher({ currentTool, hero = false }: AppSwitcherPr
                   <div
                     className="flex h-12 w-12 items-center justify-center rounded-full"
                     style={{
-                      background: "rgba(252,195,23,0.12)",
+                      background: YELLOW,
+                      color: BLACK,
                       border: isCurrent ? `2px solid ${YELLOW}` : "2px solid transparent",
                       boxShadow: isCurrent ? "0 0 0 3px rgba(252,195,23,0.18)" : "none",
                     }}
                   >
-                    <Icon />
+                    <span style={{ display: "flex", width: 28, height: 28 }}>
+                      <Icon />
+                    </span>
                   </div>
                   {isCurrent && (
                     <div

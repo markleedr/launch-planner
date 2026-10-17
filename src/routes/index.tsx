@@ -10,7 +10,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import Footer from "@/components/home/Footer";
-import AppSwitcher from "@/components/AppSwitcher";
+import AppSwitcher, { ProductLogo } from "@/components/AppSwitcher";
 import { GetStartedButton } from "@/components/billing/get-started-button";
 import heroBg from "@/assets/hero-property-bg.jpg";
 import calculatorShot from "@/assets/features/calculator.jpg";
@@ -137,9 +137,7 @@ function Home() {
             <div className="flex items-center gap-2">
               <Link to="/" className="hover:opacity-80 transition-opacity">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-brand flex items-center justify-center text-black text-lg font-bold shadow-sm">
-                    LP
-                  </div>
+                  <ProductLogo id="launch-planner" />
                   <span className="text-lg font-semibold text-white">Launch Planner</span>
                 </div>
               </Link>
